@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: django_app
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app  # bind mount pour le hot reloading
+    ports:
+      - "${DJANGO_PORT}:8000"
+    depends_on:
+      - db
+    # Le runserver Django détecte les changements et recharge automatiquement le code
+    command: >
+      sh -c "python manage.py makemigrations core &&
+            python manage.py migrate &&
+            python manage.py runserver 0.0.0.0:8000"
+
+  db:
+    image: postgres:15
+    container_name: django_db
+    env_file:
+      - .env
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  adminer:
+    image: adminer:latest
+    container_name: adminer
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+
+volumes:
+  db_data:
