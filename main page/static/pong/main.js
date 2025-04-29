@@ -1,3 +1,12 @@
+window.ball = {
+    speed_x: 3,
+    speed_y: 0,
+    size: 50,
+    move: false,
+    x: 0,
+    y: 0
+};
+
 function drawEndGame()
 {
     if (game.scorePlayer1 == game.scoremax || game.scorePlayer2 == game.scoremax) 

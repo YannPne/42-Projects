@@ -10,16 +10,6 @@ context = canvas.getContext('2d');
 
 window.animationId = null;
 
-tournamentPlayers = [];
-
-window.ball = {
-    speed_x: 3,
-    speed_y: 0,
-    size: 50,
-    move: false,
-    x: 0,
-    y: 0
-};
 
 // Ouvrir la modale
 openModalBtn.onclick = function() 

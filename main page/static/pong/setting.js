@@ -1,5 +1,6 @@
 window.game = null;
 window.players = [];
+tournamentPlayers = [];
 
 function game_key(key, boolean)
 {
@@ -63,5 +64,5 @@ function set_game()
         window.players = add_player();
     }
     resetgame(window.players[0], window.players[1], 1);
-     window.animationId = requestAnimationFrame(() => gameloop());
+    window.animationId = requestAnimationFrame(() => gameloop());
 }
