@@ -6,6 +6,29 @@ function game_key(key, boolean)
     game.keys[key] = boolean;
 }
 
+function set_speed(player)
+{
+    middle_player_y = player.y + player.height / 2;
+    ball.speed_y = (ball.y - middle_player_y) / game.angle;
+    ball.speed_x = -ball.speed_x;
+    if (ball.speed_x < 40 && ball.speed_x > 0)
+        ball.speed_x += 0.6;
+    else if (ball.speed_x > -40)
+        ball.speed_x -= 0.6;
+}
+
+function new_game()
+{
+    players.splice(0, 2);
+    if (players.length >= 2)
+    {
+        window.game = new Game();
+        game.gameover = true;
+        game.endgame = 0;
+        set_game();
+    }
+}
+
 function add_player()
 {    
     let players = [];
@@ -39,8 +62,6 @@ function set_game()
         window.game = new Game();
         window.players = add_player();
     }
-    window.game.gameover = true;
     resetgame(window.players[0], window.players[1], 1);
-
-    window.animationId = requestAnimationFrame(() => gameloop());
+     window.animationId = requestAnimationFrame(() => gameloop());
 }

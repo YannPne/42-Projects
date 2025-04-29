@@ -28,20 +28,19 @@
         window.homeUrl = "{% url 'pong:main' %}";
 
         window.init_scripts = [
-        "{% static 'pong/player.js' %}?v=101",
-        "{% static 'pong/set_game.js' %}?v=101",
-        "{% static 'pong/game.js' %}?v=101",
-        "{% static 'pong/setting.js' %}?v=101",
+        "{% static 'pong/player.js' %}?v=121",
+        "{% static 'pong/game.js' %}?v=121",
+        "{% static 'pong/setting.js' %}?v=121",
     ];
 
     window.game_scripts = [
-        "{% static 'pong/utils.js' %}?v=101",
-        "{% static 'pong/main.js' %}?v=101",
+        "{% static 'pong/utils.js' %}?v=121",
+        "{% static 'pong/main.js' %}?v=121",
     ];
         
     </script>
 
-    <script src="{% static 'main/main.js' %}?v=101"></script>
+    <script src="{% static 'main/main.js' %}?v=121"></script>
 
 </body>
 

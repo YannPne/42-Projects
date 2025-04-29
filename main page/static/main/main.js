@@ -1,3 +1,5 @@
+test = false;
+
 window.addEventListener('DOMContentLoaded', () => 
 {
   window.init_scripts.forEach(function(scriptSrc)
@@ -7,6 +9,18 @@ window.addEventListener('DOMContentLoaded', () =>
         document.body.appendChild(script);
     });
 });
+
+function prepareStartButton() {
+  const oldButton = document.getElementById('start');
+  const newButton = oldButton.cloneNode(true); // clone sans listeners
+  oldButton.parentNode.replaceChild(newButton, oldButton);
+
+  // Maintenant on ajoute le listener proprement
+  newButton.addEventListener('click', function handleStartClick() {
+    console.log("Start button clicked !");
+    set_game(); // ton lancement de jeu
+  });
+}
 
 
 document.body.addEventListener('htmx:afterSwap', function(event)
@@ -50,14 +64,14 @@ function toggleGame()
       button.dataset.playing = "true";
 
       htmx.ajax('GET', window.pingPongUrl, { target: "#pong-container", swap: "innerHTML" });
-
+      test = true;
     }
     else 
     {
-      reset_all();// reset le jeu si lancé
       button.textContent = "Lancer le jeu de ping-pong";
       button.dataset.playing = "false";
 
       htmx.ajax('GET', window.homeUrl, { target: "body", swap: "innerHTML" });
+      test = true;
     }
 }

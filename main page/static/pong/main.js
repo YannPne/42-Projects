@@ -1,12 +1,3 @@
-window.ball = {
-    speed_x: 3,
-    speed_y: 0,
-    size: 50,
-    move: false,
-    x: 0,
-    y: 0
-};
-
 function drawEndGame()
 {
     if (game.scorePlayer1 == game.scoremax || game.scorePlayer2 == game.scoremax) 
@@ -131,8 +122,6 @@ function drawScore(player1, player2) {
 
 function resetgame(player1, player2, boolean)
 {
-    if (boolean)
-        console.log("test");
     if (game.gameover || boolean)
     {
         context.clearRect(0, 0, canvas.width, canvas.height);
@@ -157,31 +146,31 @@ function resetgame(player1, player2, boolean)
 
 function gameloop()
 {
+    player1 = window.players[0];
+    player2 = window.players[1];
+    game = window.game;
+
     if (window.animationId == -1)
-        return (pause());
+        return ;
     if (!window.animationId)
-        return (resetgame(window.players[0], window.players[1], 1));
+        return (resetgame(player1, player2, 1));
     if (game.endgame)
         return new_game();
-
-    // player1 = window.players[0];
-    // player2 = window.players[1];
-    game = window.game;
-    
-    resetgame(window.players[0], window.players[1], 0);
+        
+    resetgame(player1, player2, 0);
     drawsmap();
-    drawScore(window.players[0], window.players[1]);
-    window.players[0].drawplayer();
-    window.players[1].drawplayer();
-    drawEndGame(window.players[0], window.players[1]);
+    drawScore(player1, player2);
+    player1.drawplayer();
+    player2.drawplayer();
+    drawEndGame(player1, player2);
     drawsball();
-    move(window.players[0], window.players[1]);
-    check_impact(window.players[0], window.players[1]);
+    move(player1, player2);
+    check_impact(player1, player2);
     
-    if (window.players[0] instanceof Player1IA)
-        window.players[0].IA();
-    if (window.players[1] instanceof Player2IA)
-        window.players[1].IA();
+    if (player1 instanceof Player1IA)
+        player1.IA();
+    if (player2 instanceof Player2IA)
+        player2.IA();
 
     requestAnimationFrame(() => gameloop());
 }

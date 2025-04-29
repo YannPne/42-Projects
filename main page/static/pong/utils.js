@@ -8,9 +8,18 @@ playerNameInput = document.getElementById('player-name');
 canvas = document.getElementById('pong');
 context = canvas.getContext('2d');
 
+window.animationId = null;
+
 tournamentPlayers = [];
 
-window.animationId = null;
+window.ball = {
+    speed_x: 3,
+    speed_y: 0,
+    size: 50,
+    move: false,
+    x: 0,
+    y: 0
+};
 
 // Ouvrir la modale
 openModalBtn.onclick = function() 
@@ -39,19 +48,15 @@ addPlayerButton.addEventListener('click', function() {
     }
   });
 
-startButton.addEventListener('click', function() {
-    if (window.animationId && window.animationId != -1)
-    {
-      window.animationId = -1;
-    }
+startButton.addEventListener('click', function() 
+{
+    if (window.animationId)
+      return ;
     else
       set_game();
   });
 
-
-function reset_all()
-{
-  console.log(window.animationId);
+resetbutton.addEventListener('click', function() {
   if (window.animationId)
     {
       context.clearRect(0, 0, canvas.width, canvas.height);
@@ -61,10 +66,6 @@ function reset_all()
       window.game = 0;
       window.player = 0;
     }
-}
-
-resetbutton.addEventListener('click', function() {
-  reset_all();
   });
 
 document.addEventListener('keydown', function(event)
