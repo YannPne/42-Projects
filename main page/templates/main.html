@@ -1,0 +1,49 @@
+<!-- game/templates/game/main.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transcendence</title>
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+
+    {% load static %}
+</head>
+<body>
+    <h1>Bienvenue dans Transcendence</h1>
+
+    <button 
+        id="gameButton"
+        data-playing="false"
+        onclick="toggleGame()">
+        Lancer le jeu de ping-pong
+    </button>
+
+    <div id="pong-container">
+        <!-- Le jeu sera chargé ici -->
+    </div>
+
+    <script type="text/javascript">
+
+        window.pingPongUrl = "{% url 'pong:pingpong' %}";
+        window.homeUrl = "{% url 'pong:main' %}";
+
+        window.init_scripts = [
+        "{% static 'pong/player.js' %}?v=101",
+        "{% static 'pong/set_game.js' %}?v=101",
+        "{% static 'pong/game.js' %}?v=101",
+        "{% static 'pong/setting.js' %}?v=101",
+    ];
+
+    window.game_scripts = [
+        "{% static 'pong/utils.js' %}?v=101",
+        "{% static 'pong/main.js' %}?v=101",
+    ];
+        
+    </script>
+
+    <script src="{% static 'main/main.js' %}?v=101"></script>
+
+</body>
+
+</html>
+
