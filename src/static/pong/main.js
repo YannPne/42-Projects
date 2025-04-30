@@ -9,7 +9,7 @@ window.ball = {
 
 function drawEndGame()
 {
-    if (game.scorePlayer1 == game.scoremax || game.scorePlayer2 == game.scoremax) 
+    if (game.scorePlayer1 === game.scoremax || game.scorePlayer2 === game.scoremax)
     {
         game.gamecount++;
         game.endgame = true;
@@ -99,7 +99,7 @@ function move(player1, player2)
     player1.speed = 0;
     player2.speed = 0;
 
-    if (game.keys["z"])
+    if (game.keys["z"] || game.keys["w"])
         player1.speed = -game.speed;
     if (game.keys["s"])
         player1.speed = game.speed;
@@ -155,11 +155,11 @@ function resetgame(player1, player2, boolean)
 
 function gameloop()
 {
-    player1 = window.players[0];
-    player2 = window.players[1];
-    game = window.game;
+    let player1 = window.players[0];
+    let player2 = window.players[1];
+    let game = window.game;
 
-    if (window.animationId == -1)
+    if (window.animationId === -1)
         return ;
     if (!window.animationId)
         return (resetgame(player1, player2, 1));

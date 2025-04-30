@@ -1,27 +1,12 @@
-test = false;
-
-window.addEventListener('DOMContentLoaded', () => 
+window.addEventListener('DOMContentLoaded', () =>
 {
   window.init_scripts.forEach(function(scriptSrc)
-    {
-        const script = document.createElement('script');
-        script.src = scriptSrc;
-        document.body.appendChild(script);
-    });
-});
-
-function prepareStartButton() {
-  const oldButton = document.getElementById('start');
-  const newButton = oldButton.cloneNode(true); // clone sans listeners
-  oldButton.parentNode.replaceChild(newButton, oldButton);
-
-  // Maintenant on ajoute le listener proprement
-  newButton.addEventListener('click', function handleStartClick() {
-    console.log("Start button clicked !");
-    set_game(); // ton lancement de jeu
+  {
+    const script = document.createElement('script');
+    script.src = scriptSrc;
+    document.body.appendChild(script);
   });
-}
-
+});
 
 document.body.addEventListener('htmx:afterSwap', function(event)
 {
@@ -40,10 +25,8 @@ document.body.addEventListener('htmx:afterSwap', function(event)
 
 function initializePingPongGame()
 {
-    //if (!window.scripts) return;
-
     console.log("Le jeu de ping-pong est initialisé.");
-    
+
     window.game_scripts.forEach(function(scriptSrc)
     {
         const script = document.createElement('script');
@@ -64,14 +47,12 @@ function toggleGame()
       button.dataset.playing = "true";
 
       htmx.ajax('GET', window.pingPongUrl, { target: "#pong-container", swap: "innerHTML" });
-      test = true;
     }
-    else 
+    else
     {
       button.textContent = "Lancer le jeu de ping-pong";
       button.dataset.playing = "false";
 
       htmx.ajax('GET', window.homeUrl, { target: "body", swap: "innerHTML" });
-      test = true;
     }
 }

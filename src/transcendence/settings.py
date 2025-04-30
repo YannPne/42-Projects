@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from os import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-5owrwv1m(=8av=5(j_r^$_gu*bp6*-^bt^^f4)=pb4!7wc8qv*'
+SECRET_KEY = environ.get('DJANGO_SECRET_KEY', 'secret_key'),
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -77,8 +78,12 @@ WSGI_APPLICATION = 'transcendence.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': environ.get('POSTGRES_DB', 'django_db'),
+        'USER': environ.get('POSTGRES_USER', 'django_user'),
+        'PASSWORD': environ.get('POSTGRES_PASSWORD', 'django_pass'),
+        'HOST': environ.get('POSTGRES_HOST', 'db'),
+        'PORT': 5432,
     }
 }
 

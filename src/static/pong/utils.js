@@ -24,7 +24,7 @@ closeModalBtn.onclick = function() {
 
 // Fermer la modale si l'utilisateur clique en dehors de la modale
 window.onclick = function(event) {
-  if (event.target == modal) {
+  if (event.target === modal) {
     modal.style.display = "none";
   }
 }

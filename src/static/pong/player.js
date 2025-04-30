@@ -41,7 +41,7 @@ class Player
         //     this.speed = game.speed / 5;
 
         this.speed = game.speed
-    
+
         if (middle_player1_y > this.target_y + 30) // 30 pour eviter le tramblement / taper avec les cotés
             this.speed = -this.speed;
         else if (middle_player1_y < this.target_y - 30)
