@@ -7,7 +7,7 @@ window.ball = {
     y: 0
 };
 
-function drawEndGame()
+function drawEndGame(player1, player2)
 {
     if (game.scorePlayer1 === game.scoremax || game.scorePlayer2 === game.scoremax)
     {
@@ -56,8 +56,9 @@ function check_impact(player1, player2)
 
 function drawsmap()
 {
+    // TODO: sometimes context is undefined without graphics issues
     context.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     context.beginPath();
     context.setLineDash([10, 15]);
     context.moveTo(canvas.width / 2, 0);
@@ -129,6 +130,11 @@ function drawScore(player1, player2) {
     context.globalAlpha = 1;
 }
 
+// TODO: player1 and player2 is undefined when follow this steps:
+//    - A player win
+//    - Click on 'Quitter le jeu'
+//    - Click on 'Lancer le jeu de ping-pong'
+//    - Click on 'Start game'
 function resetgame(player1, player2, boolean)
 {
     if (game.gameover || boolean)

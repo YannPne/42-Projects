@@ -7,4 +7,6 @@ app_name = 'core'
 urlpatterns = [
     path('', views.main_page, name='main'),  # Assurez-vous que c'est bien configuré pour la page d'accueil
     path('pingpong/', views.pingpong_game, name='pingpong'),  # Assurez-vous que c'est bien configuré pour le jeu
+
+    path('api/auth/42/token', views.auth_42_token)
 ]
