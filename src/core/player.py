@@ -12,6 +12,7 @@ class Player:
     time_move: datetime = datetime.now()
     speed: float = 0
     target_y: float
+    score: int = 0
 
     game: Game
 
@@ -25,12 +26,12 @@ class Player:
             self.target_y = self.game.ball.y
             self.time_move = datetime.now()
 
-        middle_player1_y = self.y + self.height / 2
+        center_y = self.y + self.height / 2
 
         self.speed = self.game.ball.speed
-        if middle_player1_y > self.target_y + 30:
+        if center_y > self.target_y + 30:
             self.speed = -self.speed
-        elif middle_player1_y < self.target_y - 30:
-            self.speed = self.speed
+        elif center_y < self.target_y - 30:
+            pass
         else:
             self.speed = 0

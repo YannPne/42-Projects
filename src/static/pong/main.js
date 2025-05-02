@@ -19,7 +19,7 @@ function drawEndGame(player1, player2)
         context.fillStyle = 'white';
         context.textAlign = 'center';
         context.textBaseline = 'middle';
-        
+
         let player_win = game.scorePlayer1 > game.scorePlayer2 ? player1 : player2;
 
         const message = player_win.name + " win";
@@ -31,27 +31,6 @@ function drawEndGame(player1, player2)
         return (1);
     }
     return (0);
-}
-
-
-
-function check_impact(player1, player2)
-{
-    if (window.ball.x + window.ball.size > canvas.width || window.ball.x < 0)
-    {
-        if (window.ball.x + window.ball.size > canvas.width)
-            game.scorePlayer1++;
-        else
-            game.scorePlayer2++;
-        return (game.gameover = true);
-    }
-
-    if (window.ball.y + window.ball.size > canvas.height || window.ball.y < 0) // Impact TOP / BOTTOM
-        window.ball.speed_y = -window.ball.speed_y;
-    else if (window.ball.x < (player1.x + player1.width) && window.ball.y + window.ball.size > player1.y && window.ball.y < (player1.y + player1.height)) // Impact player 1
-        set_speed(player1);
-    else if ((window.ball.x + window.ball.size) > player2.x && window.ball.y + window.ball.size > player2.y && window.ball.y < (player2.y + player2.height)) // Impact player 2
-        set_speed(player2);
 }
 
 function drawsmap()
@@ -73,19 +52,19 @@ function drawsmap()
 }
 
 function drawsball()
-{    
+{
     if (window.ball.move)
     {
         if (window.ball.speed_x > 0)
             window.ball.x += window.ball.speed_x;
         else
             window.ball.x += window.ball.speed_x;
-    
+
         window.ball.y += window.ball.speed_y / 2;
     }
 
     const drawX = Math.round(window.ball.x + window.ball.size / 2);
-    const drawY = Math.round(window.ball.y + window.ball.size / 2);    
+    const drawY = Math.round(window.ball.y + window.ball.size / 2);
 
     context.beginPath();
     context.arc(drawX, drawY, window.ball.size / 2, 0, Math.PI * 2);
@@ -171,7 +150,7 @@ function gameloop()
         return (resetgame(player1, player2, true));
     if (game.endgame)
         return new_game();
-        
+
     resetgame(player1, player2, false);
     drawsmap();
     drawScore(player1, player2);
@@ -181,7 +160,7 @@ function gameloop()
     drawsball();
     move(player1, player2);
     check_impact(player1, player2);
-    
+
     if (player1.isAI)
         player1.IA();
     if (player2.isAI)

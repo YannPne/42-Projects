@@ -40,10 +40,6 @@
         "{% static 'pong/main.js' %}?v=104",
     ];
 
-    const ws = new WebSocket("ws://localhost:8000/practice");
-    ws.onmessage = data => console.log(data.data);
-    ws.send("PING");
-
 </script>
 
 <script src="{% static 'main/main.js' %}?v=104"></script>

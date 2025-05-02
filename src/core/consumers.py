@@ -1,10 +1,14 @@
-from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from channels.generic.websocket import AsyncWebsocketConsumer
+import json
 
-class PracticeConsumer(AsyncJsonWebsocketConsumer):
-
+class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         await self.accept()
+        await self.send(text_data="🟢 WebSocket connecté")
 
-    async def receive(self, text_data=None, bytes_data=None, **kwargs):
-        if text_data == 'PING':
-            await self.send('PONG')
+    async def disconnect(self, close_code):
+        print(f"Déconnexion : {close_code}")
+
+    async def receive(self, text_data):
+        print(f"Message reçu : {text_data}")
+        await self.send(text_data=f"PONG : {text_data}")

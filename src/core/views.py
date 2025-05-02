@@ -12,7 +12,11 @@ def pingpong_game(request):
     return render(request, 'pingpong.html')
 
 
-def auth_42_token(request: HttpRequest):
+def api_games(request: HttpRequest):
+    pass
+
+
+def auth_42_callback(request: HttpRequest):
     if request.method == "GET":
         code = request.GET.get("code")
         if not code:

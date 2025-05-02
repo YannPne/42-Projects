@@ -7,17 +7,6 @@ function game_key(key, isDown)
     game.keys[key] = isDown;
 }
 
-function set_speed(player)
-{
-    let middle_player_y = player.y + player.height / 2;
-    ball.speed_y = (ball.y - middle_player_y) / game.angle;
-    ball.speed_x = -ball.speed_x;
-    if (ball.speed_x < 40 && ball.speed_x > 0)
-        ball.speed_x += 0.6;
-    else if (ball.speed_x > -40)
-        ball.speed_x -= 0.6;
-}
-
 function new_game()
 {
     players.splice(0, 2);
