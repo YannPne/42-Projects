@@ -1,7 +1,10 @@
-# src/core/urls.py
+# game/urls.py
 from django.urls import path
-from .views import hello_view
+from . import views
+
+app_name = 'core'
 
 urlpatterns = [
-    path('hello/', hello_view, name='hello_view'),
+    path('', views.main_page, name='main'),  # Assurez-vous que c'est bien configuré pour la page d'accueil
+    path('pingpong/', views.pingpong_game, name='pingpong'),  # Assurez-vous que c'est bien configuré pour le jeu
 ]
