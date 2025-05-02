@@ -28,6 +28,12 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
+
 
 # Application definition
 
@@ -39,7 +45,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'core',
+    'channels'
 ]
+
+ASGI_APPLICATION = 'transcendence.asgi.application'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

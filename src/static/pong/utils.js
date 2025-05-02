@@ -49,6 +49,7 @@ add42PlayerButton.addEventListener('click', () => {
     if (win == null)
         alert("Ouverture de la popup de connexion refuse");
     else {
+        localStorage.removeItem("oauth");
         const interval = setInterval(() => {
             const json = JSON.parse(localStorage.getItem("oauth"));
             if (!json)
@@ -86,13 +87,13 @@ resetbutton.addEventListener('click', function () {
 
 document.addEventListener('keydown', function (event) {
     if (window.game) {
-        game_key(event.key, 1);
+        game_key(event.key, true);
         ball.move = true;
     }
 });
 
 document.addEventListener('keyup', function (event) {
     if (window.game) {
-        game_key(event.key, 0);
+        game_key(event.key, false);
     }
 });

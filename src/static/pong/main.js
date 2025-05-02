@@ -83,7 +83,7 @@ function drawsball()
     
         window.ball.y += window.ball.speed_y / 2;
     }
-    
+
     const drawX = Math.round(window.ball.x + window.ball.size / 2);
     const drawY = Math.round(window.ball.y + window.ball.size / 2);    
 
@@ -168,11 +168,11 @@ function gameloop()
     if (window.animationId === -1)
         return ;
     if (!window.animationId)
-        return (resetgame(player1, player2, 1));
+        return (resetgame(player1, player2, true));
     if (game.endgame)
         return new_game();
         
-    resetgame(player1, player2, 0);
+    resetgame(player1, player2, false);
     drawsmap();
     drawScore(player1, player2);
     player1.drawplayer();
@@ -182,9 +182,9 @@ function gameloop()
     move(player1, player2);
     check_impact(player1, player2);
     
-    if (player1 instanceof Player1IA)
+    if (player1.isAI)
         player1.IA();
-    if (player2 instanceof Player2IA)
+    if (player2.isAI)
         player2.IA();
 
     requestAnimationFrame(() => gameloop());

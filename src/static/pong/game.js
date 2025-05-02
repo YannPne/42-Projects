@@ -1,5 +1,5 @@
 class Game {
-    constructor(speed = 7, scoremax = 5, angle = 10) 
+    constructor(speed = 7, scoremax = 5, angle = 10)
     {
         this.gameover = true;
         this.endgame = false;

@@ -2,9 +2,9 @@ window.game = null;
 window.players = [];
 tournamentPlayers = [];
 
-function game_key(key, boolean)
+function game_key(key, isDown)
 {
-    game.keys[key] = boolean;
+    game.keys[key] = isDown;
 }
 
 function set_speed(player)
@@ -31,27 +31,16 @@ function new_game()
 }
 
 function add_player()
-{    
+{
     let players = [];
-    
-    if (tournamentPlayers.length === 0)
-    {
-        players.push(new Player1("Player1"));
-        players.push(new Player2IA());
-        return players;
-    }
+
+    tournamentPlayers[0] ??= "Player1";
     for (let i = 0; i < tournamentPlayers.length; i += 2)
     {
-        if (tournamentPlayers[i] === "IA")
-            players.push(new Player1IA());
-        else
-            players.push(new Player1(tournamentPlayers[i]));
-            
-        if ((i + 1) >= tournamentPlayers.length || tournamentPlayers[i + 1] === "IA")
-            players.push(new Player2IA());
-        else
-            players.push(new Player2(tournamentPlayers[i + 1]));
-        
+        const player1 = tournamentPlayers[i] ?? "IA";
+        const player2 = tournamentPlayers[i + 1] ?? "IA";
+        players.push(Player.newPlayer(player1, true, player1 === "IA"));
+        players.push(Player.newPlayer(player2, false, player2 === "IA"));
     }
     return players;
 }
@@ -63,6 +52,6 @@ function set_game()
         window.game = new Game();
         window.players = add_player();
     }
-    resetgame(window.players[0], window.players[1], 1);
+    resetgame(window.players[0], window.players[1], true);
     window.animationId = requestAnimationFrame(() => gameloop());
 }
