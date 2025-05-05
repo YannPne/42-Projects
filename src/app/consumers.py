@@ -1,5 +1,4 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
-import json
 
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):

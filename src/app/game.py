@@ -21,7 +21,7 @@ class Game:
     def check_win(self):
         if not 0 >= self.ball.x > self.width:
             player: Player = self.players[0 if self.ball.x < 0 else 1]
-            player.score++
+            player.score += 1
             if player.score >= self.win_score:
                 self.state = GameState.SHOW_WINNER
 

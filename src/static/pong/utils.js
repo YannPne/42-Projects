@@ -13,23 +13,23 @@ window.animationId = null;
 
 
 // Ouvrir la modale
-openModalBtn.onclick = function () {
+openModalBtn.onclick = () => {
     modal.style.display = "block";
 }
 
 // Fermer la modale
-closeModalBtn.onclick = function () {
+closeModalBtn.onclick = () => {
     modal.style.display = "none";
 }
 
 // Fermer la modale si l'utilisateur clique en dehors de la modale
-window.onclick = function (event) {
+window.onclick = event => {
     if (event.target === modal) {
         modal.style.display = "none";
     }
 }
 
-addPlayerButton.addEventListener('click', function () {
+addPlayerButton.addEventListener('click', () => {
     const playerName = playerNameInput.value.trim();
     if (playerName) {
         tournamentPlayers.push(playerName);
@@ -67,14 +67,14 @@ add42PlayerButton.addEventListener('click', () => {
     }
 });
 
-startButton.addEventListener('click', function () {
+startButton.addEventListener('click', () => {
     if (window.animationId)
         return;
     else
         set_game();
 });
 
-resetbutton.addEventListener('click', function () {
+resetbutton.addEventListener('click', () => {
     if (window.animationId) {
         context.clearRect(0, 0, canvas.width, canvas.height);
         drawsmap();
@@ -85,14 +85,14 @@ resetbutton.addEventListener('click', function () {
     }
 });
 
-document.addEventListener('keydown', function (event) {
+document.addEventListener('keydown', event => {
     if (window.game) {
         game_key(event.key, true);
         ball.move = true;
     }
 });
 
-document.addEventListener('keyup', function (event) {
+document.addEventListener('keyup', event => {
     if (window.game) {
         game_key(event.key, false);
     }

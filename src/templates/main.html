@@ -26,8 +26,8 @@
 
 <script type="text/javascript">
 
-    window.pingPongUrl = "{% url 'core:pingpong' %}";
-    window.homeUrl = "{% url 'core:main' %}";
+    window.pingPongUrl = "{% url 'app:pingpong' %}";
+    window.homeUrl = "{% url 'app:main' %}";
 
     window.init_scripts = [
         "{% static 'pong/player.js' %}?v=104",
