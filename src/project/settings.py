@@ -14,7 +14,7 @@ SECRET_KEY = environ.get('DJANGO_SECRET_KEY', 'secret_key'),
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 # Application definition
 
@@ -74,6 +74,12 @@ DATABASES = {
         'HOST': environ.get('POSTGRES_HOST', 'db'),
         'PORT': 5432,
     }
+}
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
 }
 
 

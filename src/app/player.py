@@ -1,25 +1,29 @@
+from __future__ import annotations
 from datetime import datetime, timedelta
-from game import Game
 
 
 class Player:
-    name: str
-    isAI: bool
-    x: float = 0
-    y: float
-    width: float = 20
-    height: float = 200
-    time_move: datetime = datetime.now()
-    speed: float = 0
-    target_y: float
-    score: int = 0
+    def __init__(self, game: Game, name: str, is_ai: bool):
+        self.game: Game = game
+        self.name: str = name
+        self.is_ai: bool = is_ai
+        self.width: float = 20
+        self.height: float = 200
+        self.x: float = 0
+        self.y: float = (game.height - self.height) / 2
+        self.time_move: datetime = datetime.now()
+        self.go_up: bool = False
+        self.go_down: bool = False
+        self.speed: float = 0
+        self.target_y = self.y + self.height / 2
+        self.score: int = 0
 
-    game: Game
-
-    def __init__(self, game: Game):
-        self.game = game
-        y = (game.width - self.height) / 2
-        self.target_y = y + self.height / 2
+    def move(self):
+        if self.go_up:
+            self.y -= 5
+        if self.go_down:
+            self.y += 5
+        self.y = min(max(self.y, 0), self.game.height - self.height)
 
     def play_ai(self):
         if self.time_move + timedelta(seconds=1) < datetime.now():
@@ -28,10 +32,19 @@ class Player:
 
         center_y = self.y + self.height / 2
 
-        self.speed = self.game.ball.speed
         if center_y > self.target_y + 30:
-            self.speed = -self.speed
+            self.speed = -1
         elif center_y < self.target_y - 30:
-            pass
+            self.speed = 1
         else:
             self.speed = 0
+
+    def to_json(self):
+        return {
+            "name": self.name,
+            "x": self.x,
+            "y": self.y,
+            "width": self.width,
+            "height": self.height,
+            "score": self.score
+        }

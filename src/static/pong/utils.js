@@ -29,16 +29,19 @@ window.onclick = event => {
     }
 }
 
-addPlayerButton.addEventListener('click', () => {
+addPlayerButton.addEventListener("click", () => {
     const playerName = playerNameInput.value.trim();
     if (playerName) {
-        tournamentPlayers.push(playerName);
-        console.log("Joueur ajouté:", playerName);
-        playerNameInput.value = ''; // Réinitialiser l'input
+        ws.send(JSON.stringify({
+            event: "add_player",
+            name: playerName,
+            is_ai: playerName === "IA"
+        }));
+        playerNameInput.value = '';
     }
 });
 
-add42PlayerButton.addEventListener('click', () => {
+add42PlayerButton.addEventListener("click", () => {
     let win = window.open("https://api.intra.42.fr/oauth/authorize"
         + "?client_id=u-s4t2ud-0a05cb1e9d70fbc329f27e221393b94744a04cc10bf200489c0273993074e3de"
         + "&redirect_uri=http://localhost:8000/api/auth/42/token" // TODO: https
@@ -67,33 +70,40 @@ add42PlayerButton.addEventListener('click', () => {
     }
 });
 
-startButton.addEventListener('click', () => {
-    if (window.animationId)
-        return;
+startButton.addEventListener("click", () => {
+    ws.send(JSON.stringify({
+        event: "start"
+    }));
+});
+
+resetbutton.addEventListener("click", () => {
+
+});
+
+function key_handle(event, up) {
+    let send = {};
+
+    let speed = 0;
+
+    if (event.key === "w" || event.key === "z" || event.key === "ArrowUp")
+        send.up = !up;
+    else if (event.key === "s" || event.key === "ArrowDown")
+        send.down = !up;
     else
-        set_game();
+        return;
+
+    send.id = event.key === "ArrowUp" || event.key === "ArrowDown" ? 1 : 0;
+    send.event = "move";
+
+    ws.send(JSON.stringify(send));
+}
+
+document.addEventListener("keydown", event => {
+    if (event.repeat)
+        return;
+    key_handle(event, false);
 });
 
-resetbutton.addEventListener('click', () => {
-    if (window.animationId) {
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        drawsmap();
-        window.animationId = 0;
-        tournamentPlayers.length = 0;
-        window.game = 0;
-        window.player = 0;
-    }
-});
-
-document.addEventListener('keydown', event => {
-    if (window.game) {
-        game_key(event.key, true);
-        ball.move = true;
-    }
-});
-
-document.addEventListener('keyup', event => {
-    if (window.game) {
-        game_key(event.key, false);
-    }
+document.addEventListener("keyup", event => {
+    key_handle(event, true);
 });

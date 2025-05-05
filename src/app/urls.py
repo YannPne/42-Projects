@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, re_path
 from . import views, consumers
 
 app_name = 'app'
@@ -6,11 +6,11 @@ app_name = 'app'
 urlpatterns = [
     path('', views.main_page, name='main'),
     path('pingpong/', views.pingpong_game, name='pingpong'),
+    path("choose_game/", views.choose_game),
 
-    path('api/games', views.api_games),
     path('api/auth/42/callback', views.auth_42_callback),
 ]
 
 ws_urlpatterns = [
-    path('ws/game', consumers.GameConsumer.as_asgi()),
+    re_path(r"ws/game/(?P<uid>[a-f0-9-]+)$", consumers.GameConsumer.as_asgi()),
 ]

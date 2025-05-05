@@ -1,7 +1,9 @@
+import uuid
 from os import environ
 import requests
 from django.shortcuts import render
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, JsonResponse
+from .game import games
 
 
 def main_page(request):
@@ -12,8 +14,13 @@ def pingpong_game(request):
     return render(request, 'pingpong.html')
 
 
-def api_games(request: HttpRequest):
-    pass
+def choose_game(request: HttpRequest):
+    data = { "players": [], "uid": uuid.uuid4() }
+
+    for game in games:
+        data["players"].append({"id": game.uid, "name": game.name})
+
+    return render(request, "choose_game.html", {"data": data})
 
 
 def auth_42_callback(request: HttpRequest):

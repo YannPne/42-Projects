@@ -1,18 +1,23 @@
-from game import Game
-from player import Player
+from __future__ import annotations
+from .player import Player
+
 
 class Ball:
-    x: float = 0
-    y: float = 0
-    size: float = 50
-    speed_x: float = 0
-    speed_y: float = 0
-    angle: float = 100
-
-    game: Game
-
     def __init__(self, game: Game):
-        self.game = game
+        self.game: Game = game
+        self.size: float = 50
+        self.x: float = 0
+        self.y: float = 0
+        self.speed_x: float = 0
+        self.speed_y: float = 0
+        self.angle: float = 100
+        self.reset_pos()
+
+    def reset_pos(self):
+        self.x: float = (self.game.width - self.size) / 2
+        self.y: float = (self.game.height - self.size) / 2
+        self.speed_x: float = 3
+        self.speed_y: float = 0
 
     def move(self):
         self.x += self.speed_x
@@ -20,8 +25,8 @@ class Ball:
 
     def impact_player(self, player: Player):
         self.speed_x *= -1
-        self.speed_y = (self.y - player.y + player.height / 2) / self.angle
-        if 40 > self.speed_x > 0:
+        self.speed_y = (self.y - (player.y + player.height / 2)) / self.angle
+        if 0 < self.speed_x < 40:
             self.speed_x += 0.6
         elif self.speed_x > -40:
             self.speed_x -= 0.6
