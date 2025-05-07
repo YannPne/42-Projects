@@ -11,6 +11,8 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         super().__init__(args, kwargs)
         self.loop_task: asyncio.Task | None = None
         self.game: Game | None = None
+        self.room_name: str | None = None
+        self.room_group_name: str | None = None
 
     async def connect(self):
         uid = self.scope["url_route"]["kwargs"]["uid"]
@@ -45,7 +47,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         if self.loop_task is not None:
             self.loop_task.cancel()
 
-    async def receive_json(self, content):
+    async def receive_json(self, content, **kwargs):
         match content["event"]:
             case "add_player" if self.game.state == GameState.CREATING:
                 self.game.players.append(Player(self.game, content["name"], content["is_ai"]))

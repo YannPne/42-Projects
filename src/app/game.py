@@ -1,12 +1,14 @@
+from typing import TYPE_CHECKING
 import asyncio
-import json
 import sys
 import time
 from enum import Enum
-from channels.generic.websocket import AsyncJsonWebsocketConsumer
+
 from .player import Player
 from .ball import Ball
 
+if TYPE_CHECKING:
+    from .consumers import GameConsumer
 
 class GameState(Enum):
     CREATING = 0
@@ -15,20 +17,21 @@ class GameState(Enum):
 
 
 class Game:
+    win_score: int = 5
+
     def __init__(self, name: str, uid: str):
         self.name = name
         self.uid = uid
         self.width: float = 1200
         self.height: float = 600
         self.state: GameState = GameState.CREATING
-        self.win_score: int = 5
         self.ball: Ball = Ball(self)
         self.players: list[Player] = []
 
     def check_win(self) -> bool:
         if self.ball.x < 0:
             player = self.players[1]
-        elif self.ball.x > self.width:
+        elif self.ball.x + self.ball.size > self.width:
             player = self.players[0]
         else:
             return False
@@ -41,11 +44,16 @@ class Game:
 
         if len(self.players) == 1:
             self.state = GameState.SHOW_WINNER
+            return True
 
         self.ball.reset_pos()
+        self.players[0].x = 30
+        self.players[0].y = (self.height - self.players[0].height) / 2
+        self.players[1].x = self.width - self.players[1].width - 30
+        self.players[1].y = (self.height - self.players[1].height) / 2
         return True
 
-    async def loop(self, ws: AsyncJsonWebsocketConsumer):
+    async def loop(self, ws: "GameConsumer"):
         player1 = self.players[0]
         player2 = self.players[1]
 
@@ -61,13 +69,13 @@ class Game:
                 player2.move()
                 self.ball.update_speed(player1, player2)
                 if self.check_win():
+                    if self.state ==GameState.SHOW_WINNER:
+                        break
                     player1 = self.players[0]
                     player2 = self.players[1]
-                    player1.x = 30
-                    player2.x = self.width - self.players[1].width - 30
 
                 await ws.channel_layer.group_send(ws.room_group_name, {
-                    "type": "send_json", # required by channel_layer
+                    "type": "send_json",  # required by channel_layer
                     "event": "update",
                     "ball": {
                         "x": self.ball.x,
@@ -86,9 +94,9 @@ class Game:
             await asyncio.sleep(max(0.0, 0.01 - time.time() + start_time))
 
         await ws.channel_layer.group_send(ws.room_group_name, {
-            "type": "send_json", # required by channel_layer
+            "type": "send_json",  # required by channel_layer
             "event": "win",
-            "player": player1.name
+            "player": self.players[0].name
         })
 
 

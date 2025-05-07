@@ -1,16 +1,20 @@
-from __future__ import annotations
+from typing import TYPE_CHECKING
 from .player import Player
+
+if TYPE_CHECKING:
+    from .game import Game
 
 
 class Ball:
-    def __init__(self, game: Game):
+    angle: float = 30
+    size: float = 50
+
+    def __init__(self, game: "Game"):
         self.game: Game = game
-        self.size: float = 50
         self.x: float = 0
         self.y: float = 0
         self.speed_x: float = 0
         self.speed_y: float = 0
-        self.angle: float = 100
         self.reset_pos()
 
     def reset_pos(self):
