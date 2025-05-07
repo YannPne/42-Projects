@@ -1,63 +1,16 @@
-window.ball = {
-    speed_x: 3,
-    speed_y: 0,
-    size: 50,
-    move: false,
-    x: 0,
-    y: 0
-};
+function drawEndGame(player) {
+    context.font = '80px Arial';
+    context.fillStyle = 'white';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
 
-function drawEndGame()
-{
-    if (game.scorePlayer1 === game.scoremax || game.scorePlayer2 === game.scoremax)
-    {
-        game.gamecount++;
-        game.endgame = true;
-        window.ball.move = false;
-
-        context.font = '80px Arial';
-        context.fillStyle = 'white';
-        context.textAlign = 'center';
-        context.textBaseline = 'middle';
-        
-        let player_win = game.scorePlayer1 > game.scorePlayer2 ? player1 : player2;
-
-        const message = player_win.name + " win";
-
-        players.push(player_win); // global var tournament
-
-        context.fillText(message, canvas.width / 2, canvas.height / 4);
-
-        return (1);
-    }
-    return (0);
+    const message = player + " win";
+    context.fillText(message, canvas.width / 2, canvas.height / 4);
 }
 
-
-
-function check_impact(player1, player2)
-{
-    if (window.ball.x + window.ball.size > canvas.width || window.ball.x < 0)
-    {
-        if (window.ball.x + window.ball.size > canvas.width)
-            game.scorePlayer1++;
-        else
-            game.scorePlayer2++;
-        return (game.gameover = true);
-    }
-
-    if (window.ball.y + window.ball.size > canvas.height || window.ball.y < 0) // Impact TOP / BOTTOM
-        window.ball.speed_y = -window.ball.speed_y;
-    else if (window.ball.x < (player1.x + player1.width) && window.ball.y + window.ball.size > player1.y && window.ball.y < (player1.y + player1.height)) // Impact player 1
-        set_speed(player1);
-    else if ((window.ball.x + window.ball.size) > player2.x && window.ball.y + window.ball.size > player2.y && window.ball.y < (player2.y + player2.height)) // Impact player 2
-        set_speed(player2);
-}
-
-function drawsmap()
-{
+function drawsmap() {
     context.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     context.beginPath();
     context.setLineDash([10, 15]);
     context.moveTo(canvas.width / 2, 0);
@@ -68,34 +21,25 @@ function drawsmap()
     context.setLineDash([]);
     context.shadowBlur = 20;
     context.shadowColor = 'pink';
-
 }
 
-function drawsball()
-{    
-    if (window.ball.move)
-    {
-        if (window.ball.speed_x > 0)
-            window.ball.x += window.ball.speed_x;
-        else
-            window.ball.x += window.ball.speed_x;
-    
-        window.ball.y += window.ball.speed_y / 2;
-    }
-    
-    const drawX = Math.round(window.ball.x + window.ball.size / 2);
-    const drawY = Math.round(window.ball.y + window.ball.size / 2);    
+function drawplayer(player) {
+    context.fillStyle = 'white';
+    context.fillRect(player.x, player.y, player.width, player.height);
+}
+
+function drawsball(ball) {
+    const drawX = Math.round(ball.x + ball.size / 2);
+    const drawY = Math.round(ball.y + ball.size / 2);
 
     context.beginPath();
-    context.arc(drawX, drawY, window.ball.size / 2, 0, Math.PI * 2);
+    context.arc(drawX, drawY, ball.size / 2, 0, Math.PI * 2);
     context.fillStyle = 'white';
     context.fill();
     context.closePath();
-
 }
 
-function move(player1, player2)
-{
+function move(player1, player2) {
     player1.speed = 0;
     player2.speed = 0;
 
@@ -123,65 +67,8 @@ function drawScore(player1, player2) {
     context.textBaseline = 'middle';
     context.globalAlpha = 0.4;
 
-    context.fillText(game.scorePlayer1, canvas.width / 4, canvas.height / 2);
-    context.fillText(game.scorePlayer2, canvas.width * 3 / 4, canvas.height / 2);
+    context.fillText(player1.score, canvas.width / 4, canvas.height / 2);
+    context.fillText(player2.score, canvas.width * 3 / 4, canvas.height / 2);
 
     context.globalAlpha = 1;
 }
-
-function resetgame(player1, player2, boolean)
-{
-    if (game.gameover || boolean)
-    {
-        context.clearRect(0, 0, canvas.width, canvas.height);
-
-        if (game.scorePlayer1 > game.scorePlayer2)
-            window.ball.speed_x = 5;
-        else
-            window.ball.speed_x = -5;
-        window.ball.speed_y = 0;
-        window.ball.x =  (canvas.width - window.ball.size) / 2;
-        window.ball.y =  (canvas.height - window.ball.size) / 2;
-        player1.x = 50;
-        player1.y = canvas.height / 2 - player1.height / 2;
-        player2.x = canvas.width - 50;
-        player2.y = canvas.height / 2 - player1.height / 2;
-        drawsmap();
-        player1.drawplayer();
-        player2.drawplayer();
-        game.gameover = false;
-    }
-}
-
-function gameloop()
-{
-    let player1 = window.players[0];
-    let player2 = window.players[1];
-    let game = window.game;
-
-    if (window.animationId === -1)
-        return ;
-    if (!window.animationId)
-        return (resetgame(player1, player2, 1));
-    if (game.endgame)
-        return new_game();
-        
-    resetgame(player1, player2, 0);
-    drawsmap();
-    drawScore(player1, player2);
-    player1.drawplayer();
-    player2.drawplayer();
-    drawEndGame(player1, player2);
-    drawsball();
-    move(player1, player2);
-    check_impact(player1, player2);
-    
-    if (player1 instanceof Player1IA)
-        player1.IA();
-    if (player2 instanceof Player2IA)
-        player2.IA();
-
-    requestAnimationFrame(() => gameloop());
-}
-
-drawsmap();

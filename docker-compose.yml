@@ -18,9 +18,9 @@ services:
         condition: service_healthy
     # Le runserver Django détecte les changements et recharge automatiquement le code
     command: >
-      sh -c "python manage.py makemigrations core &&
+      sh -c "python manage.py makemigrations app &&
             python manage.py migrate &&
-            python manage.py runserver 0.0.0.0:8000"
+            uvicorn project.asgi:application --host 0.0.0.0 --reload"
 
   db:
     image: postgres:alpine
