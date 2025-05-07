@@ -1,6 +1,23 @@
 #version: '3.8'
 
 services:
+  node:
+    container_name: node
+    image: node:22-alpine
+    networks: [ transcendence ]
+    env_file: [ .env ]
+    volumes:
+      - ./src:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    working_dir: /app
+    command: >
+      npm start
+
+
   web:
     build:
       context: .
@@ -10,7 +27,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ./src:/app  # bind mount pour le hot reloading
+      - ./src_old:/app  # bind mount pour le hot reloading
     ports:
       - "${DJANGO_PORT}:8000"
     depends_on:

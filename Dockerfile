@@ -8,7 +8,7 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# On ne copie pas le code src/ ici, 
+# On ne copie pas le code src_old/ ici,
 # car on veut l'avoir via le bind mount pour le hot-reload.
 # CMD ["/bin/bash"] serait possible, 
 # mais on laisse docker-compose gérer la commande (runserver).
