@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transcendence</title>
+
+    <script src="https://unpkg.com/htmx.org@2.0.4"
+            integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="/static/index.js"></script>
+
+    {% load static %}
+</head>
+<body>
+<button id="gameButton" data-playing="false" onclick="toggleGame()">
+    Lancer le jeu de ping-pong
+</button>
+
+<div id="container"></div>
+
+<script src="{% static 'main/main.js' %}?v=104"></script>
+
+</body>
+</html>

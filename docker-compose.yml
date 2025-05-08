@@ -15,29 +15,9 @@ services:
         condition: service_healthy
     working_dir: /app
     command: >
-      npm start
-
-
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: django_app
-    networks: [ transcendence ]
-    env_file:
-      - .env
-    volumes:
-      - ./src_old:/app  # bind mount pour le hot reloading
-    ports:
-      - "${DJANGO_PORT}:8000"
-    depends_on:
-      db:
-        condition: service_healthy
-    # Le runserver Django détecte les changements et recharge automatiquement le code
-    command: >
-      sh -c "python manage.py makemigrations app &&
-            python manage.py migrate &&
-            uvicorn project.asgi:application --host 0.0.0.0 --reload"
+      sh -c "npm install
+      && npm update
+      && npm start"
 
   db:
     image: postgres:alpine

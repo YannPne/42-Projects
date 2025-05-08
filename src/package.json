@@ -1,12 +1,11 @@
 {
-  "name": "educpe-services",
-  "version": "2.1.0",
+  "name": "ft_transcendence",
+  "version": "1.0.0",
   "description": "",
   "main": "src/index.ts",
   "scripts": {
-    "start": "npx ts-node src/index.ts"
+    "start": "node -r esbuild-runner/register src/index.ts"
   },
-  "author": "EduCPE",
   "license": "ISC",
   "private": true,
   "dependencies": {
@@ -17,8 +16,9 @@
     "ejs": "^3.1.10"
   },
   "devDependencies": {
+    "@types/node": "^22.15.15",
     "@types/ejs": "^3.1.5",
     "typescript": "^5.5.2",
-    "ts-node": "^10.9.2"
+    "esbuild-runner": "^2.2.2"
   }
 }
