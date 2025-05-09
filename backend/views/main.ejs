@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transcendence</title>
+
+    <script src="https://unpkg.com/htmx.org@2.0.4"
+            integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- <script src="/static/index.js"></script> -->
+</head>
+<body>
+<button id="gameButton">Lancer le jeu de ping-pong</button>
+
+<div id="container"></div>
+
+<script>
+    ws = new WebSocket("ws://localhost:8000/ws");
+    ws.onopen = () => {
+      ws.send(JSON.stringify({
+        event: "join_game",
+        uid: crypto.randomUUID(),
+        name: "salut"
+      }));
+      ws.send(JSON.stringify({
+        event: "play"
+      }));
+    }
+
+    ws.onmessage = console.log;
+</script>
+
+</body>
+</html>

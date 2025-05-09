@@ -1,10 +1,12 @@
-import Game from "./game";
+import { Game } from "./Game";
+import User from "./User";
 
 export default class Player {
   readonly width: number = 20;
   readonly height: number = 200;
 
   readonly game: Game;
+  readonly user?: User;
   readonly name: string;
   readonly isAi: boolean;
   x: number = 0;
@@ -16,10 +18,15 @@ export default class Player {
   aiLastCheck: number = Date.now();
   aiTargetY: number = 0;
 
-  constructor(game: Game, name: string, isAi: boolean = false) {
+  constructor(game: Game, params: { isAi: false, user: User } | { isAi: true, name: string }) {
     this.game = game;
-    this.name = name;
-    this.isAi = isAi;
+    this.isAi = params.isAi;
+    if (params.isAi)
+      this.name = params.name;
+    else {
+      this.user = params.user;
+      this.name = params.user.name;
+    }
   }
 
   move() {
@@ -49,6 +56,14 @@ export default class Player {
       const centerY = this.y + this.height / 2;
       this.goUp = centerY > this.aiTargetY + 30;
       this.goDown = centerY < this.aiTargetY - 30;
+    }
+  }
+
+  toJSON() {
+    return {
+      name: this.name,
+      x: this.x,
+      y: this.y
     }
   }
 }

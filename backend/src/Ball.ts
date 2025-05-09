@@ -1,5 +1,5 @@
-import Game from "./game";
-import Player from "./player";
+import { Game } from "./Game";
+import Player from "./Player";
 
 export default class Ball {
   readonly angle: number = 30;
@@ -44,5 +44,13 @@ export default class Ball {
       this.speedX += 0.6;
     else if (this.speedX > -40)
       this.speedX -= 0.6;
+  }
+
+  toJSON() {
+    return {
+      x: this.x,
+      y: this.y,
+      size: this.size
+    }
   }
 }
