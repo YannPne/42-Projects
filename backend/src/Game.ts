@@ -23,17 +23,17 @@ export class Game {
     this.uid = uid;
 
     this.loop()
-      .then(() => console.log("Game finished"))
-      .catch(console.error);
+        .then(() => console.log("Game finished"))
+        .catch(console.error);
   }
 
   checkWin() {
     let player: Player;
 
     if (this.ball.x < 0)
-      player = this.players[0];
-    else if (this.ball.x + this.ball.size > this.width)
       player = this.players[1];
+    else if (this.ball.x + this.ball.size > this.width)
+      player = this.players[0];
     else
       return false;
 
@@ -57,12 +57,15 @@ export class Game {
   }
 
   async loop() {
-    while (this.state == GameState.CREATING) ;
+    while (this.state == GameState.CREATING)
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
-    let [player1, player2] = this.players;
+    let [ player1, player2 ] = this.players;
 
     player1.x = 30;
+    player1.y = (this.height - player1.height) / 2;
     player2.x = this.width - player2.width - 30;
+    player2.y = (this.height - player2.height) / 2;
 
     while (this.state == GameState.IN_GAME) {
       const startTime = Date.now();
@@ -76,14 +79,14 @@ export class Game {
         // @ts-ignore
         if (this.state == GameState.SHOW_WINNER)
           break;
-        [player1, player2] = this.players;
+        [ player1, player2 ] = this.players;
       }
 
       for (let player of this.players) {
         player.user?.socket?.send(JSON.stringify({
           event: "update",
           ball: this.ball,
-          players: [player1, player2]
+          players: [ player1, player2 ]
         }));
       }
 

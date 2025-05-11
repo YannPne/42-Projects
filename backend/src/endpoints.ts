@@ -1,13 +1,9 @@
 import { FastifyInstance } from "fastify";
-import { Game, games, GameState } from "../Game";
-import Player from "../Player";
-import User from "../User";
+import { Game, games, GameState } from "./Game";
+import User from "./User";
+import Player from "./Player";
 
 export default function registerEndpoints(app: FastifyInstance) {
-  app.get("/", (request, reply) => {
-    return reply.view("/main.ejs", { title: "Bonjour", message: "Ceci est un message dynamique" });
-  });
-
   app.register(app => {
     app.get("/ws", { websocket: true }, (socket, req) => {
       const user = new User("Player");
@@ -18,10 +14,8 @@ export default function registerEndpoints(app: FastifyInstance) {
         switch (message.event) {
           case "join_game":
             let game = games.find(g => g.uid == message.uid);
-            if (game == undefined) {
-              game = new Game(message.name, message.uid);
-              games.push(game);
-            }
+            if (game == undefined)
+              games.push(game = new Game(message.name, message.uid));
 
             game.players.push(user.player = new Player(game, { isAi: false, user }));
             break;

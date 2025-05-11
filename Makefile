@@ -12,4 +12,8 @@ down:
 down-v:
 	$(DC) down -v
 
-.PHONY: up build down down-v
+update:
+	(cd backend && npm install --package-lock-only && npm update --package-lock-only)
+	(cd frontend && npm install --package-lock-only && npm update --package-lock-only)
+
+.PHONY: up build down down-v update

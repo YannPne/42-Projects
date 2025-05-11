@@ -41,7 +41,7 @@ export default class Player {
   }
 
   playAi() {
-    if (this.aiLastCheck + 1_000 <= Date.now()) {
+    if (Date.now() - this.aiLastCheck >= 1_000) {
       this.aiLastCheck = Date.now();
 
       const ball = this.game.ball;
@@ -52,18 +52,21 @@ export default class Player {
         const ballY = ball.y + ball.size / 2;
         this.aiTargetY = (this.x - ballX) * ball.speedY / ball.speedX + ballY;
       }
-
-      const centerY = this.y + this.height / 2;
-      this.goUp = centerY > this.aiTargetY + 30;
-      this.goDown = centerY < this.aiTargetY - 30;
     }
+
+    const centerY = this.y + this.height / 2;
+    this.goUp = centerY > this.aiTargetY + 30;
+    this.goDown = centerY < this.aiTargetY - 30;
   }
 
   toJSON() {
     return {
       name: this.name,
       x: this.x,
-      y: this.y
-    }
+      y: this.y,
+      width: this.width,
+      height: this.height,
+      score: this.score
+    };
   }
 }

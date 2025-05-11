@@ -10,9 +10,7 @@ services:
     ports: [ "3000:3000" ]
     working_dir: /app
     command: >
-      sh -c "npm install
-      && npm update
-      && npx tsc
+      sh -c "npm ci
       && npm run dev"
 
   frontend:
@@ -24,8 +22,7 @@ services:
     ports: [ "8000:5173" ]
     working_dir: /app
     command: >
-      sh -c "npm install
-      && npm update
+      sh -c "npm ci
       && npm run dev"
 
   adminer:
