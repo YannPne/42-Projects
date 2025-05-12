@@ -1,53 +1,36 @@
 #version: '3.8'
 
 services:
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: django_app
-    networks: [ transcendence ]
-    env_file:
-      - .env
-    volumes:
-      - ./src:/app  # bind mount pour le hot reloading
-    ports:
-      - "${DJANGO_PORT}:8000"
-    depends_on:
-      db:
-        condition: service_healthy
-    # Le runserver Django détecte les changements et recharge automatiquement le code
+  backend:
+    container_name: backend
+    image: node:22-alpine
+    restart: always
+    env_file: [ .env ]
+    volumes: [ ./backend:/app ]
+    ports: [ "3000:3000" ]
+    working_dir: /app
     command: >
-      sh -c "python manage.py makemigrations app &&
-            python manage.py migrate &&
-            uvicorn project.asgi:application --host 0.0.0.0 --reload"
+      sh -c "npm ci
+      && npm run dev"
 
-  db:
-    image: postgres:alpine
-    container_name: django_db
-    networks: [ transcendence ]
-    env_file:
-      - .env
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-      interval: 5s
-      timeout: 10s
-      retries: 5
+  frontend:
+    container_name: frontend
+    image: node:22-alpine
+    restart: always
+    env_file: [ .env ]
+    volumes: [ ./frontend:/app ]
+    ports: [ "8000:5173" ]
+    working_dir: /app
+    command: >
+      sh -c "npm ci
+      && npm run dev"
 
   adminer:
     image: adminer:latest
     container_name: adminer
-    networks: [ transcendence ]
-    depends_on:
-      - db
+    restart: always
     ports:
       - "8080:8080"
 
-networks:
-  transcendence:
-    driver: bridge
-
 volumes:
-  db_data:
+  database:
