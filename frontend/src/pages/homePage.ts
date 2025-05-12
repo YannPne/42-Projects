@@ -1,5 +1,6 @@
 import { loadPage, type Page } from "./Page.ts";
 import { chooseGamePage } from "./chooseGamePage.ts";
+import { babylonPage } from "./babylonPage.ts";
 
 export const homePage: Page = {
   url: "/",
@@ -7,13 +8,17 @@ export const homePage: Page = {
 
   getPage(): string {
     return `
-    <button id="button">Rejoindre une partie</button>
+    <button id="chooseGame">Rejoindre une partie</button>
+    <button id="babylon">Babylon</button>
     `;
   },
 
   onMount() {
-    document.querySelector<HTMLButtonElement>("#button")!.onclick = () => {
+    document.querySelector<HTMLButtonElement>("#chooseGame")!.onclick = () => {
       loadPage(chooseGamePage);
+    };
+    document.querySelector<HTMLButtonElement>("#babylon")!.onclick = () => {
+      loadPage(babylonPage);
     };
   },
 

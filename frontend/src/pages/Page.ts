@@ -1,6 +1,7 @@
 import { homePage } from "./homePage.ts";
 import { chooseGamePage } from "./chooseGamePage.ts";
 import { pongPage } from "./pongPage.ts";
+import { babylonPage } from "./babylonPage.ts";
 
 export type Page = {
   url: string;
@@ -14,6 +15,7 @@ const pages: Page[] = [
   homePage,
   chooseGamePage,
   pongPage,
+  babylonPage,
 ];
 
 let currentPage: Page | undefined;

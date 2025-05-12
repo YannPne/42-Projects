@@ -71,14 +71,14 @@ export const pongPage: Page = {
 function move(event: KeyboardEvent, up: boolean) {
   let send: Partial<Event> = { event: "move" };
 
-  if (event.key === "w" || event.key === "z" || event.key === "ArrowUp")
+  if (event.code == "KeyW" || event.code == "ArrowUp")
     send.goUp = !up;
-  else if (event.key === "s" || event.key === "ArrowDown")
+  else if (event.code == "KeyS" || event.code == "ArrowDown")
     send.goDown = !up;
   else
     return;
 
-  send.id = event.key === "ArrowUp" || event.key === "ArrowDown" ? 1 : 0;
+  send.id = event.code == "ArrowUp" || event.code == "ArrowDown" ? 1 : 0;
 
   ws.send(JSON.stringify(send));
 }
@@ -87,7 +87,7 @@ function drawMap(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
   context.clearRect(0, 0, canvas.width, canvas.height);
 
   context.beginPath();
-  context.setLineDash([ 10, 15 ]);
+  context.setLineDash([10, 15]);
   context.moveTo(canvas.width / 2, 0);
   context.lineTo(canvas.width / 2, canvas.height);
   context.strokeStyle = "#ffffff44";
