@@ -1,5 +1,25 @@
 import "./pages/Page.ts"
+import { findPage, loadPage, pages } from "./pages/Page.ts";
 
 export const ws = new WebSocket("ws://" + document.location.hostname + ":3000/ws");
 ws.onopen = _ => console.log("WebSocket connection opened");
 ws.onclose = _ => console.log("WebSocket connection closed");
+
+const nav = document.querySelector<HTMLElement>("nav")!;
+
+for (let page of pages) {
+  if (page.navbar === false)
+    continue;
+  const button = document.createElement("a");
+  button.className = "flex-1 text-center p-3 bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950 transition-all hover:via-gray-950";
+  button.innerHTML = typeof page.navbar == "string" ? page.navbar : page.title;
+  button.href = page.url;
+  button.onclick = event => {
+    event.preventDefault();
+    loadPage(page);
+  };
+
+  nav.appendChild(button);
+}
+
+loadPage(findPage(window.location.pathname));
