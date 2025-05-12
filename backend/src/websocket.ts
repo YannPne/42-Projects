@@ -2,27 +2,69 @@ import { FastifyRequest } from "fastify";
 import User from "./User";
 import { Game, games, GameState } from "./Game";
 import Player from "./Player";
+import { sqlite } from ".";
+import { setTimeout } from "timers";
+import bcrypt from "bcrypt";
 
 export default function registerWebSocket(socket: WebSocket, req: FastifyRequest) {
-  const user = new User("Player");
-  user.socket = socket;
+  let user: User | undefined;
 
-  socket.addEventListener("message", (event) => {
+  socket.addEventListener("message", async (event) => {
     const message = JSON.parse(event.data);
     switch (message.event) {
       case "get_games":
         getGames(socket);
         break;
       case "join_game":
-        joinGame(user, message);
+        joinGame(user!, message);
         break;
       case "play":
-        play(user);
+        play(user!);
         break;
       case "move":
-        move(user, message);
+        move(user!, message);
+        break;
+      case "login":
+        //user = login(message);
+        //user!.socket = socket;
+        break;
+      case "register":
+        user = await register(message);
+        user!.socket = socket;
         break;
     }
+  });
+}
+function login(message: any) {
+  const sql = "SELECT username FROM users WHERE username = ? AND password = ?";
+    sqlite.get(sql, [message.username, message.password], (err, row) => {
+    if (row) 
+    {
+      console.log(row);
+      //bcrypt.compare(message.password, );
+    } 
+    else
+    {
+      console.log("rien");
+    }
+  });
+}
+
+
+function register(message: any) {
+  return new Promise<User>(async (resolve, reject) => {
+    sqlite.run("INSERT INTO users (username, password) VALUES (?, ?)", [message.username, await bcrypt.hash(message.password, 10)],
+      function (err) {
+        if (err) {
+          console.error("Erreur lors de l'insertion :", err.message);
+        } else {
+          console.error("register valide");
+          resolve(new User(this.lastID, message.username));
+        }
+      }
+    );
+
+    setTimeout(() => reject("Timeout"), 5_000);
   });
 }
 

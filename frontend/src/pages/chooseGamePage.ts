@@ -16,7 +16,7 @@ export const chooseGamePage: Page = {
 
   onMount() {
     document.querySelector<HTMLButtonElement>("#createGame")!.onclick = () => {
-      ws.send(JSON.stringify({
+      ws?.send(JSON.stringify({
         event: "join_game",
         uid: crypto.randomUUID(),
         name: "Hello world"
@@ -32,7 +32,7 @@ export const chooseGamePage: Page = {
         const button = document.createElement("button");
         button.innerHTML = game.name;
         button.onclick = () => {
-          ws.send(JSON.stringify({
+          ws?.send(JSON.stringify({
             event: "join_game",
             uid: game.uid
           }));
