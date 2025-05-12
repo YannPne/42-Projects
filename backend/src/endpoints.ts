@@ -12,6 +12,14 @@ export default function registerEndpoints(app: FastifyInstance) {
       socket.on("message", (message: any) => {
         message = JSON.parse(message);
         switch (message.event) {
+          case "get_games":
+            socket.send(JSON.stringify({
+              event: "get_games",
+              games: games.map(g => {
+                return { name: g.name, uid: g.uid };
+              })
+            }));
+            break;
           case "join_game":
             let game = games.find(g => g.uid == message.uid);
             if (game == undefined)
@@ -20,14 +28,14 @@ export default function registerEndpoints(app: FastifyInstance) {
             game.players.push(user.player = new Player(game, { isAi: false, user }));
             break;
           case "play":
-            if (user.player) {
+            if (user.player != undefined) {
               if (user.player.game.players.length % 2 != 0)
                 user.player.game.players.push(new Player(user.player.game, {isAi: true, name: "IA"}));
               user.player.game.state = GameState.IN_GAME;
             }
             break;
           case "move":
-            if (user.player) {
+            if (user.player != undefined) {
               if (message.goUp != undefined)
                 user.player.goUp = message.goUp;
               if (message.goDown != undefined)

@@ -1,5 +1,6 @@
-import PongPage from "./PongPage.ts";
-import ChooseGamePage from "./ChooseGamePage.ts";
+import { homePage } from "./homePage.ts";
+import { chooseGamePage } from "./chooseGamePage.ts";
+import { pongPage } from "./pongPage.ts";
 
 export type Page = {
   url: string;
@@ -10,13 +11,10 @@ export type Page = {
 };
 
 const pages: Page[] = [
-  ChooseGamePage,
-  PongPage,
+  homePage,
+  chooseGamePage,
+  pongPage,
 ];
-
-function findPage(url: string) {
-  return pages.find(p => p.url == url) ?? pages[0];
-}
 
 let currentPage: Page | undefined;
 
@@ -28,6 +26,10 @@ export function loadPage(page: Page) {
 
   history.pushState({}, "", page.url);
   document.title = "ft_transcendence | " + page.title;
+}
+
+function findPage(url: string) {
+  return pages.find(p => p.url == url) ?? pages[0];
 }
 
 window.addEventListener("popstate", () => {

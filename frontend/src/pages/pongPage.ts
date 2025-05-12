@@ -6,7 +6,7 @@ let wsListener: ((event: MessageEvent) => void) | undefined;
 let keydownListener: ((event: KeyboardEvent) => void) | undefined;
 let keyupListener: ((event: KeyboardEvent) => void) | undefined;
 
-const PongPage: Page = {
+export const pongPage: Page = {
   url: "/pong",
   title: "Jeu",
 
@@ -67,8 +67,6 @@ const PongPage: Page = {
     wsListener = undefined;
   }
 };
-
-export default PongPage;
 
 function move(event: KeyboardEvent, up: boolean) {
   let send: Partial<Event> = { event: "move" };
