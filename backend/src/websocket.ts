@@ -5,6 +5,7 @@ import Player from "./Player";
 import { sqlite } from ".";
 import { setTimeout } from "timers";
 import bcrypt from "bcrypt";
+import { resolve } from "path";
 
 export default function registerWebSocket(socket: WebSocket, req: FastifyRequest) {
   let user: User | undefined;
@@ -25,8 +26,8 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         move(user!, message);
         break;
       case "login":
-        //user = login(message);
-        //user!.socket = socket;
+        user = await login(message);
+        user!.socket = socket;
         break;
       case "register":
         user = await register(message);
@@ -36,17 +37,27 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
   });
 }
 function login(message: any) {
-  const sql = "SELECT username FROM users WHERE username = ? AND password = ?";
-    sqlite.get(sql, [message.username, message.password], (err, row) => {
-    if (row) 
-    {
-      console.log(row);
-      //bcrypt.compare(message.password, );
-    } 
-    else
-    {
-      console.log("rien");
-    }
+  return new Promise<User>(async (resolve, reject) => 
+  {
+      const sql = "SELECT * FROM users WHERE username = ?";
+
+      sqlite.get(sql, message.username, async (err, row) => {
+      if (row)
+      {
+        const userRow = row as { id: number; username: string; password: string };
+        const isMatch = await bcrypt.compare(message.password, userRow.password);
+        
+        if (!isMatch) 
+          return reject("Mot de passe incorrect");    
+
+        resolve(new User(userRow.id, userRow.username));
+      }
+      else
+      {
+        reject("User not found");
+      }
+    });
+    setTimeout(() => reject("Timeout"), 5000);
   });
 }
 

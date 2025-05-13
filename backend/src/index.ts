@@ -5,6 +5,9 @@ import { verbose } from "sqlite3";
 
 export const sqlite = new (verbose()).Database(':memory:');
 
+//export const sqlite = new (verbose()).Database('mydatabase.db');
+
+
 sqlite.serialize(() => {
   sqlite.run("CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT)");
 });

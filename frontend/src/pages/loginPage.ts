@@ -26,11 +26,11 @@ export const loginPage: Page = {
   },
 
   onMount() {
+
     const username = document.querySelector<HTMLInputElement>("#username")!;
     const password = document.querySelector<HTMLInputElement>("#password")!;
 
     document.querySelector<HTMLButtonElement>("#login")!.onclick = () => {
-        console.log(ws);
         ws?.send(JSON.stringify({event: "login", username: username.value, password: password.value}))
     };
   },
