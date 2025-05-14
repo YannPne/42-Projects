@@ -5,6 +5,22 @@ export const ws = new WebSocket("ws://" + document.location.hostname + ":3000/ws
 ws.onopen = _ => console.log("WebSocket connection opened");
 ws.onclose = _ => console.log("WebSocket connection closed");
 
+export function awaitWs(timeout: number = 5_000) {
+  return new Promise((resolve, reject) => {
+    if (ws.readyState == ws.OPEN)
+      resolve(undefined);
+    else if (ws.readyState == ws.CONNECTING) {
+      ws.addEventListener("open", () => {
+        resolve(undefined);
+      }, {once: true});
+
+      setTimeout(() => reject("Timeout"), timeout);
+    } else
+      reject("WebSocket closing or closed");
+
+  });
+}
+
 const nav = document.querySelector<HTMLElement>("nav")!;
 
 for (let page of pages) {

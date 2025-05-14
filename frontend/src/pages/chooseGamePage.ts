@@ -1,7 +1,9 @@
-import { ws } from "../main.ts";
+import { awaitWs, ws } from "../main.ts";
 import { loadPage, type Page } from "./Page.ts";
 import { pongPage } from "./pongPage.ts";
-import { sendAndWait } from "../Event.ts";
+import type { Event } from "../Event.ts";
+
+let wsListener: ((event: MessageEvent) => void) | undefined;
 
 export const chooseGamePage: Page = {
   url: "/choose_game",
@@ -21,39 +23,49 @@ export const chooseGamePage: Page = {
     `;
   },
 
-  onMount() {
+  async onMount() {
+    await awaitWs();
+
     const createGameName = document.querySelector<HTMLInputElement>("#createGameName")!;
     document.querySelector<HTMLButtonElement>("#createGame")!.onclick = () => {
       if (createGameName.value.trim() == "")
         return;
-      ws.send(JSON.stringify({
+
+      loadPage(pongPage, {
         event: "join_game",
         uid: crypto.randomUUID(),
         name: createGameName.value.trim()
-      }));
-
-      loadPage(pongPage);
+      });
     };
 
     const games = document.querySelector<HTMLUListElement>("#games")!;
-    sendAndWait({ event: "get_games" }).then(message => {
-      for (let game of message.games!) {
-        const li = document.createElement("li");
-        li.textContent = game.name;
-        li.className = "pl-9 pr-9 p-2.5 hover:bg-gray-500 cursor-pointer";
-        li.onclick = () => {
-          ws.send(JSON.stringify({
-            event: "join_game",
-            uid: game.uid
-          }));
+    ws.send(JSON.stringify({ event: "get_games" }));
+    ws.addEventListener("message", wsListener = event => {
+      const message: Event = JSON.parse(event.data);
 
-          loadPage(pongPage);
-        };
-        games.appendChild(li);
+      switch (message.event) {
+        case "get_games":
+          games.innerHTML = "";
+          for (let game of message.games!) {
+            const li = document.createElement("li");
+            li.textContent = game.name;
+            li.className = "pl-9 pr-9 p-2.5 hover:bg-gray-500 cursor-pointer";
+            li.onclick = () => {
+              loadPage(pongPage, {
+                event: "join_game",
+                uid: game.uid
+              });
+            };
+            games.appendChild(li);
+          }
+          break;
       }
     });
   },
 
   onUnmount() {
+    if (wsListener != undefined)
+      ws.removeEventListener("message", wsListener);
+    wsListener = undefined;
   }
 };

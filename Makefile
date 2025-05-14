@@ -1,10 +1,7 @@
 DC := docker compose
 
-up: build
+up:
 	$(DC) up -d
-
-build:
-	$(DC) build
 
 down:
 	$(DC) down
@@ -16,4 +13,4 @@ update:
 	(cd backend && npm install --package-lock-only && npm update --package-lock-only)
 	(cd frontend && npm install --package-lock-only && npm update --package-lock-only)
 
-.PHONY: up build down down-v update
+.PHONY: up down down-v update

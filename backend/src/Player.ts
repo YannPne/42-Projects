@@ -6,7 +6,6 @@ export default class Player {
   readonly height: number = 200;
 
   readonly game: Game;
-  readonly user?: User;
   readonly name: string;
   readonly isAi: boolean;
   x: number = 0;
@@ -18,15 +17,10 @@ export default class Player {
   aiLastCheck: number = Date.now();
   aiTargetY: number = 0;
 
-  constructor(game: Game, params: { isAi: false, user: User } | { isAi: true, name: string }) {
+  constructor(game: Game, name: string, isAi: boolean) {
     this.game = game;
-    this.isAi = params.isAi;
-    if (params.isAi)
-      this.name = params.name;
-    else {
-      this.user = params.user;
-      this.name = params.user.name;
-    }
+    this.name = name;
+    this.isAi = isAi;
   }
 
   move() {

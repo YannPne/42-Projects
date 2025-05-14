@@ -8,7 +8,7 @@ export type Page = {
   title: string;
   navbar: boolean | string;
   getPage(): string;
-  onMount(): void;
+  onMount(data?: any): void;
   onUnmount(): void;
 };
 
@@ -21,10 +21,10 @@ export const pages: Page[] = [
 
 let currentPage: Page | undefined;
 
-export function loadPage(page: Page) {
+export function loadPage(page: Page, data?: any) {
   currentPage?.onUnmount();
   document.querySelector<HTMLDivElement>("#app")!.innerHTML = page.getPage();
-  page.onMount();
+  page.onMount(data);
   currentPage = page;
 
   history.pushState({}, "", page.url);
