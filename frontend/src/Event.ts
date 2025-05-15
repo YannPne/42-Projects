@@ -22,8 +22,8 @@ export type Event =
   | { event: "move", id: number, goUp?: boolean, goDown?: boolean }
   | { event: "update", ball: Ball, players: Player[] }
   | { event: "win", player: string }
-  | { event: "register", username: string, password: string }
-  | { event: "login", username: string, password: string }
+  | { event: "register", username: string, pseudo?: string, password: string, success?: boolean}
+  | { event: "login", username?: string, password?: string, success?: boolean}
 
 export function sendAndWait<T extends Event>(data: T, timeout: number = 5_000) {
   ws?.send(JSON.stringify(data));
