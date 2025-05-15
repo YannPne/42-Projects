@@ -30,7 +30,7 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         move(user!, message);
         break;
       case "login":
-        const response = await login(socket, message);
+        const response = await login(message);
 
         socket.send(JSON.stringify({
           event: "login",
@@ -44,14 +44,30 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         }
         break;
       case "register":
-        user = await register(message);
-        user!.socket = socket;
+
+        user = await register(socket, message);
+
+        if (user != null)
+        {
+          socket.send(JSON.stringify({
+            event: "register",
+            success: true}));
+
+          user!.socket = socket;
+        }
+        else
+        {
+          socket.send(JSON.stringify({
+            event: "register",
+            success: false}));
+        }
+
         break;
     }
   });
 }
 
-function login(socket: WebSocket, message: any) {
+function login(message: any) {
   return new Promise<User | null>(async (resolve, reject) => 
   {
       const sql = "SELECT * FROM users WHERE username = ?";
@@ -71,15 +87,39 @@ function login(socket: WebSocket, message: any) {
         reject(err);
       }
     });
-    setTimeout(() => reject("Timeout"), 5000);
+    setTimeout(() => reject("Timeout"), 5_000);
+  });
+}
+
+function  user_exist(message: any): Promise<boolean> {
+  return new Promise<boolean>((resolve, reject) => {
+    const sql = "SELECT * FROM users WHERE username = ?";
+
+    sqlite.get(sql, message.username, (err, row: any) => {
+      if (err) 
+      {
+        reject(err);
+      } 
+      else 
+      {
+        resolve(!!row);
+      }
+    });
+
+    setTimeout(() => reject(new Error("Timeout")), 5_000);
   });
 }
 
 
-function register(message: any) {
+async function register(socket: WebSocket, message: any) {
+  const exist = await user_exist(message)
+
+  if (exist)
+    return undefined;
+    
   return new Promise<User>(async (resolve, reject) => {
     sqlite.run("INSERT INTO users (username, pseudo, password) VALUES (?, ?, ?)", [message.username, message.pseudo, await bcrypt.hash(message.password, 10)],
-      function (err) {
+      function (err: any) {
         if (err) 
         {
           console.error("Erreur lors de l'insertion :", err.message);
@@ -91,7 +131,7 @@ function register(message: any) {
       }
     );
 
-    setTimeout(() => reject("Timeout"), 3_000);
+    setTimeout(() => reject("Timeout"), 5_000);
   });
 }
 

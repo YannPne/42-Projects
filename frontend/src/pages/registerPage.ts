@@ -1,3 +1,4 @@
+import { sendAndWait } from "../Event.ts";
 import {connectWs, ws} from "../main.ts";
 import { homePage } from "./homePage.ts";
 import { loginPage } from "./loginPage.ts";
@@ -17,7 +18,7 @@ export const registerPage: Page = {
         <input id="username" type="text" name="username" placeholder="username" required />
         <input id="pseudo" type="text" name="pseudo" placeholder="pseudo" required />
         <input id="password" type="password" name="password" placeholder="password" required />
-        <input id="avatar" type="file" name="avatar" placeholder="avatar"  />
+        <input id="avatar" type="file" name="avatar" placeholder="avatar" required />
         <button id="register" type="button">register</button>
     </form>
     
@@ -48,32 +49,25 @@ export const registerPage: Page = {
         return;
       }
 
-      await connectWs();
-      ws?.send(JSON.stringify({
+      const message = await sendAndWait({
         event: "register",
         username: username.value,
         pseudo: pseudo.value,
-        password: password.value
-      }));
+        password: password.value,
+        success: false
+      });
+
+      console.log(message);
+
+      if (message.success === false)
+        return;
 
       const formData = new FormData();
       formData.append('avatar', avatar.files[0]);
-      fetch('http://localhost:3000/upload/avatar', {
+      await fetch('http://localhost:3000/upload/avatar', {
         method: 'POST',
         body: formData
       });
-
-  
-      // const formData = new FormData();
-      // formData.append("avatar", avatar.files[0]);
-  
-      //  const res = await fetch("http://localhost:3000/upload/avatar", {
-      //    method: "POST",
-      //    headers: {
-      //      "Authorize": "Bearer " + username.value
-      //    },
-      //    body: formData
-      //  });
 
       loadPage(homePage);
     };

@@ -16,11 +16,10 @@ const app = fastify({ logger: true });
 
 app.register(fastifyWebsocket);
 
-app.register(app => {
+app.register((app: any)  => {
   app.get("/ws", { websocket: true }, registerWebSocket);
 });
 
-// ✅ Important : fastify-multipart d'abord
 app.register(fastifyMultipart);
 
 app.register(cors, {
@@ -28,7 +27,6 @@ app.register(cors, {
   methods: ["GET", "POST", "OPTIONS"],
 });
 
-// ✅ Ensuite fastify-multer (qui utilise fastify-multipart)
 const upload = fastifyMulter({
   dest: './uploads',
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -40,9 +38,7 @@ const upload = fastifyMulter({
   }
 });
 
-// ❌ Ne PAS faire upload.contentParser (déjà géré par fastify-multipart)
-
-app.post('/upload/avatar', { preHandler: upload.single('avatar') }, async (req, reply) => {
+app.post('/upload/avatar', { preHandler: upload.single('avatar') }, async (req: any, reply: any) => {
   const avatar = req.file;
 
   if (!avatar) {
@@ -58,7 +54,7 @@ app.post('/upload/avatar', { preHandler: upload.single('avatar') }, async (req, 
   });
 });
 
-app.listen({ host: "0.0.0.0", port: 3000 }, err => {
+app.listen({ host: "0.0.0.0", port: 3000 }, (err: any) => {
   if (err) throw err;
   console.log("Server listening on 3000");
 });
