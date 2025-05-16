@@ -1,6 +1,5 @@
 import { sendAndWait } from "../Event.ts";
 import { connectWs, ws } from "../main.ts";
-import { homePage } from "./homePage.ts";
 import { loginPage } from "./loginPage.ts";
 import { loadPage, type Page } from "./Page.ts";
 import { profilePage } from "./profilePage.ts";
@@ -22,7 +21,7 @@ export const registerPage: Page = {
             </label>
             <label>
               <p>Display name:</p>
-              <input id="pseudo" type="text" required class="p-1 bg-gray-600 rounded-lg w-full" />
+              <input id="displayName" type="text" required class="p-1 bg-gray-600 rounded-lg w-full" />
             </label>
             <label>
               <p>Password:</p>
@@ -53,7 +52,7 @@ export const registerPage: Page = {
 
     const username = document.querySelector<HTMLInputElement>("#username")!;
     const password = document.querySelector<HTMLInputElement>("#password")!;
-    const pseudo = document.querySelector<HTMLInputElement>("#pseudo")!;
+    const displayName = document.querySelector<HTMLInputElement>("#displayName")!;
     const avatar = document.querySelector<HTMLInputElement>("#avatar")!;
     const registerButton = document.querySelector<HTMLFormElement>("#register")!;
     const loginLink = document.querySelector<HTMLAnchorElement>("#login")!;
@@ -78,7 +77,7 @@ export const registerPage: Page = {
       const message = await sendAndWait({
         event: "register",
         username: username.value,
-        pseudo: pseudo.value,
+        displayName: displayName.value,
         password: password.value
       });
 

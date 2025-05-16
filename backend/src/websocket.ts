@@ -32,89 +32,52 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         move(user!, message);
         break;
       case "login":
-        const response = await login(message);
+        user = login(message);
 
         socket.send(JSON.stringify({
           event: "login",
-          success: response != null
+          success: user != undefined
         }));
 
-        if (response != null) {
-          user = response;
+        if (user != undefined)
           user!.socket = socket;
-        }
+        else
+          socket.close();
         break;
       case "register":
-        user = await register(message);
+        user = register(message);
         socket.send(JSON.stringify({
           event: "register",
-          success: user != null
+          success: user != undefined
         }));
 
-        if (user != null)
+        if (user != undefined)
           user!.socket = socket;
-
+        socket.close();
         break;
     }
   });
 }
 
 function login(message: any) {
-  return new Promise<User | null>(async (resolve, reject) => {
-    const sql = "SELECT * FROM users WHERE username = ?";
-    sqlite.get(sql, message.username, async (err: any, row: any) => {
-      if (!err) {
-        if (!row)
-          resolve(null);
-        else if (await bcrypt.compare(message.password, row.password))
-          resolve(new User(row.id, row.username));
-        else
-          resolve(null);
-      } else {
-        reject(err);
-      }
-    });
-    setTimeout(() => reject("Timeout"), 5_000);
-  });
+  const row: any = sqlite.prepare("SELECT id, displayName, password FROM users WHERE username = ?")
+    .get(message.username);
+
+  if (row == undefined || !bcrypt.compareSync(message.password, row.password))
+    return;
+
+  return new User(row.id, row.displayName);
 }
 
-function user_exist(message: any): Promise<boolean> {
-  return new Promise<boolean>((resolve, reject) => {
-    const sql = "SELECT * FROM users WHERE username = ?";
+function register(message: any) {
+  const result = sqlite.prepare(`INSERT INTO users (username, displayName, password)
+                                 SELECT ?, ?, ?
+                                 WHERE NOT EXISTS(SELECT 1 FROM users WHERE username = ?)`)
+    .run(message.username, message.displayName, bcrypt.hashSync(message.password, 10), message.username);
 
-    sqlite.get(sql, message.username, (err: any, row: any) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(!!row);
-      }
-    });
-
-    setTimeout(() => reject(new Error("Timeout")), 5_000);
-  });
-}
-
-
-async function register(message: any) {
-  const exist = await user_exist(message);
-
-  if (exist)
-    return undefined;
-
-  return new Promise<User>(async (resolve, reject) => {
-    sqlite.run("INSERT INTO users (username, pseudo, password) VALUES (?, ?, ?)", [message.username, message.pseudo, await bcrypt.hash(message.password, 10)],
-      function(err: any) {
-        if (err) {
-          console.error("Erreur lors de l'insertion :", err.message);
-          reject(err);
-        } else {
-          resolve(new User(this.lastID, message.username));
-        }
-      }
-    );
-
-    setTimeout(() => reject("Timeout"), 5_000);
-  });
+  if (result.changes == 0)
+    return;
+  return new User(result.lastInsertRowid as number, message.displayName);
 }
 
 function getGames(socket: WebSocket) {
