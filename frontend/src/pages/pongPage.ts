@@ -19,7 +19,7 @@ export const pongPage: Page = {
 
   onMount() {
     document.querySelector<HTMLButtonElement>("#start")!.onclick = () => {
-      ws.send(JSON.stringify({
+      ws?.send(JSON.stringify({
         event: "play"
       }));
     };
@@ -37,7 +37,7 @@ export const pongPage: Page = {
     const canvas = document.querySelector<HTMLCanvasElement>("#game")!;
     const context = canvas.getContext("2d")!;
 
-    ws.addEventListener("message", wsListener = (event) => {
+    ws?.addEventListener("message", wsListener = (event) => {
       const message: Event = JSON.parse(event.data);
 
       switch (message.event) {
@@ -61,7 +61,7 @@ export const pongPage: Page = {
     if (keyupListener != undefined)
       document.removeEventListener("keyup", keyupListener);
     if (wsListener != undefined)
-      ws.removeEventListener("message", wsListener);
+      ws?.removeEventListener("message", wsListener);
     keydownListener = undefined;
     keyupListener = undefined;
     wsListener = undefined;
@@ -80,7 +80,7 @@ function move(event: KeyboardEvent, up: boolean) {
 
   send.id = event.code == "ArrowUp" || event.code == "ArrowDown" ? 1 : 0;
 
-  ws.send(JSON.stringify(send));
+  ws?.send(JSON.stringify(send));
 }
 
 function drawMap(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {

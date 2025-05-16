@@ -22,23 +22,25 @@ export type Event =
   | { event: "move", id: number, goUp?: boolean, goDown?: boolean }
   | { event: "update", ball: Ball, players: Player[] }
   | { event: "win", player: string }
+  | { event: "register", username?: string, pseudo?: string, password?: string, success?: boolean}
+  | { event: "login", username?: string, password?: string, success?: boolean}
 
 export function sendAndWait<T extends Event>(data: T, timeout: number = 5_000) {
-  ws.send(JSON.stringify(data));
+  ws?.send(JSON.stringify(data));
 
   return new Promise<Event & T>((resolve, reject) => {
     const listener = (event: MessageEvent) => {
       const message: T = JSON.parse(event.data);
       if (message.event == data.event) {
-        ws.removeEventListener("message", listener);
+        ws?.removeEventListener("message", listener);
         resolve(message);
       }
     };
 
-    ws.addEventListener("message", listener);
+    ws?.addEventListener("message", listener);
 
     setTimeout(() => {
-      ws.removeEventListener("message", listener);
+      ws?.removeEventListener("message", listener);
       reject("Timeout");
     }, timeout);
   });
