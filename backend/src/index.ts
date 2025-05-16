@@ -14,6 +14,10 @@ export const sqlite = initSqlite("./database.sqlite", { verbose: console.log });
 
 sqlite.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, displayName TEXT, password TEXT, avatar BLOB)");
 
+sqlite.exec("CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY AUTOINCREMENT, user1 INTEGER, user2 INTEGER, score1 INTEGER, score2 INTEGER)");
+
+sqlite.exec("CREATE TABLE IF NOT EXISTS friends (id INTEGER PRIMARY KEY AUTOINCREMENT, user1 INTEGER, user2 INTEGER)");
+
 const app = fastify({ logger: true });
 
 app.register(fastifyWebsocket);

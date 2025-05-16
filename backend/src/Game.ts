@@ -1,6 +1,7 @@
 import Ball from "./Ball";
 import Player from "./Player";
 import User from "./User";
+import {insert_game_bdd} from "./websocket";
 import { webSocketInstances } from "./websocket";
 
 export let games: Game[] = [];
@@ -10,7 +11,7 @@ export enum GameState {
 }
 
 export class Game {
-  readonly winScore: number = 5;
+  readonly winScore: number = 2;
   readonly width: number = 1200;
   readonly height: number = 600;
 
@@ -33,7 +34,7 @@ export class Game {
 
   addUser(user: User) {
     if (this.state == GameState.CREATING) {
-      const player = new Player(this, user.name, false);
+      const player = new Player(this, user.name, user.id, false);
       this.players.push(player);
       user.players.push(player);
     }
@@ -76,9 +77,12 @@ export class Game {
 
     player.score++;
     if (player.score >= this.winScore) {
+
       const [player1, player2] = this.players.splice(0, 2);
       this.tournament.push({ player1, player2, score1: player1.score, score2: player2.score });
       this.players.push(player);
+
+      insert_game_bdd({"Id1": player1.id, "Id2": player2.id, "score1": player1.score, "score2": player2.score}); // username
     }
 
     if (this.players.length == 1) {

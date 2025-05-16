@@ -22,6 +22,9 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
       case "join_game":
         joinGame(user!, message);
         break;
+      case "get_bdd_games":
+        get_game_bdd(socket, user?.id);
+        break;
       case "add_local_player":
         addLocalPlayer(user!, message);
         break;
@@ -94,6 +97,33 @@ function joinGame(user: User, message: any) {
   }
   game.addUser(user);
 }
+
+export function insert_game_bdd(data)
+{
+  const id1 = parseInt(data.Id1, 10);
+  const id2 = data.Id2 === true ? 0 : parseInt(data.Id2, 10);
+  const score1 = parseInt(data.score1, 10);
+  const score2 = parseInt(data.score2, 10);
+
+  const result = sqlite.prepare(`INSERT INTO games (user1, user2, score1, score2) VALUES (?, ?, ?, ?)`)
+    .run(id1, id2, score1, score2);
+}
+
+export function get_game_bdd(socket: WebSocket, id_user) {
+  const id = parseInt(id_user, 10);
+
+  const rows: any[] = sqlite.prepare("SELECT * FROM games WHERE user1 = ?")
+    .all(id);
+
+    socket.send(JSON.stringify({
+      event: "get_bdd_games",
+      id1: rows[0],
+      id2: rows[1],
+      score1: rows[2],
+      score2: rows[3],
+    }));
+}
+
 
 function addLocalPlayer(user: User, message: any) {
   if (message.isAi)

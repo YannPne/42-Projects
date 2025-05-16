@@ -6,6 +6,7 @@ export default class Player {
 
   readonly game: Game;
   readonly name: string;
+  readonly id: number;
   readonly isAi: boolean;
   x: number = 0;
   y: number = 0;
@@ -16,8 +17,9 @@ export default class Player {
   aiLastCheck: number = Date.now();
   aiTargetY: number = 0;
 
-  constructor(game: Game, name: string, isAi: boolean) {
+  constructor(game: Game, name: string, id: number, isAi: boolean) {
     this.game = game;
+    this.id = id;
     this.name = name;
     this.isAi = isAi;
   }
