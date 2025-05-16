@@ -2,6 +2,7 @@ import { awaitWs, ws } from "../main.ts";
 import { loadPage, type Page } from "./Page.ts";
 import { pongPage } from "./pongPage.ts";
 import type { Event } from "../Event.ts";
+import { loginPage } from "./loginPage.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 
@@ -24,6 +25,11 @@ export const chooseGamePage: Page = {
   },
 
   async onMount() {
+    if (ws == undefined) {
+      loadPage(loginPage, chooseGamePage);
+      return;
+    }
+
     await awaitWs();
 
     const createGameName = document.querySelector<HTMLInputElement>("#createGameName")!;

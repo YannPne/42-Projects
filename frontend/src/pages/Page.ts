@@ -4,6 +4,7 @@ import { pongPage } from "./pongPage.ts";
 import { babylonPage } from "./babylonPage.ts";
 import { loginPage } from "./loginPage.ts";
 import { registerPage } from "./registerPage.ts";
+import { profilePage } from "./profilePage.ts";
 
 
 export type Page = {
@@ -22,6 +23,7 @@ export const pages: Page[] = [
   babylonPage,
   loginPage,
   registerPage,
+  profilePage
 ];
 
 let currentPage: Page | undefined;
@@ -29,11 +31,12 @@ let currentPage: Page | undefined;
 export function loadPage(page: Page, data?: any) {
   currentPage?.onUnmount();
   document.querySelector<HTMLDivElement>("#app")!.innerHTML = page.getPage();
-  page.onMount(data);
-  currentPage = page;
 
   history.pushState({}, "", page.url);
   document.title = "ft_transcendence | " + page.title;
+
+  page.onMount(data);
+  currentPage = page;
 }
 
 export function findPage(url: string) {

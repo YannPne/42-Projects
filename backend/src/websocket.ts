@@ -38,21 +38,21 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
           event: "login",
           success: response != null
         }));
-        
-        if (response != null)
-        { 
+
+        if (response != null) {
           user = response;
           user!.socket = socket;
         }
         break;
       case "register":
-        user = await register(socket, message);
+        user = await register(message);
         socket.send(JSON.stringify({
           event: "register",
-          success: !!user}));
+          success: user != null
+        }));
 
-         if (user != null)
-           user!.socket = socket;
+        if (user != null)
+          user!.socket = socket;
 
         break;
     }
@@ -60,21 +60,17 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
 }
 
 function login(message: any) {
-  return new Promise<User | null>(async (resolve, reject) => 
-  {
-      const sql = "SELECT * FROM users WHERE username = ?";
-      sqlite.get(sql, message.username, async (err: any, row: any) => {
-      if (!err)
-      {
+  return new Promise<User | null>(async (resolve, reject) => {
+    const sql = "SELECT * FROM users WHERE username = ?";
+    sqlite.get(sql, message.username, async (err: any, row: any) => {
+      if (!err) {
         if (!row)
           resolve(null);
         else if (await bcrypt.compare(message.password, row.password))
           resolve(new User(row.id, row.username));
         else
           resolve(null);
-      }
-      else
-      {
+      } else {
         reject(err);
       }
     });
@@ -82,17 +78,14 @@ function login(message: any) {
   });
 }
 
-function  user_exist(message: any): Promise<boolean> {
+function user_exist(message: any): Promise<boolean> {
   return new Promise<boolean>((resolve, reject) => {
     const sql = "SELECT * FROM users WHERE username = ?";
 
     sqlite.get(sql, message.username, (err: any, row: any) => {
-      if (err) 
-      {
+      if (err) {
         reject(err);
-      } 
-      else 
-      {
+      } else {
         resolve(!!row);
       }
     });
@@ -102,22 +95,19 @@ function  user_exist(message: any): Promise<boolean> {
 }
 
 
-async function register(socket: WebSocket, message: any) {
-  const exist = await user_exist(message)
+async function register(message: any) {
+  const exist = await user_exist(message);
 
   if (exist)
     return undefined;
-    
+
   return new Promise<User>(async (resolve, reject) => {
     sqlite.run("INSERT INTO users (username, pseudo, password) VALUES (?, ?, ?)", [message.username, message.pseudo, await bcrypt.hash(message.password, 10)],
       function(err: any) {
-        if (err) 
-        {
+        if (err) {
           console.error("Erreur lors de l'insertion :", err.message);
           reject(err);
-        } 
-        else 
-        {
+        } else {
           resolve(new User(this.lastID, message.username));
         }
       }

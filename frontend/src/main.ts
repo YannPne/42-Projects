@@ -1,4 +1,3 @@
-import "./pages/Page.ts"
 import { findPage, loadPage, pages } from "./pages/Page.ts";
 
 export let ws: WebSocket | undefined;
@@ -31,6 +30,11 @@ export function awaitWs(timeout: number = 5_000) {
       reject("WebSocket closing or closed");
 
   });
+}
+
+export function closeWs() {
+  ws?.close();
+  ws = undefined;
 }
 
 const nav = document.querySelector<HTMLElement>("nav")!;
