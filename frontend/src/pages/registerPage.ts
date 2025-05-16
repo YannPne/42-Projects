@@ -9,17 +9,17 @@ export const registerPage: Page = {
   title: "register",
 
   getPage(): string {
-    return `
+    return /* html */ `
     <h2>register</h2>
 
 
-    <form>
+    <form id="register">
 
         <input id="username" type="text" name="username" placeholder="username" required />
         <input id="pseudo" type="text" name="pseudo" placeholder="pseudo" required />
         <input id="password" type="password" name="password" placeholder="password" required />
         <input id="avatar" type="file" name="avatar" placeholder="avatar" required />
-        <button id="register" type="button">register</button>
+        <button>register</button>
     </form>
     
 
@@ -42,28 +42,31 @@ export const registerPage: Page = {
       loadPage(loginPage);
     };
   
-    document.querySelector<HTMLButtonElement>("#register")!.onclick = async () => {
+    document.querySelector<HTMLFormElement>("#register")!.onsubmit = async (event) => {
+      event.preventDefault();
 
       if (!avatar.files || avatar.files.length === 0) {
         alert("Sélectionne un fichier.");
         return;
       }
 
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        await connectWs();
+        }
+
       const message = await sendAndWait({
         event: "register",
         username: username.value,
         pseudo: pseudo.value,
-        password: password.value,
-        success: false
+        password: password.value
       });
-
-      console.log(message);
 
       if (message.success === false)
         return;
 
       const formData = new FormData();
       formData.append('avatar', avatar.files[0]);
+      formData.append('username', username.value);
       await fetch('http://localhost:3000/upload/avatar', {
         method: 'POST',
         body: formData

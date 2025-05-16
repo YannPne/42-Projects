@@ -7,13 +7,10 @@ import { setTimeout } from "timers";
 import bcrypt from "bcrypt";
 import { resolve } from "path";
 
-//import type { WebSocket } from "ws"; // <-- CE TYPE ICI
-
 export default function registerWebSocket(socket: WebSocket, req: FastifyRequest) {
   let user: User | undefined;
 
   socket.addEventListener("message", async (event) => {
-    //const message = JSON.parse(data.toString());
   
     const message = JSON.parse(event.data);
     switch (message.event) {
@@ -44,23 +41,13 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         }
         break;
       case "register":
-
         user = await register(socket, message);
+        socket.send(JSON.stringify({
+          event: "register",
+          success: !!user}));
 
-        if (user != null)
-        {
-          socket.send(JSON.stringify({
-            event: "register",
-            success: true}));
-
-          user!.socket = socket;
-        }
-        else
-        {
-          socket.send(JSON.stringify({
-            event: "register",
-            success: false}));
-        }
+         if (user != null)
+           user!.socket = socket;
 
         break;
     }
@@ -72,7 +59,7 @@ function login(message: any) {
   {
       const sql = "SELECT * FROM users WHERE username = ?";
 
-      sqlite.get(sql, message.username, async (err, row: any) => {
+      sqlite.get(sql, message.username, async (err: any, row: any) => {
       if (!err)
       {
         if (!row)
@@ -95,7 +82,7 @@ function  user_exist(message: any): Promise<boolean> {
   return new Promise<boolean>((resolve, reject) => {
     const sql = "SELECT * FROM users WHERE username = ?";
 
-    sqlite.get(sql, message.username, (err, row: any) => {
+    sqlite.get(sql, message.username, (err: any, row: any) => {
       if (err) 
       {
         reject(err);
@@ -119,10 +106,11 @@ async function register(socket: WebSocket, message: any) {
     
   return new Promise<User>(async (resolve, reject) => {
     sqlite.run("INSERT INTO users (username, pseudo, password) VALUES (?, ?, ?)", [message.username, message.pseudo, await bcrypt.hash(message.password, 10)],
-      function (err: any) {
+      function(err: any) {
         if (err) 
         {
           console.error("Erreur lors de l'insertion :", err.message);
+          reject(err);
         } 
         else 
         {

@@ -27,8 +27,9 @@ app.register(cors, {
   methods: ["GET", "POST", "OPTIONS"],
 });
 
+
 const upload = fastifyMulter({
-  dest: './uploads',
+  storage: fastifyMulter.memoryStorage(),  // en mémoire
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (!file.mimetype.startsWith('image/')) {
@@ -40,19 +41,37 @@ const upload = fastifyMulter({
 
 app.post('/upload/avatar', { preHandler: upload.single('avatar') }, async (req: any, reply: any) => {
   const avatar = req.file;
+  const username = req.body.username;
 
   if (!avatar) {
     return reply.status(400).send({ error: 'Aucun fichier reçu' });
   }
 
-  return reply.send({
-    message: 'Avatar bien reçu',
-    filename: avatar.filename,
-    mimetype: avatar.mimetype,
-    size: avatar.size,
-    path: avatar.path
-  });
+  if (!username) {
+    return reply.status(400).send({ error: 'Username manquant' });
+  }
+
+  const buffer = avatar.buffer;
+
+  sqlite.run(
+    "UPDATE users SET avatar = ? WHERE username = ?",
+    [buffer, username],
+    function (err: any) {
+      if (err) {
+        return reply.status(500).send({ error: 'Erreur base de données', details: err });
+      } else if (this.changes === 0) {
+        return reply.status(404).send({ error: 'Utilisateur non trouvé' });
+      } else {
+        return reply.send({
+          message: 'Avatar bien enregistré',
+          size: buffer.length,
+          username
+        });
+      }
+    }
+  );
 });
+
 
 app.listen({ host: "0.0.0.0", port: 3000 }, (err: any) => {
   if (err) throw err;
