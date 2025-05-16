@@ -1,16 +1,28 @@
 import "./pages/Page.ts"
 import { findPage, loadPage, pages } from "./pages/Page.ts";
 
-export const ws = new WebSocket("ws://" + document.location.hostname + ":3000/ws");
-ws.onopen = _ => console.log("WebSocket connection opened");
-ws.onclose = _ => console.log("WebSocket connection closed");
+export let ws: WebSocket | undefined;
+
+export function connectWs()  {
+  return new Promise((resolve, reject) => {
+
+    ws = new WebSocket("ws://" + document.location.hostname + ":3000/ws");
+    ws.onopen = _ => console.log("WebSocket connection opened");
+    ws.onclose = _ => console.log("WebSocket connection closed");
+
+    ws.addEventListener("open", () => {
+      resolve(undefined);
+    }, {once: true});
+    setTimeout(() => reject("Timeout"), 8_000);
+  });
+}
 
 export function awaitWs(timeout: number = 5_000) {
   return new Promise((resolve, reject) => {
-    if (ws.readyState == ws.OPEN)
+    if (ws!.readyState == ws!.OPEN)
       resolve(undefined);
-    else if (ws.readyState == ws.CONNECTING) {
-      ws.addEventListener("open", () => {
+    else if (ws!.readyState == ws!.CONNECTING) {
+      ws!.addEventListener("open", () => {
         resolve(undefined);
       }, {once: true});
 

@@ -33,21 +33,21 @@ export const pongPage: Page = {
 
   onMount(data?: any) {
     if (data != undefined) {
-      ws.send(JSON.stringify(data)); // join_game event
+      ws!.send(JSON.stringify(data)); // join_game event
     } else {
       loadPage(chooseGamePage);
       return;
     }
 
     document.querySelector<HTMLButtonElement>("#start")!.onclick = () => {
-      ws.send(JSON.stringify({ event: "play" }));
+      ws!.send(JSON.stringify({ event: "play" }));
     };
 
     const addLocalName = document.querySelector<HTMLInputElement>("#addLocalName")!;
     const addLocalCheck = document.querySelector<HTMLInputElement>("#addLocalCheck")!;
     document.querySelector<HTMLButtonElement>("#addLocalButton")!.onclick = () => {
       if (addLocalName.value.trim() != "") {
-        ws.send(JSON.stringify({ event: "add_local_player", name: addLocalName.value, isAi: addLocalCheck.checked }));
+        ws!.send(JSON.stringify({ event: "add_local_player", name: addLocalName.value, isAi: addLocalCheck.checked }));
         addLocalName.value = "";
         addLocalCheck.checked = false;
       }
@@ -66,7 +66,7 @@ export const pongPage: Page = {
     const canvas = document.querySelector<HTMLCanvasElement>("#game")!;
     const context = canvas.getContext("2d")!;
 
-    ws.addEventListener("message", wsListener = (event) => {
+    ws?.addEventListener("message", wsListener = (event) => {
       const message: Event = JSON.parse(event.data);
 
       switch (message.event) {
@@ -90,7 +90,7 @@ export const pongPage: Page = {
     if (keyupListener != undefined)
       document.removeEventListener("keyup", keyupListener);
     if (wsListener != undefined)
-      ws.removeEventListener("message", wsListener);
+      ws?.removeEventListener("message", wsListener);
     keydownListener = undefined;
     keyupListener = undefined;
     wsListener = undefined;
@@ -109,7 +109,7 @@ function move(event: KeyboardEvent, up: boolean) {
 
   send.id = event.code == "ArrowUp" || event.code == "ArrowDown" ? 1 : 0;
 
-  ws.send(JSON.stringify(send));
+  ws?.send(JSON.stringify(send));
 }
 
 function drawMap(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {

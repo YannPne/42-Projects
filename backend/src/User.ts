@@ -3,6 +3,7 @@ import { Game } from "./Game";
 
 export default class User {
   socket?: WebSocket;
+  id: number;
   name: string;
   game?: Game;
   /**
@@ -10,7 +11,8 @@ export default class User {
    */
   players: Player[] = [];
 
-  constructor(name: string) {
+  constructor(id: number, name: string) {
+    this.id = id;
     this.name = name;
   }
 }

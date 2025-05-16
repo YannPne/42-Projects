@@ -39,8 +39,8 @@ export const chooseGamePage: Page = {
     };
 
     const games = document.querySelector<HTMLUListElement>("#games")!;
-    ws.send(JSON.stringify({ event: "get_games" }));
-    ws.addEventListener("message", wsListener = event => {
+    ws!.send(JSON.stringify({ event: "get_games" }));
+    ws!.addEventListener("message", wsListener = event => {
       const message: Event = JSON.parse(event.data);
 
       switch (message.event) {
@@ -65,7 +65,7 @@ export const chooseGamePage: Page = {
 
   onUnmount() {
     if (wsListener != undefined)
-      ws.removeEventListener("message", wsListener);
+      ws!.removeEventListener("message", wsListener);
     wsListener = undefined;
   }
 };
