@@ -22,8 +22,11 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
       case "join_game":
         joinGame(user!, message);
         break;
-      case "get_bdd_games":
-        get_game_bdd(socket, user?.id);
+      // case "get_avatar" :
+      //   get_avatar(socket, user?.id);
+        break;
+      case "get_games_history":
+        get_games_history(socket, user?.id);
         break;
       case "add_local_player":
         addLocalPlayer(user!, message);
@@ -62,6 +65,21 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
   });
 }
 
+// function get_avatar(socket: WebSocket, id_user) {
+//   const id = parseInt(id_user, 10);
+
+//   const row = sqlite.prepare("SELECT avatar FROM users WHERE id = 1")
+//     .get();
+
+//     if (row?.avatar) {
+//       const avatarBase64: string = row.avatar.toString('base64');
+
+//     socket.send(JSON.stringify({
+//       event: "get_avatar",
+//       avatar: avatarBase64,
+//     }));
+// }
+
 function login(message: any) {
   const row: any = sqlite.prepare("SELECT id, displayName, password FROM users WHERE username = ?")
     .get(message.username);
@@ -98,7 +116,7 @@ function joinGame(user: User, message: any) {
   game.addUser(user);
 }
 
-export function insert_game_bdd(data)
+export function insert_game_history(data)
 {
   const id1 = parseInt(data.Id1, 10);
   const id2 = data.Id2 === true ? 0 : parseInt(data.Id2, 10);
@@ -109,21 +127,44 @@ export function insert_game_bdd(data)
     .run(id1, id2, score1, score2);
 }
 
-export function get_game_bdd(socket: WebSocket, id_user) {
+function get_displayName_opponent(userId: number): string[] {
+  const rows: any[] = sqlite.prepare(`SELECT users.displayName 
+                              FROM games 
+                              JOIN users ON games.user2 = users.id 
+                              WHERE games.user1 = ?`).all(userId);
+  return rows;
+}
+
+
+function get_games_history(socket: WebSocket, id_user) {
   const id = parseInt(id_user, 10);
 
   const rows: any[] = sqlite.prepare("SELECT * FROM games WHERE user1 = ?")
     .all(id);
 
+    const gameId1 = rows.map(row => row.user1);
+    const gameId2 = rows.map(row => row.user2);
+    const gameScore1 = rows.map(row => row.score1);
+    const gameScore2 = rows.map(row => row.score2);
+    
+    console.log(gameId1);
+    
+    const name2 = get_displayName_opponent(id_user);
+    console.log("--------------");
+    console.log(name2);
+    console.log("--------------");
+
+
     socket.send(JSON.stringify({
-      event: "get_bdd_games",
-      id1: rows[0],
-      id2: rows[1],
-      score1: rows[2],
-      score2: rows[3],
+      event: "get_games_history",
+      id1: gameId1,
+      id2: gameId2,
+      score1: gameScore1,
+      score2: gameScore2,
+      name1: gameScore2,
+      name2: gameScore2,
     }));
 }
-
 
 function addLocalPlayer(user: User, message: any) {
   if (message.isAi)

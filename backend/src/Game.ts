@@ -1,7 +1,7 @@
 import Ball from "./Ball";
 import Player from "./Player";
 import User from "./User";
-import {insert_game_bdd} from "./websocket";
+import {insert_game_history} from "./websocket";
 import { webSocketInstances } from "./websocket";
 
 export let games: Game[] = [];
@@ -82,7 +82,7 @@ export class Game {
       this.tournament.push({ player1, player2, score1: player1.score, score2: player2.score });
       this.players.push(player);
 
-      insert_game_bdd({"Id1": player1.id, "Id2": player2.id, "score1": player1.score, "score2": player2.score}); // username
+      insert_game_history({"Id1": player1.id, "Id2": player2.id, "score1": player1.score, "score2": player2.score}); // username
     }
 
     if (this.players.length == 1) {
