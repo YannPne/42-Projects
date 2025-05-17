@@ -22,8 +22,14 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
       case "join_game":
         joinGame(user!, message);
         break;
-       case "get_info_profile" :
-         get_info_profile(socket, user?.id);
+      case "set_friend":
+        set_friend(socket, user?.id, message);
+        break;
+      case "remove_friend":
+        remove_friend(socket, user?.id, message);
+        break;
+      case "get_info_profile" :
+        get_info_profile(socket, user?.id);
         break;
       case "get_games_history":
         get_games_history(socket, user?.id);
@@ -66,19 +72,69 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
   });
 }
 
-function get_info_profile(socket: WebSocket, id_user) {
+function remove_friend(socket, id_user, message)
+{
   const id = parseInt(id_user, 10);
 
-  console.log(id);
+  const myName = get_displayName(id_user);
+
+  const result = sqlite.prepare("DELETE FROM friends WHERE name1 = ? AND name2 = ?")
+    .run(myName, message.name);
+
+    socket.send(JSON.stringify({
+      event: "remove_friend",
+      success: result.changes != 0,
+    }));
+}
+
+function set_friend(socket: WebSocket, id_user: any, friend: any) 
+{
+  const myName = get_displayName(id_user);
+
+  if (myName == friend.name)
+  {
+    socket.send(JSON.stringify({
+      event: "set_friend",
+      success: false
+    }));
+    return ;
+  }
+
+  const result = sqlite.prepare(`
+    INSERT INTO friends (name1, name2)
+    SELECT ?, ?
+    WHERE EXISTS (SELECT 1 FROM users WHERE displayName = ?)
+    AND NOT EXISTS (SELECT 1 FROM friends WHERE name1 = ? AND name2 = ?)
+  `).run(myName, friend.name, friend.name, myName, friend.name);
+  
+    
+  socket.send(JSON.stringify({
+    event: "set_friend",
+    success: result.changes != 0
+  }));
+}
+
+function get_friend(socket: WebSocket, myName: any) 
+{
+  const rows: any[] = sqlite.prepare("SELECT name2 FROM friends WHERE name1 = ?")
+    .all(myName);
+
+  return rows.map(row => row.name2);
+}
+
+function get_info_profile(socket: WebSocket, id_user: any) 
+{
+  const id = parseInt(id_user, 10);
   const row = sqlite.prepare("SELECT displayName, avatar FROM users WHERE id = ?")
     .get(id);
 
-    // if (row?.avatar) {
-    //   const avatarBase64: string = row.avatar.toString('base64');
+  const friends = get_friend(socket, row.displayName);  
 
     socket.send(JSON.stringify({
       event: "get_info_profile",
       name: row.displayName,
+      avatar: row.avatar,
+      friends: friends,
     }));
 }
 
@@ -125,7 +181,6 @@ export function insert_game_history(data)
   const score1 = parseInt(data.score1, 10);
   const score2 = parseInt(data.score2, 10);
   const date = data.date.toString();
-  console.log(date);
 
   const result = sqlite.prepare(`INSERT INTO games (user1, user2, score1, score2, date) VALUES (?, ?, ?, ?, ?)`)
     .run(id1, id2, score1, score2, date);
@@ -134,8 +189,9 @@ export function insert_game_history(data)
 function get_displayName(userId: number): string[] {
   const row: any = sqlite.prepare(`SELECT displayName 
                               FROM users
-                              WHERE username = ?`).all(userId);
-  return row;
+                              WHERE id = ?`).get(userId);
+
+  return row.displayName;
 }
 
 function get_displayName_opponent(userId: number): string[] {
@@ -143,7 +199,7 @@ function get_displayName_opponent(userId: number): string[] {
                               FROM games 
                               JOIN users ON 1 = users.id 
                               WHERE games.user1 = ?`).all(userId); // JOIN users ON games.user2 = users.id 
-  return rows.map(row => row.displayName);;
+  return rows.map(row => row.displayName);
 }
 
 

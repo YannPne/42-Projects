@@ -84,7 +84,7 @@ export class Game {
 
       let date = new Date();
       const convertDate = date.toISOString().split('T')[0];
-      insert_game_history({"Id1": player1.id, "Id2": player2.id, "score1": player1.score, "score2": player2.score, "date": convertDate}); // username
+      insert_game_history({"Id1": player1.id, "Id2": player2.id, "score1": player1.score, "score2": player2.score, "date": convertDate});
     }
 
     if (this.players.length == 1) {

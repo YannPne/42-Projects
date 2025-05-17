@@ -9,17 +9,16 @@ export const profilePage: Page = {
   navbar: true,
 
   getPage(): string {
-    return `
+    return /*html*/`
     <div class="h-full flex flex-col justify-start items-center">
-    <img src="src/pages/profile.jpg" alt="avatar" class="w-32 h-32 border-4 border-gray-700 bg-gray-700" />
-    <img id="image" alt="Image from BLOB" />
+    <img id="image" alt="avatar" class="w-32 h-32 border-4 border-gray-700 bg-gray-700" />
 
     <p id="username" class="text-5xl pb-5 font-bold"></p>
     <p class="text-xl pb-5 text-green-500 font-bold">online</p>
 
     <div class="flex justify-between space-x-8 w-full max-w-7xl px-4 mt-6">
     
-      <div class="bg-gray-700 space-y-1 p-4 w-1/3 h-[700px] rounded-xl">
+      <div class="bg-gray-700 space-y-1 p-4 w-1/3 h-[500px] rounded-xl">
         <ul id="match-history" class="pl-3 text-white">
           <li class="text-3xl pb-5">Match History:</li>
         </ul>
@@ -33,59 +32,133 @@ export const profilePage: Page = {
 
         <div class="bg-gray-700 p-6 rounded-xl text-white flex flex-col items-center mt-4 space-y-3">
           <p class="text-3xl pb-2">Manage:</p>
-          <button class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200 w-40">A2F</button>
+          <button class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200 w-40">2FA</button>
           <button class="bg-white hover:bg-gray-400 text-black font-bold py-2 px-4 rounded transition duration-200 w-40">Google</button>
           <button class="bg-red-600 hover:bg-red-800 text-white font-bold py-2 px-4 rounded transition duration-200 w-40">Delete Account</button>
         </div>
       </div>
 
-      <div class="bg-gray-700 p-4 w-1/3 rounded-xl h-[700px]">
-        <ul class="pl-3 text-white space-y-1">
-          <li class="text-3xl pb-5">Friend List:</li>
-          <li class="font-semibold flex justify-between items-center">
-            <span>bde</span>
-            <button class="text-sm bg-red-600 hover:bg-red-700 text-white py-1 px-2 rounded">Unfriend</button>
-          </li>
+    <div class="bg-gray-700 p-4 w-1/3 rounded-xl h-[500px] flex flex-col justify-between">
+      <ul id="friends-list" class="pl-3 text-white space-y-1 overflow-y-auto">
+        <li class="text-3xl pb-5">Friend List:</li>
+      </ul>
 
-          <li class="font-semibold flex justify-between items-center">
-            <span>damien</span>
-            <button class="text-sm bg-red-600 hover:bg-red-700 text-white py-1 px-2 rounded">Unfriend</button>
-          </li>
+      <form id="add_friend" class="flex items-center space-x-2 mt-5 w-full">
+        <input id="username_to_add" placeholder="username" type="text" required class="p-1 bg-gray-600 rounded-lg flex-1" />
+        <button class="rounded-2xl bg-green-600 hover:bg-green-600 p-2 cursor-pointer">ADD</button>
+      </form>
+    </div>
 
-          <li class="font-semibold flex justify-between items-center">
-            <span>charlie</span>
-            <button class="text-sm bg-red-600 hover:bg-red-700 text-white py-1 px-2 rounded">Unfriend</button>
-          </li>
-
-          <li class="font-semibold flex justify-between items-center">
-            <span>yann</span>
-            <button class="text-sm bg-red-600 hover:bg-red-700 text-white py-1 px-2 rounded">Unfriend</button>
-          </li>
-        </ul>
-      </div>
 
     </div>
   </div>
     `;
   },
 
+
   async onMount() {
     if (ws == undefined) {
       loadPage(loginPage, profilePage);
       return;
     }
+
     await awaitWs();
 
-    sendAndWait({event: "get_info_profile"}).then( (message: any) => {
+    // ADD FRIEND
+    const addFriendButton = document.querySelector<HTMLFormElement>("#add_friend")!;
+    const username = document.querySelector<HTMLInputElement>("#username_to_add")!;
 
-      document.getElementById("username")!.innerHTML = message.name + " Profile";
-      
-      // const imageBlob = new Blob([message.avatar], { type: 'image/jpeg' });
-      // const imageUrl = URL.createObjectURL(imageBlob);
-      // document.getElementById('image').src = imageUrl;
 
+    addFriendButton.onsubmit = async (event) => {
+      event.preventDefault();
+
+      if (username.value.trim() == "")
+        return;
+
+
+      sendAndWait({ event: "set_friend", name: username.value.trim()}).then(message => {
+        if (message.success)
+          loadPage(profilePage);
+      });
+    };
+
+    // Remove friend
+    document.getElementById("friends-list")?.addEventListener("click", async (event) => {
+      const target = event.target as HTMLElement;
+
+      if (target.tagName === "BUTTON" && target.dataset.friend) {
+        const friendName = target.dataset.friend;
+
+        const message = await sendAndWait({ event: "remove_friend", name: friendName });
+
+        if (message.success) 
+        {
+          const li = target.closest("li");
+          li?.remove();
+        }
+      }
     });
 
+    
+    // GET INFO PROFILE
+    sendAndWait({event: "get_info_profile"}).then( (message: any) => {
+      
+      // USERNAME
+      document.getElementById("username")!.innerHTML = message.name + " Profile";
+
+      // FRIEND LIST
+      const friendsList = document.getElementById("friends-list");
+      const friendsCount = message.friends?.length;
+
+      if (friendsCount === 0) 
+      {
+        const li = document.createElement("li");
+        li.textContent = "No friend yet :'(";
+        friendsList?.appendChild(li);
+      } 
+      else 
+      {
+        friendsList!.innerHTML = `<li class="text-3xl pb-5">Friends list:</li>`;
+
+        for (let i = friendsCount - 1; i >= 0; i--) 
+        {
+          const friend = message.friends[i];
+          const li = document.createElement("li");
+
+          li.id = `friend-${i}`;
+          li.className = "flex items-center gap-2"; // pour aligner le nom et le bouton
+
+          li.innerHTML = `
+          <div class="w-full flex justify-between items-center">
+            <div class="flex items-center gap-2">
+            <span class="inline-block w-2.5 h-2.5 bg-green-500 rounded-full mr-2 shadow-md"></span>
+            <span>${friend}</span>
+            </div>
+            <button class="bg-red-700 text-white px-2 py-1 rounded hover:bg-red-800" data-friend="${friend}">
+              Remove
+            </button>
+            </div>
+          `;
+          friendsList?.appendChild(li);
+        }
+      } 
+
+      // AVATAR
+
+      const mimeType = message.avatar.type || 'image/jpeg';
+
+      const byteArray = new Uint8Array(message.avatar.data); // conversion explicite
+      const imageBlob = new Blob([byteArray], { type: mimeType });
+      const imageUrl = URL.createObjectURL(imageBlob);
+
+      console.log(message.avatar.data);
+
+      const imageElement = document.getElementById('image');
+      if (imageElement instanceof HTMLImageElement)
+        imageElement.src = imageUrl;
+    });
+
+    // GAME HISTORY
     sendAndWait({event: "get_games_history"}).then( (message: any) => {
       const historyList = document.getElementById("match-history");
       const matchCount = message.id1?.length;
@@ -111,12 +184,10 @@ export const profilePage: Page = {
           const outcomeText = win ? "WIN" : "LOSS";
           const outcomeClass = win ? "text-green-500" : "text-red-500";
           const date = message.date[i];
-          const opponentName = message.id2[i] == 0 ? "ai" : "player";
+          const li = document.createElement("li");
+
           winrate += +win;
 
-          console.log(message.name2[i]);
-
-          const li = document.createElement("li");
           li.innerHTML = `${date} | <span class="${outcomeClass}">${outcomeText}</span> ${myScore} - ${opponentScore} versus ${message.name2[i]}`;
           historyList?.appendChild(li);
         }
