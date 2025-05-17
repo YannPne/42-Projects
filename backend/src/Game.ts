@@ -82,7 +82,9 @@ export class Game {
       this.tournament.push({ player1, player2, score1: player1.score, score2: player2.score });
       this.players.push(player);
 
-      insert_game_history({"Id1": player1.id, "Id2": player2.id, "score1": player1.score, "score2": player2.score}); // username
+      let date = new Date();
+      const convertDate = date.toISOString().split('T')[0];
+      insert_game_history({"Id1": player1.id, "Id2": player2.id, "score1": player1.score, "score2": player2.score, "date": convertDate}); // username
     }
 
     if (this.players.length == 1) {

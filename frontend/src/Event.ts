@@ -24,8 +24,8 @@ export type Event =
   | { event: "win", player: string }
   | { event: "register", username?: string, displayName?: string, password?: string, success?: boolean}
   | { event: "login", username?: string, password?: string, success?: boolean}
-  | { event: "get_games_history", id1?: number[], id2?: number[], score1?: number[], score2?: number[], name1?: string[], name2?: string[]}
-  // | { event: "get_avatar", avatar?: string }
+  | { event: "get_games_history", id1?: number[], id2?: number[], score1?: number[], score2?: number[], name1?: string, name2?: string[], date?: string[]}
+  | { event: "get_info_profile", name?: string, avatar?: string, friends?: string[]}
 
 export function sendAndWait<T extends Event>(data: T, timeout: number = 5_000) {
   ws?.send(JSON.stringify(data));

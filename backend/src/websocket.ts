@@ -22,8 +22,8 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
       case "join_game":
         joinGame(user!, message);
         break;
-      // case "get_avatar" :
-      //   get_avatar(socket, user?.id);
+       case "get_info_profile" :
+         get_info_profile(socket, user?.id);
         break;
       case "get_games_history":
         get_games_history(socket, user?.id);
@@ -59,26 +59,28 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
 
         if (user != undefined)
           user!.socket = socket;
-        socket.close();
+        else
+          socket.close();
         break;
     }
   });
 }
 
-// function get_avatar(socket: WebSocket, id_user) {
-//   const id = parseInt(id_user, 10);
+function get_info_profile(socket: WebSocket, id_user) {
+  const id = parseInt(id_user, 10);
 
-//   const row = sqlite.prepare("SELECT avatar FROM users WHERE id = 1")
-//     .get();
+  console.log(id);
+  const row = sqlite.prepare("SELECT displayName, avatar FROM users WHERE id = ?")
+    .get(id);
 
-//     if (row?.avatar) {
-//       const avatarBase64: string = row.avatar.toString('base64');
+    // if (row?.avatar) {
+    //   const avatarBase64: string = row.avatar.toString('base64');
 
-//     socket.send(JSON.stringify({
-//       event: "get_avatar",
-//       avatar: avatarBase64,
-//     }));
-// }
+    socket.send(JSON.stringify({
+      event: "get_info_profile",
+      name: row.displayName,
+    }));
+}
 
 function login(message: any) {
   const row: any = sqlite.prepare("SELECT id, displayName, password FROM users WHERE username = ?")
@@ -122,17 +124,26 @@ export function insert_game_history(data)
   const id2 = data.Id2 === true ? 0 : parseInt(data.Id2, 10);
   const score1 = parseInt(data.score1, 10);
   const score2 = parseInt(data.score2, 10);
+  const date = data.date.toString();
+  console.log(date);
 
-  const result = sqlite.prepare(`INSERT INTO games (user1, user2, score1, score2) VALUES (?, ?, ?, ?)`)
-    .run(id1, id2, score1, score2);
+  const result = sqlite.prepare(`INSERT INTO games (user1, user2, score1, score2, date) VALUES (?, ?, ?, ?, ?)`)
+    .run(id1, id2, score1, score2, date);
+}
+
+function get_displayName(userId: number): string[] {
+  const row: any = sqlite.prepare(`SELECT displayName 
+                              FROM users
+                              WHERE username = ?`).all(userId);
+  return row;
 }
 
 function get_displayName_opponent(userId: number): string[] {
   const rows: any[] = sqlite.prepare(`SELECT users.displayName 
                               FROM games 
-                              JOIN users ON games.user2 = users.id 
-                              WHERE games.user1 = ?`).all(userId);
-  return rows;
+                              JOIN users ON 1 = users.id 
+                              WHERE games.user1 = ?`).all(userId); // JOIN users ON games.user2 = users.id 
+  return rows.map(row => row.displayName);;
 }
 
 
@@ -146,14 +157,10 @@ function get_games_history(socket: WebSocket, id_user) {
     const gameId2 = rows.map(row => row.user2);
     const gameScore1 = rows.map(row => row.score1);
     const gameScore2 = rows.map(row => row.score2);
-    
-    console.log(gameId1);
-    
-    const name2 = get_displayName_opponent(id_user);
-    console.log("--------------");
-    console.log(name2);
-    console.log("--------------");
+    const date = rows.map(row => row.date);
 
+    const name1 = get_displayName(id_user);
+    const name2 = get_displayName_opponent(id_user);
 
     socket.send(JSON.stringify({
       event: "get_games_history",
@@ -161,8 +168,9 @@ function get_games_history(socket: WebSocket, id_user) {
       id2: gameId2,
       score1: gameScore1,
       score2: gameScore2,
-      name1: gameScore2,
-      name2: gameScore2,
+      name1: name1,
+      name2: name2,
+      date: date,
     }));
 }
 
