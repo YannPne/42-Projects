@@ -28,6 +28,10 @@ export const registerPage: Page = {
               <input id="password" type="password" required class="p-1 bg-gray-600 rounded-lg w-full" />
             </label>
             <label>
+              <p>email:</p>
+              <input id="email" type="email" required class="p-1 bg-gray-600 rounded-lg w-full" />
+            </label>
+            <label>
               <p>Avatar:</p>
               <input id="avatar" type="file" accept="image/*" class="border rounded-lg cursor-pointer text-gray-400 bg-gray-700 border-gray-600" />
             </label>
@@ -52,6 +56,7 @@ export const registerPage: Page = {
 
     const username = document.querySelector<HTMLInputElement>("#username")!;
     const password = document.querySelector<HTMLInputElement>("#password")!;
+    const email = document.querySelector<HTMLInputElement>("#email")!;
     const displayName = document.querySelector<HTMLInputElement>("#displayName")!;
     const avatar = document.querySelector<HTMLInputElement>("#avatar")!;
     const registerButton = document.querySelector<HTMLFormElement>("#register")!;
@@ -78,7 +83,8 @@ export const registerPage: Page = {
         event: "register",
         username: username.value,
         displayName: displayName.value,
-        password: password.value
+        password: password.value,
+        email: email.value,
       });
 
       if (message.success === false)

@@ -123,7 +123,7 @@ export const profilePage: Page = {
 
     
     // GET INFO PROFILE
-    sendAndWait({event: "get_info_profile"}).then( (message: any) => {
+     sendAndWait({event: "get_info_profile"}).then( async (message: any) => {
       
       // USERNAME
       document.getElementById("username")!.innerHTML = message.name + " Profile";
@@ -142,18 +142,21 @@ export const profilePage: Page = {
       {
         friendsList!.innerHTML = `<li class="text-3xl pb-5">Friends list:</li>`;
 
-        for (let i = friendsCount - 1; i >= 0; i--) 
+        const status = await sendAndWait({event: "get_status", friends: message.friends});
+
+        for (let i = 0; i < friendsCount; i++) 
         {
           const friend = message.friends[i];
           const li = document.createElement("li");
 
+          let status_display = status.status![i] ? "bg-green-500" : "bg-gray-500";
           li.id = `friend-${i}`;
-          li.className = "flex items-center gap-2"; // pour aligner le nom et le bouton
+          li.className = "flex items-center gap-2";
 
           li.innerHTML = `
           <div class="w-full flex justify-between items-center">
             <div class="flex items-center gap-2">
-            <span class="inline-block w-2.5 h-2.5 bg-green-500 rounded-full mr-2 shadow-md"></span>
+            <span class="inline-block w-2.5 h-2.5 ${status_display} rounded-full mr-2 shadow-md"></span>
             <span>${friend}</span>
             </div>
             <button class="bg-red-700 text-white px-2 py-1 rounded hover:bg-red-800" data-friend="${friend}">

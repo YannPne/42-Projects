@@ -15,7 +15,7 @@ dotenv.config();
 
 export const sqlite = initSqlite("./database.sqlite", { verbose: log });
 
-sqlite.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, displayName TEXT, password TEXT, avatar BLOB)");
+sqlite.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, displayName TEXT, email TEXT, password TEXT, avatar BLOB)");
 
 sqlite.exec("CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY AUTOINCREMENT, user1 INTEGER, user2 INTEGER, score1 INTEGER, score2 INTEGER, date DATE)");
 
@@ -28,7 +28,7 @@ sqlite.prepare(`
 `).run('LOCAL', 'AI', '', null); // displayName a UPADTE (localplayer / ia)
 
 function log(msg) {
-  fs.appendFileSync("./sqlite.log", msg + "\n");
+  fs.appendFileSync("./log_bdd.sql", msg + "\n");
 }
 
 const app = fastify({ logger: true });

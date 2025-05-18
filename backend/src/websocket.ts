@@ -4,20 +4,39 @@ import User from "./User";
 import { Game, games, GameState } from "./Game";
 import { sqlite } from ".";
 
-export let webSocketInstances: WebSocket[] = [];
+type OnlineUser = {
+  user: User | undefined;
+  socket: WebSocket;
+};
+
+export let onlineUsers: OnlineUser[] = [];
+
+function setUserForSocket(socket: WebSocket, user: User) {
+  const entry = onlineUsers.find(e => e.socket === socket);
+  if (entry)
+    entry.user = user;
+}
 
 export default function registerWebSocket(socket: WebSocket, req: FastifyRequest) {
   let user: User | undefined;
 
-  webSocketInstances.push(socket);
-  socket.addEventListener("close", () =>
-    webSocketInstances.splice(webSocketInstances.indexOf(socket), 1));
+  onlineUsers.push({ user: undefined, socket: socket });
+
+  socket.addEventListener("close", () => {
+    const index = onlineUsers.findIndex(entry => entry.socket === socket);
+    if (index !== -1) {
+      onlineUsers.splice(index, 1);
+    }
+  });  
 
   socket.addEventListener("message", async (event) => {
     const message = JSON.parse(event.data);
     switch (message.event) {
       case "get_games":
         getGames(socket);
+        break;
+      case "get_status":
+        get_status(socket, user!, message);
         break;
       case "join_game":
         joinGame(user!, message);
@@ -26,13 +45,13 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         set_friend(socket, user?.id, message);
         break;
       case "remove_friend":
-        remove_friend(socket, user?.id, message);
+        remove_friend(socket, user!.id, message);
         break;
       case "get_info_profile" :
-        get_info_profile(socket, user?.id);
+        get_info_profile(socket, user!.id);
         break;
       case "get_games_history":
-        get_games_history(socket, user?.id);
+        get_games_history(socket, user!.id);
         break;
       case "add_local_player":
         addLocalPlayer(user!, message);
@@ -44,22 +63,32 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         move(user!, message);
         break;
       case "del_account":
-        const success = del_account(socket, user?.id);
+        const success = del_account(socket, user!.id);
         socket.send(JSON.stringify({ event: "del_account", success: success }));
         success && (user = undefined);
         break;
       case "login":
         user = login(message);
         socket.send(JSON.stringify({ event: "login", success: user != undefined }));
-        user != undefined ? user!.socket = socket : socket.close();
+        user != undefined ? (setUserForSocket(socket, user), user!.socket = socket) : socket.close();    
         break;
       case "register":
         user = register(message);
         socket.send(JSON.stringify({ event: "register", success: user != undefined }));
-        user != undefined ? user!.socket = socket : socket.close();
+        user != undefined ? (setUserForSocket(socket, user), user!.socket = socket) : socket.close();          
         break;
     }
   });
+}
+
+function get_status(socket: WebSocket, id_user: number, message: any)
+{
+  const all_status: boolean[] = message.friends.map((friend: string) => {return !!onlineUsers.find(u => u.user?.name === friend)})
+
+  socket.send(JSON.stringify({
+    event: "get_status",
+    status: all_status,
+  }));
 }
 
 function del_account(socket: WebSocket, id_user: number) 
@@ -86,10 +115,8 @@ function del_account(socket: WebSocket, id_user: number)
 }
 
 
-function remove_friend(socket, id_user, friend)
+function remove_friend(socket, id_user: number, friend)
 {
-  const id = parseInt(id_user, 10);
-
   const myName = get_displayName(id_user);
 
   const result = sqlite.prepare("DELETE FROM friends WHERE name1 = ? AND name2 = ?")
@@ -136,11 +163,10 @@ function get_friend(socket: WebSocket, myName: any)
   return rows.map(row => row.name2);
 }
 
-function get_info_profile(socket: WebSocket, id_user: any) 
+function get_info_profile(socket: WebSocket, id_user: number) 
 {
-  const id = parseInt(id_user, 10);
   const row = sqlite.prepare("SELECT displayName, avatar FROM users WHERE id = ?")
-    .get(id);
+    .get(id_user);
 
   const friends = get_friend(socket, row.displayName);  
 
@@ -163,10 +189,10 @@ function login(message: any) {
 }
 
 function register(message: any) {
-  const result = sqlite.prepare(`INSERT INTO users (username, displayName, password)
-                                 SELECT ?, ?, ?
-                                 WHERE NOT EXISTS(SELECT 1 FROM users WHERE username = ?)`)
-    .run(message.username, message.displayName, bcrypt.hashSync(message.password, 10), message.username);
+  const result = sqlite.prepare(`INSERT INTO users (username, displayName, email, password)
+                                 SELECT ?, ?, ?, ?
+                                 WHERE NOT EXISTS(SELECT 1 FROM users WHERE username = ? AND displayName = ?)`)
+    .run(message.username, message.displayName, message.email, bcrypt.hashSync(message.password, 10), message.username, message.displayName);
 
   if (result.changes == 0)
     return;
@@ -181,8 +207,8 @@ function joinGame(user: User, message: any) {
   let game = games.find(g => g.uid == message.uid);
   if (game == undefined) {
     games.push(game = new Game(message.name, message.uid));
-    for (let webSocket of webSocketInstances) {
-      webSocket.send(JSON.stringify({ event: "get_games", games }));
+    for (let entry of onlineUsers) {
+      entry.socket.send(JSON.stringify({ event: "get_games", games }));
     }
   }
   game.addUser(user);
@@ -217,11 +243,10 @@ function get_displayName_opponent(userId: number): string[] {
 }
 
 
-function get_games_history(socket: WebSocket, id_user) {
-  const id = parseInt(id_user, 10);
+function get_games_history(socket: WebSocket, id_user: number) {
 
   const rows: any[] = sqlite.prepare("SELECT * FROM games WHERE user1 = ?")
-    .all(id);
+    .all(id_user);
 
     const gameId1 = rows.map(row => row.user1);
     const gameId2 = rows.map(row => row.user2);
@@ -256,6 +281,7 @@ function play(user: User) {
     if (user.game.players.length % 2 != 0)
       user.game.addLocalPlayer("AI");
     user.game.state = GameState.IN_GAME;
+    console.log(user.game);
   }
 }
 

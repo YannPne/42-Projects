@@ -1,8 +1,7 @@
 import Ball from "./Ball";
 import Player from "./Player";
 import User from "./User";
-import {insert_game_history} from "./websocket";
-import { webSocketInstances } from "./websocket";
+import {insert_game_history, onlineUsers} from "./websocket";
 
 export let games: Game[] = [];
 
@@ -139,8 +138,8 @@ export class Game {
     }
 
     games.splice(games.indexOf(this), 1);
-    for (let webSocket of webSocketInstances)
-      webSocket.send(JSON.stringify({event: "get_games", games}));
+    for (let entry of onlineUsers)
+      entry.socket.send(JSON.stringify({event: "get_games", games}));
 
     // saveTournament(); -- TODO
   }
