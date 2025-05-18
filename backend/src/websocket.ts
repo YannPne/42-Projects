@@ -43,43 +43,57 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
       case "move":
         move(user!, message);
         break;
+      case "del_account":
+        const success = del_account(socket, user?.id);
+        socket.send(JSON.stringify({ event: "del_account", success: success }));
+        success && (user = undefined);
+        break;
       case "login":
         user = login(message);
-
-        socket.send(JSON.stringify({
-          event: "login",
-          success: user != undefined
-        }));
-
-        if (user != undefined)
-          user!.socket = socket;
-        else
-          socket.close();
+        socket.send(JSON.stringify({ event: "login", success: user != undefined }));
+        user != undefined ? user!.socket = socket : socket.close();
         break;
       case "register":
         user = register(message);
-        socket.send(JSON.stringify({
-          event: "register",
-          success: user != undefined
-        }));
-
-        if (user != undefined)
-          user!.socket = socket;
-        else
-          socket.close();
+        socket.send(JSON.stringify({ event: "register", success: user != undefined }));
+        user != undefined ? user!.socket = socket : socket.close();
         break;
     }
   });
 }
 
-function remove_friend(socket, id_user, message)
+function del_account(socket: WebSocket, id_user: number) 
+{
+  try 
+  {
+    const myName = get_displayName(id_user);
+
+    const deleteUserTransaction = sqlite.transaction(() => 
+    {
+      sqlite.prepare("DELETE FROM friends WHERE name1 = ? OR name2 = ?").run(myName, myName);
+      sqlite.prepare("DELETE FROM games WHERE user1 = ? OR user2 = ?").run(myName, myName);
+      sqlite.prepare("DELETE FROM users WHERE id = ?").run(id_user);
+    });
+
+    deleteUserTransaction();
+    return true;
+  } 
+  catch (error) 
+  {
+    console.error("Error deleting account:", error);
+    return false;
+  }
+}
+
+
+function remove_friend(socket, id_user, friend)
 {
   const id = parseInt(id_user, 10);
 
   const myName = get_displayName(id_user);
 
   const result = sqlite.prepare("DELETE FROM friends WHERE name1 = ? AND name2 = ?")
-    .run(myName, message.name);
+    .run(myName, friend.name);
 
     socket.send(JSON.stringify({
       event: "remove_friend",

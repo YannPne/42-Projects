@@ -1,5 +1,5 @@
 import { loadPage, type Page } from "./Page.ts";
-import { awaitWs, ws } from "../main.ts";
+import { awaitWs, closeWs, ws } from "../main.ts";
 import { loginPage } from "./loginPage.ts";
 import { sendAndWait } from "../Event.ts";
 
@@ -34,7 +34,7 @@ export const profilePage: Page = {
           <p class="text-3xl pb-2">Manage:</p>
           <button class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200 w-40">2FA</button>
           <button class="bg-white hover:bg-gray-400 text-black font-bold py-2 px-4 rounded transition duration-200 w-40">Google</button>
-          <button class="bg-red-600 hover:bg-red-800 text-white font-bold py-2 px-4 rounded transition duration-200 w-40">Delete Account</button>
+          <button id="delete" class="bg-red-600 hover:bg-red-800 text-white font-bold py-2 px-4 rounded transition duration-200 w-40">Delete Account</button>
         </div>
       </div>
 
@@ -64,10 +64,28 @@ export const profilePage: Page = {
 
     await awaitWs();
 
+    // DELETE ACCOUNT
+    document.getElementById("delete")?.addEventListener("click", async () => 
+    {
+      const confirmDelete = confirm("Are you sure you want to delete your account?");
+      
+      if (confirmDelete == false)
+        return;
+
+      sendAndWait({ event: "del_account" }).then(message => {
+        if (message.success)
+        {
+          closeWs();
+          loadPage(loginPage);
+        }
+        else
+          alert("An error occurred.")
+      });
+    });
+
     // ADD FRIEND
     const addFriendButton = document.querySelector<HTMLFormElement>("#add_friend")!;
     const username = document.querySelector<HTMLInputElement>("#username_to_add")!;
-
 
     addFriendButton.onsubmit = async (event) => {
       event.preventDefault();
@@ -79,10 +97,12 @@ export const profilePage: Page = {
       sendAndWait({ event: "set_friend", name: username.value.trim()}).then(message => {
         if (message.success)
           loadPage(profilePage);
+        else
+          alert("The user does not exist.")
       });
     };
 
-    // Remove friend
+    // REMOVE FRIEND
     document.getElementById("friends-list")?.addEventListener("click", async (event) => {
       const target = event.target as HTMLElement;
 
@@ -96,6 +116,8 @@ export const profilePage: Page = {
           const li = target.closest("li");
           li?.remove();
         }
+        else
+          alert("An error occurred.")
       }
     });
 
@@ -144,14 +166,10 @@ export const profilePage: Page = {
       } 
 
       // AVATAR
-
       const mimeType = message.avatar.type || 'image/jpeg';
-
       const byteArray = new Uint8Array(message.avatar.data); // conversion explicite
       const imageBlob = new Blob([byteArray], { type: mimeType });
       const imageUrl = URL.createObjectURL(imageBlob);
-
-      console.log(message.avatar.data);
 
       const imageElement = document.getElementById('image');
       if (imageElement instanceof HTMLImageElement)

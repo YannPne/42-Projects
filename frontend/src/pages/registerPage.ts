@@ -29,7 +29,7 @@ export const registerPage: Page = {
             </label>
             <label>
               <p>Avatar:</p>
-              <input id="avatar" type="file" accept="image/*" required class="border rounded-lg cursor-pointer text-gray-400 bg-gray-700 border-gray-600" />
+              <input id="avatar" type="file" accept="image/*" class="border rounded-lg cursor-pointer text-gray-400 bg-gray-700 border-gray-600" />
             </label>
             <div class="flex justify-center">
               <button class="rounded-2xl bg-gray-900 hover:bg-gray-950 p-2 mt-5 cursor-pointer">Register</button>
@@ -65,7 +65,7 @@ export const registerPage: Page = {
     registerButton.onsubmit = async (event) => {
       event.preventDefault();
 
-      if (!avatar.files || avatar.files.length === 0 || !avatar.files[0].type.startsWith("image/")) {
+      if (avatar.files && avatar.files.length != 0 && !avatar.files[0].type.startsWith("image/")) {
         alert("Please select a valid image.");
         return;
       }
@@ -85,7 +85,8 @@ export const registerPage: Page = {
         return;
 
       const formData = new FormData();
-      formData.append("avatar", avatar.files[0]);
+      if (avatar.files && avatar.files?.length > 0)
+        formData.append("avatar", avatar.files[0]);
       formData.append("username", username.value);
       await fetch("http://localhost:3000/upload/avatar", {
         method: "POST",

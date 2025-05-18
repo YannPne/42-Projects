@@ -7,10 +7,13 @@ import fastifyMulter from "fastify-multer";
 import initSqlite from "better-sqlite3";
 import registerWebSocket from "./websocket";
 import * as dotenv from "dotenv";
+import path from "path";
+import fs from "fs";
+
 
 dotenv.config();
 
-export const sqlite = initSqlite("./database.sqlite", { verbose: console.log });
+export const sqlite = initSqlite("./database.sqlite", { verbose: log });
 
 sqlite.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, displayName TEXT, password TEXT, avatar BLOB)");
 
@@ -24,6 +27,9 @@ sqlite.prepare(`
   VALUES (?, ?, ?, ?)
 `).run('LOCAL', 'AI', '', null); // displayName a UPADTE (localplayer / ia)
 
+function log(msg) {
+  fs.appendFileSync("./sqlite.log", msg + "\n");
+}
 
 const app = fastify({ logger: true });
 
@@ -56,13 +62,15 @@ app.register(app => {
 app.post("/upload/avatar", { preHandler: upload.single("avatar") }, async (req: any, reply) => {
   const avatar = req.file;
   const username = req.body.username;
+  let buffer;
 
-  if (!avatar)
-    return reply.status(400).send({ error: "Avatar is required" });
   if (!username)
     return reply.status(400).send({ error: "Username is required" });
 
-  const buffer = avatar.buffer;
+  if (!avatar || !avatar.buffer)
+    buffer = fs.readFileSync(path.join(__dirname, "../img", "avatar.webp"));
+  else
+    buffer = avatar.buffer;
 
   const result = sqlite.prepare("UPDATE users SET avatar = ? WHERE username = ?")
     .run(buffer, username);
