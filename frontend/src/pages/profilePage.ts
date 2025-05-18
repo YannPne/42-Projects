@@ -182,7 +182,7 @@ export const profilePage: Page = {
     // GAME HISTORY
     sendAndWait({event: "get_games_history"}).then( (message: any) => {
       const historyList = document.getElementById("match-history");
-      const matchCount = message.id1?.length;
+      const matchCount = message.name1?.length;
 
       if (matchCount === 0) {
         const li = document.createElement("li");

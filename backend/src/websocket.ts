@@ -100,7 +100,7 @@ function del_account(socket: WebSocket, id_user: number)
     const deleteUserTransaction = sqlite.transaction(() => 
     {
       sqlite.prepare("DELETE FROM friends WHERE name1 = ? OR name2 = ?").run(myName, myName);
-      sqlite.prepare("DELETE FROM games WHERE user1 = ? OR user2 = ?").run(myName, myName);
+      sqlite.prepare("DELETE FROM games WHERE name1 = ? OR name2 = ?").run(myName, myName);
       sqlite.prepare("DELETE FROM users WHERE id = ?").run(id_user);
     });
 
@@ -115,7 +115,7 @@ function del_account(socket: WebSocket, id_user: number)
 }
 
 
-function remove_friend(socket, id_user: number, friend)
+function remove_friend(socket: WebSocket, id_user: number, friend: any)
 {
   const myName = get_displayName(id_user);
 
@@ -216,14 +216,12 @@ function joinGame(user: User, message: any) {
 
 export function insert_game_history(data)
 {
-  const id1 = parseInt(data.Id1, 10);
-  const id2 = data.Id2 === true ? 0 : parseInt(data.Id2, 10);
   const score1 = parseInt(data.score1, 10);
   const score2 = parseInt(data.score2, 10);
   const date = data.date.toString();
 
-  const result = sqlite.prepare(`INSERT INTO games (user1, user2, score1, score2, date) VALUES (?, ?, ?, ?, ?)`)
-    .run(id1, id2, score1, score2, date);
+  const result = sqlite.prepare(`INSERT INTO games (name1, name2, score1, score2, date) VALUES (?, ?, ?, ?, ?)`)
+    .run(data.name1, data.name2, score1, score2, date);
 }
 
 function get_displayName(userId: number): string[] {
@@ -235,32 +233,24 @@ function get_displayName(userId: number): string[] {
 }
 
 function get_displayName_opponent(userId: number): string[] {
-  const rows: any[] = sqlite.prepare(`SELECT users.displayName 
-                              FROM games 
-                              JOIN users ON 1 = users.id 
-                              WHERE games.user1 = ?`).all(userId); // JOIN users ON games.user2 = users.id 
+  const rows: any[] = sqlite.prepare(`SELECT name2 frome games WHERE name1 = ?`).all(get_displayName(userId)); // JOIN users ON games.user2 = users.id 
   return rows.map(row => row.displayName);
 }
 
 
 function get_games_history(socket: WebSocket, id_user: number) {
 
-  const rows: any[] = sqlite.prepare("SELECT * FROM games WHERE user1 = ?")
-    .all(id_user);
+  const rows: any[] = sqlite.prepare("SELECT * FROM games WHERE name1 = ?")
+    .all(get_displayName(id_user));
 
-    const gameId1 = rows.map(row => row.user1);
-    const gameId2 = rows.map(row => row.user2);
+    const name1 = rows.map(row => row.name1);
+    const name2 = rows.map(row => row.name2);
     const gameScore1 = rows.map(row => row.score1);
     const gameScore2 = rows.map(row => row.score2);
     const date = rows.map(row => row.date);
 
-    const name1 = get_displayName(id_user);
-    const name2 = get_displayName_opponent(id_user);
-
     socket.send(JSON.stringify({
       event: "get_games_history",
-      id1: gameId1,
-      id2: gameId2,
       score1: gameScore1,
       score2: gameScore2,
       name1: name1,

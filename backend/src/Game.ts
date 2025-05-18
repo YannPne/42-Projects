@@ -33,7 +33,7 @@ export class Game {
 
   addUser(user: User) {
     if (this.state == GameState.CREATING) {
-      const player = new Player(this, user.name, user.id, false);
+      const player = new Player(this, user.name, false);
       this.players.push(player);
       user.players.push(player);
     }
@@ -83,7 +83,7 @@ export class Game {
 
       let date = new Date();
       const convertDate = date.toISOString().split('T')[0];
-      insert_game_history({"Id1": player1.id, "Id2": player2.id, "score1": player1.score, "score2": player2.score, "date": convertDate});
+      insert_game_history({"name1": player1.name, "name2": player2.name, "score1": player1.score, "score2": player2.score, "date": convertDate});
     }
 
     if (this.players.length == 1) {

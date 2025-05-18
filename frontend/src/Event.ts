@@ -26,7 +26,7 @@ export type Event =
   | { event: "login", username?: string, password?: string, success?: boolean}
   | { event: "set_friend", name: string, success?: boolean}
   | { event: "del_account", success?: boolean}
-  | { event: "get_games_history", id1?: number[], id2?: number[], score1?: number[], score2?: number[], name1?: string, name2?: string[], date?: string[]}
+  | { event: "get_games_history", score1?: number[], score2?: number[], name1?: string, name2?: string[], date?: string[]}
   | { event: "get_info_profile", name?: string, avatar?: string, friends?: string[]}
   | { event: "remove_friend", name?: string, success?: boolean}
   | { event: "get_status", friends?: string[], status?: boolean[]}
