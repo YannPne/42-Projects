@@ -2,6 +2,9 @@ import { loadPage, type Page } from "./Page.ts";
 import { awaitWs, closeWs, ws } from "../main.ts";
 import { loginPage } from "./loginPage.ts";
 import { sendAndWait } from "../Event.ts";
+import path from "path";
+import fs from "fs";
+import { homePage } from "./homePage.ts";
 
 export const profilePage: Page = {
   url: "/profile",
@@ -18,7 +21,7 @@ export const profilePage: Page = {
 
     <div class="flex justify-between space-x-8 w-full max-w-7xl px-4 mt-6">
     
-      <div class="bg-gray-700 space-y-1 p-4 w-1/3 h-[500px] rounded-xl">
+    <div class="bg-gray-700 space-y-1 p-4 w-1/3 min-h-[200px] rounded-xl">
         <ul id="match-history" class="pl-3 text-white">
           <li class="text-3xl pb-5">Match History:</li>
         </ul>
@@ -38,7 +41,7 @@ export const profilePage: Page = {
         </div>
       </div>
 
-    <div class="bg-gray-700 p-4 w-1/3 rounded-xl h-[500px] flex flex-col justify-between">
+      <div class="bg-gray-700 p-4 w-1/3 min-h-[200px] rounded-xl flex flex-col justify-between">
       <ul id="friends-list" class="pl-3 text-white space-y-1 overflow-y-auto">
         <li class="text-3xl pb-5">Friend List:</li>
       </ul>
@@ -69,14 +72,13 @@ export const profilePage: Page = {
     {
       const confirmDelete = confirm("Are you sure you want to delete your account?");
       
-      if (confirmDelete == false)
+      if (!confirmDelete)
         return;
 
       sendAndWait({ event: "del_account" }).then(message => {
-        if (message.success)
-        {
+        if (message.success) {
           closeWs();
-          loadPage(loginPage);
+          loadPage(loginPage, profilePage);
         }
         else
           alert("An error occurred.")
@@ -129,7 +131,7 @@ export const profilePage: Page = {
       document.getElementById("username")!.innerHTML = message.name + " Profile";
 
       // FRIEND LIST
-      const friendsList = document.getElementById("friends-list");
+      const friendsList = document.querySelector<HTMLAnchorElement>("#friends-list")!;
       const friendsCount = message.friends?.length;
 
       if (friendsCount === 0) 
@@ -140,8 +142,6 @@ export const profilePage: Page = {
       } 
       else 
       {
-        friendsList!.innerHTML = `<li class="text-3xl pb-5">Friends list:</li>`;
-
         const status = await sendAndWait({event: "get_status", friends: message.friends});
 
         for (let i = 0; i < friendsCount; i++) 
@@ -169,14 +169,18 @@ export const profilePage: Page = {
       } 
 
       // AVATAR
-      const mimeType = message.avatar.type || 'image/jpeg';
-      const byteArray = new Uint8Array(message.avatar.data); // conversion explicite
-      const imageBlob = new Blob([byteArray], { type: mimeType });
-      const imageUrl = URL.createObjectURL(imageBlob);
+      const imageElement = document.querySelector<HTMLImageElement>("#image")!;
 
-      const imageElement = document.getElementById('image');
-      if (imageElement instanceof HTMLImageElement)
+      if (!message.avatar)
+        imageElement.src = '/img/avatar.webp';
+      else 
+      {
+        const mimeType = message.avatar.type || 'image/jpeg';
+        const byteArray = new Uint8Array(message.avatar.data);
+        const imageBlob = new Blob([byteArray], { type: mimeType });
+        const imageUrl = URL.createObjectURL(imageBlob);
         imageElement.src = imageUrl;
+      }
     });
 
     // GAME HISTORY

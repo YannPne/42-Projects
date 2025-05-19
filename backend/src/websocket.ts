@@ -4,29 +4,14 @@ import User from "./User";
 import { Game, games, GameState } from "./Game";
 import { sqlite } from ".";
 
-type OnlineUser = {
-  user: User | undefined;
-  socket: WebSocket;
-};
 
-export let onlineUsers: OnlineUser[] = [];
-
-function setUserForSocket(socket: WebSocket, user: User) {
-  const entry = onlineUsers.find(e => e.socket === socket);
-  if (entry)
-    entry.user = user;
-}
+export let onlineUsers: User[] = [];
 
 export default function registerWebSocket(socket: WebSocket, req: FastifyRequest) {
   let user: User | undefined;
 
-  onlineUsers.push({ user: undefined, socket: socket });
-
   socket.addEventListener("close", () => {
-    const index = onlineUsers.findIndex(entry => entry.socket === socket);
-    if (index !== -1) {
-      onlineUsers.splice(index, 1);
-    }
+      onlineUsers.splice(onlineUsers.indexOf(user!), 1);
   });  
 
   socket.addEventListener("message", async (event) => {
@@ -36,22 +21,22 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         getGames(socket);
         break;
       case "get_status":
-        get_status(socket, user!, message);
+        getStatus(socket, message);
         break;
       case "join_game":
         joinGame(user!, message);
         break;
       case "set_friend":
-        set_friend(socket, user?.id, message);
+        setFriend(socket, user?.id, message);
         break;
       case "remove_friend":
-        remove_friend(socket, user!.id, message);
+        removeFriend(socket, user!.id, message);
         break;
       case "get_info_profile" :
-        get_info_profile(socket, user!.id);
+        getInfoProfile(socket, user!.id);
         break;
       case "get_games_history":
-        get_games_history(socket, user!.id);
+        getGamesHistory(socket, user!.id);
         break;
       case "add_local_player":
         addLocalPlayer(user!, message);
@@ -63,27 +48,27 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         move(user!, message);
         break;
       case "del_account":
-        const success = del_account(socket, user!.id);
+        const success = delAccount(socket, user!.id);
         socket.send(JSON.stringify({ event: "del_account", success: success }));
-        success && (user = undefined);
+        success && (user = undefined, socket.close());
         break;
       case "login":
         user = login(message);
         socket.send(JSON.stringify({ event: "login", success: user != undefined }));
-        user != undefined ? (setUserForSocket(socket, user), user!.socket = socket) : socket.close();    
+        user != undefined ? (user!.socket = socket, onlineUsers.push(user!)): socket.close();
         break;
       case "register":
         user = register(message);
         socket.send(JSON.stringify({ event: "register", success: user != undefined }));
-        user != undefined ? (setUserForSocket(socket, user), user!.socket = socket) : socket.close();          
+        user != undefined ? (user!.socket = socket, onlineUsers.push(user!)) : socket.close();  
         break;
     }
   });
 }
 
-function get_status(socket: WebSocket, id_user: number, message: any)
+function getStatus(socket: WebSocket, message: any)
 {
-  const all_status: boolean[] = message.friends.map((friend: string) => {return !!onlineUsers.find(u => u.user?.name === friend)})
+  const all_status: boolean[] = message.friends.map((friend: string) => {return !!onlineUsers.find(u => u.name === friend)})
 
   socket.send(JSON.stringify({
     event: "get_status",
@@ -91,16 +76,15 @@ function get_status(socket: WebSocket, id_user: number, message: any)
   }));
 }
 
-function del_account(socket: WebSocket, id_user: number) 
+function delAccount(socket: WebSocket, id_user: number) 
 {
   try 
   {
-    const myName = get_displayName(id_user);
+    const myName = getDisplayName(id_user);
 
     const deleteUserTransaction = sqlite.transaction(() => 
     {
       sqlite.prepare("DELETE FROM friends WHERE name1 = ? OR name2 = ?").run(myName, myName);
-      sqlite.prepare("DELETE FROM games WHERE name1 = ? OR name2 = ?").run(myName, myName);
       sqlite.prepare("DELETE FROM users WHERE id = ?").run(id_user);
     });
 
@@ -115,9 +99,9 @@ function del_account(socket: WebSocket, id_user: number)
 }
 
 
-function remove_friend(socket: WebSocket, id_user: number, friend: any)
+function removeFriend(socket: WebSocket, id_user: number, friend: any)
 {
-  const myName = get_displayName(id_user);
+  const myName = getDisplayName(id_user);
 
   const result = sqlite.prepare("DELETE FROM friends WHERE name1 = ? AND name2 = ?")
     .run(myName, friend.name);
@@ -128,9 +112,9 @@ function remove_friend(socket: WebSocket, id_user: number, friend: any)
     }));
 }
 
-function set_friend(socket: WebSocket, id_user: any, friend: any) 
+function setFriend(socket: WebSocket, id_user: any, friend: any) 
 {
-  const myName = get_displayName(id_user);
+  const myName = getDisplayName(id_user);
 
   if (myName == friend.name)
   {
@@ -142,11 +126,11 @@ function set_friend(socket: WebSocket, id_user: any, friend: any)
   }
 
   const result = sqlite.prepare(`
-    INSERT INTO friends (name1, name2)
-    SELECT ?, ?
+    INSERT INTO friends (userid, name1, name2)
+    SELECT ?, ?, ?
     WHERE EXISTS (SELECT 1 FROM users WHERE displayName = ?)
     AND NOT EXISTS (SELECT 1 FROM friends WHERE name1 = ? AND name2 = ?)
-  `).run(myName, friend.name, friend.name, myName, friend.name);
+  `).run(id_user, myName, friend.name, friend.name, myName, friend.name);
   
     
   socket.send(JSON.stringify({
@@ -155,7 +139,7 @@ function set_friend(socket: WebSocket, id_user: any, friend: any)
   }));
 }
 
-function get_friend(socket: WebSocket, myName: any) 
+function getFriend(socket: WebSocket, myName: any) 
 {
   const rows: any[] = sqlite.prepare("SELECT name2 FROM friends WHERE name1 = ?")
     .all(myName);
@@ -163,12 +147,12 @@ function get_friend(socket: WebSocket, myName: any)
   return rows.map(row => row.name2);
 }
 
-function get_info_profile(socket: WebSocket, id_user: number) 
+function getInfoProfile(socket: WebSocket, id_user: number) 
 {
-  const row = sqlite.prepare("SELECT displayName, avatar FROM users WHERE id = ?")
+  const row: any = sqlite.prepare("SELECT displayName, avatar FROM users WHERE id = ?")
     .get(id_user);
 
-  const friends = get_friend(socket, row.displayName);  
+  const friends = getFriend(socket, row.displayName);  
 
     socket.send(JSON.stringify({
       event: "get_info_profile",
@@ -207,24 +191,20 @@ function joinGame(user: User, message: any) {
   let game = games.find(g => g.uid == message.uid);
   if (game == undefined) {
     games.push(game = new Game(message.name, message.uid));
-    for (let entry of onlineUsers) {
-      entry.socket.send(JSON.stringify({ event: "get_games", games }));
+    for (let user of onlineUsers) {
+      user.socket!.send(JSON.stringify({ event: "get_games", games }));
     }
   }
   game.addUser(user);
 }
 
-export function insert_game_history(data)
+export function insertGameHistory(data: {name1: string, name2: string, score1: number, score2: number, date: string})
 {
-  const score1 = parseInt(data.score1, 10);
-  const score2 = parseInt(data.score2, 10);
-  const date = data.date.toString();
-
   const result = sqlite.prepare(`INSERT INTO games (name1, name2, score1, score2, date) VALUES (?, ?, ?, ?, ?)`)
-    .run(data.name1, data.name2, score1, score2, date);
+    .run(data.name1, data.name2, data.score1, data.score2, data.date);
 }
 
-function get_displayName(userId: number): string[] {
+function getDisplayName(userId: number): string[] {
   const row: any = sqlite.prepare(`SELECT displayName 
                               FROM users
                               WHERE id = ?`).get(userId);
@@ -232,16 +212,16 @@ function get_displayName(userId: number): string[] {
   return row.displayName;
 }
 
-function get_displayName_opponent(userId: number): string[] {
-  const rows: any[] = sqlite.prepare(`SELECT name2 frome games WHERE name1 = ?`).all(get_displayName(userId)); // JOIN users ON games.user2 = users.id 
+function getDisplayNameOpponent(userId: number): string[] {
+  const rows: any[] = sqlite.prepare(`SELECT name2 frome games WHERE name1 = ?`).all(getDisplayName(userId)); // JOIN users ON games.user2 = users.id 
   return rows.map(row => row.displayName);
 }
 
 
-function get_games_history(socket: WebSocket, id_user: number) {
+function getGamesHistory(socket: WebSocket, id_user: number) {
 
   const rows: any[] = sqlite.prepare("SELECT * FROM games WHERE name1 = ?")
-    .all(get_displayName(id_user));
+    .all(getDisplayName(id_user));
 
     const name1 = rows.map(row => row.name1);
     const name2 = rows.map(row => row.name2);
@@ -271,7 +251,6 @@ function play(user: User) {
     if (user.game.players.length % 2 != 0)
       user.game.addLocalPlayer("AI");
     user.game.state = GameState.IN_GAME;
-    console.log(user.game);
   }
 }
 

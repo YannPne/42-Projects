@@ -33,7 +33,8 @@ export function awaitWs(timeout: number = 5_000) {
 }
 
 export function closeWs() {
-  ws?.close();
+  if (ws && ws.readyState == ws.OPEN)
+    ws.close();
   ws = undefined;
 }
 

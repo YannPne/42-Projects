@@ -7,7 +7,6 @@ import fastifyMulter from "fastify-multer";
 import initSqlite from "better-sqlite3";
 import registerWebSocket from "./websocket";
 import * as dotenv from "dotenv";
-import path from "path";
 import fs from "fs";
 
 
@@ -19,29 +18,23 @@ sqlite.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREM
 
 sqlite.exec("CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY AUTOINCREMENT, name1 TEXT, name2 TEXT, score1 INTEGER, score2 INTEGER, date DATE)");
 
-sqlite.exec("CREATE TABLE IF NOT EXISTS friends (id INTEGER PRIMARY KEY AUTOINCREMENT, name1 TEXT, name2 TEXT, UNIQUE(name1, name2))");
+sqlite.exec("CREATE TABLE IF NOT EXISTS friends (id INTEGER PRIMARY KEY AUTOINCREMENT, userid INTEGER, name1 TEXT, name2 TEXT, UNIQUE(name1, name2))");
 
-
-sqlite.prepare(`
-  INSERT OR IGNORE INTO users (username, displayName, password, avatar)
-  VALUES (?, ?, ?, ?)
-`).run('LOCAL', 'AI', '', null); // displayName a UPADTE (localplayer / ia)
 
 function log(msg) {
-  fs.appendFileSync("./log_bdd.sql", msg + "\n");
+  fs.appendFileSync("./log_db.sql", msg + "\n");
 }
 
 const app = fastify({ logger: true });
 
 app.register(fastifyWebsocket);
-// app.register(fastifyJwt, {
-//   secret:
-// });
+
+
 app.register(fastifyMultipart);
 
 app.register(cors, {
   origin: "*",
-  methods: ["GET", "POST", "OPTIONS"]
+  methods: ["GET", "POST"]
 });
 
 const upload = fastifyMulter({
@@ -68,7 +61,7 @@ app.post("/upload/avatar", { preHandler: upload.single("avatar") }, async (req: 
     return reply.status(400).send({ error: "Username is required" });
 
   if (!avatar || !avatar.buffer)
-    buffer = fs.readFileSync(path.join(__dirname, "../img", "avatar.webp"));
+    buffer = null;
   else
     buffer = avatar.buffer;
 
