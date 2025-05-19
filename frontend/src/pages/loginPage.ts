@@ -1,5 +1,4 @@
-import { sendAndWait } from "../Event.ts";
-import { closeWs, connectWs, ws } from "../main.ts";
+import { connectWs, ws } from "../main.ts";
 import { loadPage, type Page } from "./Page.ts";
 import { registerPage } from "./registerPage.ts";
 import { profilePage } from "./profilePage.ts";
@@ -36,7 +35,7 @@ export const loginPage: Page = {
 	`;
   },
 
-  onMount(requestedPage: any) {
+  onMount(requestedPage?: Page) {
     if (ws != undefined) {
       loadPage(profilePage);
       return;
@@ -55,21 +54,23 @@ export const loginPage: Page = {
     loginButton.onsubmit = async (event) => {
       event.preventDefault();
 
-      if (username.value.trim() == "" && password.value == "")
-        return;
+      const loginResponse = await fetch("http://" + document.location.hostname + ":3000/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: username.value, password: password.value })
+      });
 
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        await connectWs();
+      if (loginResponse.status == 401) {
+        alert("Wrong username / password");
+        return;
+      } else if (loginResponse.status != 200) {
+        console.error(loginResponse.body);
+        return;
       }
 
-      sendAndWait({ event: "login", username: username.value.trim(), password: password.value }).then(message => {
-        if (message.success === true)
-          loadPage(requestedPage ?? profilePage);
-        else {
-          closeWs();
-          alert("Invalid username / password");
-        }
-      });
+      sessionStorage.setItem("token", await loginResponse.text());
+      await connectWs();
+      loadPage(requestedPage ?? profilePage);
     };
   },
 

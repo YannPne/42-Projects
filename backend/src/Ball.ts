@@ -58,27 +58,19 @@ export default class Ball {
 
   updateSpeed(player1: Player, player2: Player) {
     if (this.bottom >= this.game.height || this.top <= 0) this.speedY *= -1;
-    else if (
-      this.goToLeft &&
-      this.left <= player1.right &&
-      this.bottom >= player1.top &&
-      this.top < player1.bottom
-    )
+    else if (this.goToLeft && this.left <= player1.right && this.bottom >= player1.top && this.top < player1.bottom)
       this.impactPlayer(player1);
-    else if (
-      !this.goToLeft &&
-      this.right >= player2.left &&
-      this.bottom >= player2.top &&
-      this.top < player2.bottom
-    )
+    else if (!this.goToLeft && this.right >= player2.left && this.bottom >= player2.top && this.top < player2.bottom)
       this.impactPlayer(player2);
   }
 
   impactPlayer(player: Player) {
     this.speedX *= -1;
     this.speedY = (this.y - player.centerY) / this.angle;
-    if (this.speedX > 0 && this.speedX < 40) this.speedX += 0.6;
-    else if (this.speedX > -40) this.speedX -= 0.6;
+    if (this.speedX > 0 && this.speedX < 40)
+      this.speedX += 0.6;
+    else if (this.speedX > -40)
+      this.speedX -= 0.6;
   }
 
   toJSON() {

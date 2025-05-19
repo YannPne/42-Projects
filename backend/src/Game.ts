@@ -84,7 +84,7 @@ export class Game {
         player1,
         player2,
         score1: player1.score,
-        score2: player2.score,
+        score2: player2.score
       });
       this.players.push(player);
     }
@@ -120,27 +120,23 @@ export class Game {
       }
 
       for (let user of this.users) {
-        user.socket?.send(
-          JSON.stringify({
-            event: "update",
-            ball: this.ball,
-            players: [player1, player2],
-          }),
-        );
+        user.socket.send(JSON.stringify({
+          event: "update",
+          ball: this.ball,
+          players: [player1, player2]
+        }));
       }
 
       await new Promise((res) =>
-        setTimeout(res, 10 - (Date.now() - startTime)),
+        setTimeout(res, 10 - (Date.now() - startTime))
       );
     }
 
     for (let user of this.users) {
-      user.socket?.send(
-        JSON.stringify({
-          event: "win",
-          player: this.players[0].name,
-        }),
-      );
+      user.socket.send(JSON.stringify({
+        event: "win",
+        player: this.players[0].name
+      }));
       user.game = undefined;
       user.players = [];
     }
@@ -155,7 +151,7 @@ export class Game {
   toJSON() {
     return {
       uid: this.uid,
-      name: this.name,
+      name: this.name
     };
   }
 }

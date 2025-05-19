@@ -4,8 +4,10 @@ export let ws: WebSocket | undefined;
 
 export function connectWs()  {
   return new Promise((resolve, reject) => {
+    if (ws)
+      ws.close();
 
-    ws = new WebSocket("ws://" + document.location.hostname + ":3000/ws");
+    ws = new WebSocket("ws://" + document.location.hostname + ":3000/ws?token=" + sessionStorage.getItem("token"));
     ws.onopen = _ => console.log("WebSocket connection opened");
     ws.onclose = _ => console.log("WebSocket connection closed");
 
@@ -54,4 +56,6 @@ for (let page of pages) {
   nav.appendChild(button);
 }
 
+if (sessionStorage.getItem("token") != null)
+  await connectWs();
 loadPage(findPage(window.location.pathname));

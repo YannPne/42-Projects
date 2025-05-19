@@ -19,11 +19,11 @@ export const pongPage: Page = {
       <div class="flex flex-col items-center justify-center h-full w-full">
         <div class="pb-5 w-full flex justify-around">
           <button id="start" class="p-2 rounded-xl bg-blue-900 hover:bg-blue-950 cursor-pointer">Start game</button>
-          <form class="bg-gray-900 items-center justify-center">
+          <form id="addLocalForm" class="bg-gray-900 items-center justify-center">
             <input id="addLocalName" type="text" required placeholder="Local player's name" class="p-2 placeholder-gray-400">
             <label for="addLocalCheck">Is AI?</label>
             <input id="addLocalCheck" type="checkbox" required>
-            <button type="button" id="addLocalButton" class="p-2 bg-blue-900 hover:bg-blue-950">Create a new game</button>
+            <button class="p-2 bg-blue-900 hover:bg-blue-950">Add local player</button>
           </form>
         </div>
         <canvas id="game" width="1200" height="600" class="w-[90%] aspect-[2/1] bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
@@ -43,7 +43,7 @@ export const pongPage: Page = {
     const start = document.querySelector<HTMLButtonElement>("#start")!;
     const addLocalName = document.querySelector<HTMLInputElement>("#addLocalName")!;
     const addLocalCheck = document.querySelector<HTMLInputElement>("#addLocalCheck")!;
-    const addLocalButton = document.querySelector<HTMLButtonElement>("#addLocalButton")!;
+    const addLocalForm = document.querySelector<HTMLButtonElement>("#addLocalForm")!;
     // Game
     const canvas = document.querySelector<HTMLCanvasElement>("#game")!;
     const context = canvas.getContext("2d")!;
@@ -52,7 +52,9 @@ export const pongPage: Page = {
       ws!.send(JSON.stringify({ event: "play" }));
     };
 
-    addLocalButton.onclick = () => {
+    addLocalForm.onsubmit = event => {
+      event.preventDefault();
+
       if (addLocalName.value.trim() != "") {
         ws!.send(JSON.stringify({ event: "add_local_player", name: addLocalName.value, isAi: addLocalCheck.checked }));
         addLocalName.value = "";
@@ -69,7 +71,7 @@ export const pongPage: Page = {
       move(event, true);
     });
 
-    ws!.addEventListener("message", wsListener = (event) => {
+    ws!.addEventListener("message", wsListener = event => {
       const message: Event = JSON.parse(event.data);
 
       switch (message.event) {

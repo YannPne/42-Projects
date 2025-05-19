@@ -5,7 +5,6 @@ services:
     container_name: backend
     image: node:22-alpine
     restart: always
-    env_file: [ .env ]
     volumes: [ ./backend:/app ]
     ports: [ "3000:3000" ]
     working_dir: /app
@@ -17,7 +16,6 @@ services:
     container_name: frontend
     image: node:22-alpine
     restart: always
-    env_file: [ .env ]
     volumes: [ ./frontend:/app ]
     ports: [ "8000:8000" ]
     working_dir: /app
