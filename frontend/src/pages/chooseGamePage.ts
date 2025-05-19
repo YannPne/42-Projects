@@ -16,9 +16,9 @@ export const chooseGamePage: Page = {
       <div class="flex flex-col h-full items-center p-5">
         <p class="text-2xl font-bold mb-3">Available games</p>
         <ul id="games" class="flex-1 overflow-y-auto w-3/4 bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950"></ul>
-        <form class="mt-5 bg-gray-900">
+        <form class="mt-5 bg-gray-900" id="createGame">
           <input id="createGameName" type="text" required placeholder="New game's name" class="p-2 placeholder-gray-400">
-          <button type="button" id="createGame" class="p-2 bg-blue-900 hover:bg-blue-950">Create a new game</button>
+          <button class="p-2 bg-blue-900 hover:bg-blue-950">Create a new game</button>
         </form>
       </div>
     `;
@@ -32,21 +32,20 @@ export const chooseGamePage: Page = {
 
     await awaitWs();
 
+    const createGame = document.querySelector<HTMLFormElement>("#createGame")!;
     const createGameName = document.querySelector<HTMLInputElement>("#createGameName")!;
-    document.querySelector<HTMLButtonElement>("#createGame")!.onclick = () => {
-      if (createGameName.value.trim() == "")
-        return;
+    const games = document.querySelector<HTMLUListElement>("#games")!;
 
+    createGame.onsubmit = event => {
+      event.preventDefault();
       loadPage(pongPage, {
         event: "join_game",
         uid: crypto.randomUUID(),
-        name: createGameName.value.trim()
+        name: createGameName.value
       });
     };
 
-    const games = document.querySelector<HTMLUListElement>("#games")!;
-    ws!.send(JSON.stringify({ event: "get_games" }));
-    ws!.addEventListener("message", wsListener = event => {
+    ws.addEventListener("message", wsListener = event => {
       const message: Event = JSON.parse(event.data);
 
       switch (message.event) {
@@ -67,6 +66,7 @@ export const chooseGamePage: Page = {
           break;
       }
     });
+    ws.send(JSON.stringify({ event: "get_games" }));
   },
 
   onUnmount() {

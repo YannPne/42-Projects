@@ -38,7 +38,7 @@ const upload = fastifyMulter({
   }
 });
 
-app.register(app => {
+app.register((app) => {
   app.get("/ws", { websocket: true }, registerWebSocket);
 });
 

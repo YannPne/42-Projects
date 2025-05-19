@@ -31,12 +31,10 @@ let currentPage: Page | undefined;
 export function loadPage(page: Page, data?: any) {
   currentPage?.onUnmount();
   document.querySelector<HTMLDivElement>("#app")!.innerHTML = page.getPage();
-
+  currentPage = page;
   history.pushState({}, "", page.url);
   document.title = "ft_transcendence | " + page.title;
-
   page.onMount(data);
-  currentPage = page;
 }
 
 export function findPage(url: string) {

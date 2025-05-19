@@ -85,9 +85,9 @@ function getGames(socket: WebSocket) {
 }
 
 function joinGame(user: User, message: any) {
-  let game = games.find(g => g.uid == message.uid);
+  let game = games.find((g) => g.uid == message.uid);
   if (game == undefined) {
-    games.push(game = new Game(message.name, message.uid));
+    games.push((game = new Game(message.name, message.uid)));
     for (let webSocket of webSocketInstances) {
       webSocket.send(JSON.stringify({ event: "get_games", games }));
     }
@@ -96,30 +96,23 @@ function joinGame(user: User, message: any) {
 }
 
 function addLocalPlayer(user: User, message: any) {
-  if (message.isAi)
-    user.game?.addLocalPlayer(message.name);
-  else
-    user.game?.addLocalPlayer(message.name, user);
+  if (message.isAi) user.game?.addLocalPlayer(message.name);
+  else user.game?.addLocalPlayer(message.name, user);
 }
 
 function play(user: User) {
   if (user.game != undefined) {
-    if (user.game.players.length % 2 != 0)
-      user.game.addLocalPlayer("AI");
+    if (user.game.players.length % 2 != 0) user.game.addLocalPlayer("AI");
     user.game.state = GameState.IN_GAME;
   }
 }
 
 function move(user: User, message: any) {
-  if (user.game == undefined)
-    return;
+  if (user.game == undefined) return;
 
-  const player = user.players.find(p => p == user.game?.players[message.id]);
-  if (player == undefined)
-    return;
+  const player = user.players.find((p) => p == user.game?.players[message.id]);
+  if (player == undefined) return;
 
-  if (message.goUp != undefined)
-    player.goUp = message.goUp;
-  if (message.goDown != undefined)
-    player.goDown = message.goDown;
+  if (message.goUp != undefined) player.goUp = message.goUp;
+  if (message.goDown != undefined) player.goDown = message.goDown;
 }
