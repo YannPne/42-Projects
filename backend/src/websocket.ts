@@ -30,7 +30,7 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         setFriend(socket, user?.id, message);
         break;
       case "remove_friend":
-        removeFriend(socket, user!.id, message);
+        removeFriend(socket, user!.id, message.name);
         break;
       case "get_info_profile" :
         getInfoProfile(socket, user!.id);
@@ -80,11 +80,9 @@ function delAccount(socket: WebSocket, id_user: number)
 {
   try 
   {
-    const myName = getDisplayName(id_user);
-
     const deleteUserTransaction = sqlite.transaction(() => 
     {
-      sqlite.prepare("DELETE FROM friends WHERE name1 = ? OR name2 = ?").run(myName, myName);
+      sqlite.prepare("DELETE FROM friends WHERE userid = ? OR friendid = ?").run(id_user, id_user);
       sqlite.prepare("DELETE FROM users WHERE id = ?").run(id_user);
     });
 
@@ -98,13 +96,21 @@ function delAccount(socket: WebSocket, id_user: number)
   }
 }
 
-
-function removeFriend(socket: WebSocket, id_user: number, friend: any)
+function getUserID(name: string)
 {
-  const myName = getDisplayName(id_user);
+  const result: any = sqlite.prepare("SELECT id FROM users WHERE displayName = ?")
+    .get(name);
 
-  const result = sqlite.prepare("DELETE FROM friends WHERE name1 = ? AND name2 = ?")
-    .run(myName, friend.name);
+    return result && result.id;
+}
+
+
+function removeFriend(socket: WebSocket, id_user: number, friend: string)
+{
+  const friendid = getUserID(friend);
+
+  const result = sqlite.prepare("DELETE FROM friends WHERE userid = ? AND friendid = ?")
+    .run(id_user, friendid);
 
     socket.send(JSON.stringify({
       event: "remove_friend",
@@ -114,9 +120,9 @@ function removeFriend(socket: WebSocket, id_user: number, friend: any)
 
 function setFriend(socket: WebSocket, id_user: any, friend: any) 
 {
-  const myName = getDisplayName(id_user);
+  const friendid = getUserID(friend.name);
 
-  if (myName == friend.name)
+  if (!friendid || id_user == friendid)
   {
     socket.send(JSON.stringify({
       event: "set_friend",
@@ -126,12 +132,11 @@ function setFriend(socket: WebSocket, id_user: any, friend: any)
   }
 
   const result = sqlite.prepare(`
-    INSERT INTO friends (userid, name1, name2)
-    SELECT ?, ?, ?
-    WHERE EXISTS (SELECT 1 FROM users WHERE displayName = ?)
-    AND NOT EXISTS (SELECT 1 FROM friends WHERE name1 = ? AND name2 = ?)
-  `).run(id_user, myName, friend.name, friend.name, myName, friend.name);
-  
+    INSERT INTO friends (userid, friendid)
+    SELECT ?, ?
+    WHERE NOT EXISTS ( SELECT 1 FROM friends WHERE (userid = ? AND friendid = ?) OR (userid = ? AND friendid = ?)
+  )
+  `).run(id_user, friendid, id_user, friendid, id_user, friendid);  
     
   socket.send(JSON.stringify({
     event: "set_friend",
@@ -139,12 +144,14 @@ function setFriend(socket: WebSocket, id_user: any, friend: any)
   }));
 }
 
-function getFriend(socket: WebSocket, myName: any) 
+function getFriends(socket: WebSocket, id_user: Number) 
 {
-  const rows: any[] = sqlite.prepare("SELECT name2 FROM friends WHERE name1 = ?")
-    .all(myName);
-
-  return rows.map(row => row.name2);
+  const rows: any[] = sqlite.prepare(`SELECT u.displayName
+                                      FROM friends f
+                                      JOIN users u ON f.friendid = u.id
+                                      WHERE f.userid = ?;
+                                      `).all(id_user);
+  return rows.map(row => row.displayName);
 }
 
 function getInfoProfile(socket: WebSocket, id_user: number) 
@@ -152,7 +159,7 @@ function getInfoProfile(socket: WebSocket, id_user: number)
   const row: any = sqlite.prepare("SELECT displayName, avatar FROM users WHERE id = ?")
     .get(id_user);
 
-  const friends = getFriend(socket, row.displayName);  
+  const friends = getFriends(socket, id_user);  
 
     socket.send(JSON.stringify({
       event: "get_info_profile",

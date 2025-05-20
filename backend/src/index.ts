@@ -18,7 +18,7 @@ sqlite.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREM
 
 sqlite.exec("CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY AUTOINCREMENT, name1 TEXT, name2 TEXT, score1 INTEGER, score2 INTEGER, date DATE)");
 
-sqlite.exec("CREATE TABLE IF NOT EXISTS friends (id INTEGER PRIMARY KEY AUTOINCREMENT, userid INTEGER, name1 TEXT, name2 TEXT, UNIQUE(name1, name2))");
+sqlite.exec("CREATE TABLE IF NOT EXISTS friends (id INTEGER PRIMARY KEY AUTOINCREMENT, userid INTEGER, friendid INTEGER, UNIQUE(userid, friendid))");
 
 
 function log(msg) {
