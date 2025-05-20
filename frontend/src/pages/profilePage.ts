@@ -2,9 +2,6 @@ import { loadPage, type Page } from "./Page.ts";
 import { awaitWs, closeWs, ws } from "../main.ts";
 import { loginPage } from "./loginPage.ts";
 import { sendAndWait } from "../Event.ts";
-import path from "path";
-import fs from "fs";
-import { homePage } from "./homePage.ts";
 
 export const profilePage: Page = {
   url: "/profile",
@@ -68,8 +65,7 @@ export const profilePage: Page = {
     await awaitWs();
 
     // DELETE ACCOUNT
-    document.getElementById("delete")?.addEventListener("click", async () => 
-    {
+    document.querySelector<HTMLButtonElement>("#delete")!.onclick = async () => {
       const confirmDelete = confirm("Are you sure you want to delete your account?");
       
       if (!confirmDelete)
@@ -83,7 +79,7 @@ export const profilePage: Page = {
         else
           alert("An error occurred.")
       });
-    });
+    };
 
     // ADD FRIEND
     const addFriendButton = document.querySelector<HTMLFormElement>("#add_friend")!;
@@ -105,7 +101,7 @@ export const profilePage: Page = {
     };
 
     // REMOVE FRIEND
-    document.getElementById("friends-list")?.addEventListener("click", async (event) => {
+    document.querySelector<HTMLButtonElement>("#friends-list")!.onclick = async (event) => {
       const target = event.target as HTMLElement;
 
       if (target.tagName === "BUTTON" && target.dataset.friend) {
@@ -121,14 +117,14 @@ export const profilePage: Page = {
         else
           alert("An error occurred.")
       }
-    });
+    };
 
     
     // GET INFO PROFILE
      sendAndWait({event: "get_info_profile"}).then( async (message: any) => {
       
       // USERNAME
-      document.getElementById("username")!.innerHTML = message.name + " Profile";
+      document.querySelector("#username")!.innerHTML = message.name + " Profile";
 
       // FRIEND LIST
       const friendsList = document.querySelector<HTMLAnchorElement>("#friends-list")!;
@@ -172,7 +168,7 @@ export const profilePage: Page = {
       const imageElement = document.querySelector<HTMLImageElement>("#image")!;
 
       if (!message.avatar)
-        imageElement.src = '/img/avatar.webp';
+        imageElement.src = 'avatar.webp';
       else 
       {
         const mimeType = message.avatar.type || 'image/jpeg';
@@ -185,14 +181,14 @@ export const profilePage: Page = {
 
     // GAME HISTORY
     sendAndWait({event: "get_games_history"}).then( (message: any) => {
-      const historyList = document.getElementById("match-history");
+      const historyList = document.querySelector("#match-history")
       const matchCount = message.name1?.length;
 
       if (matchCount === 0) {
         const li = document.createElement("li");
         li.textContent = "No matches played yet.";
         historyList?.appendChild(li);
-        document.getElementById("winrate")!.innerHTML = "- %";
+        document.querySelector("#winrate")!.innerHTML = "- %";
         return;
       } 
       else 
@@ -216,7 +212,7 @@ export const profilePage: Page = {
           li.innerHTML = `${date} | <span class="${outcomeClass}">${outcomeText}</span> ${myScore} - ${opponentScore} versus ${message.name2[i]}`;
           historyList?.appendChild(li);
         }
-        document.getElementById("winrate")!.innerHTML = ~~(winrate / matchCount * 100) + "%";
+        document.querySelector("#winrate")!.innerHTML = ~~(winrate / matchCount * 100) + "%";
       }      
     });
   },

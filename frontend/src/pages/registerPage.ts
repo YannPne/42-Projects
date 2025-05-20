@@ -28,7 +28,7 @@ export const registerPage: Page = {
               <input id="password" type="password" required class="p-1 bg-gray-600 rounded-lg w-full" />
             </label>
             <label>
-              <p>email:</p>
+              <p>Email:</p>
               <input id="email" type="email" required class="p-1 bg-gray-600 rounded-lg w-full" />
             </label>
             <label>

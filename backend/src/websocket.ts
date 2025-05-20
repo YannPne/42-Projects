@@ -48,7 +48,7 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         move(user!, message);
         break;
       case "del_account":
-        const success = delAccount(socket, user!.id);
+        const success = deleteAccount(user!.id);
         socket.send(JSON.stringify({ event: "del_account", success: success }));
         success && (user = undefined, socket.close());
         break;
@@ -76,24 +76,10 @@ function getStatus(socket: WebSocket, message: any)
   }));
 }
 
-function delAccount(socket: WebSocket, id_user: number) 
-{
-  try 
-  {
-    const deleteUserTransaction = sqlite.transaction(() => 
-    {
-      sqlite.prepare("DELETE FROM friends WHERE userid = ? OR friendid = ?").run(id_user, id_user);
-      sqlite.prepare("DELETE FROM users WHERE id = ?").run(id_user);
-    });
+function deleteAccount(id_user: number): boolean {
+  const result = sqlite.prepare("DELETE FROM users WHERE id = ?").run(id_user);
 
-    deleteUserTransaction();
-    return true;
-  } 
-  catch (error) 
-  {
-    console.error("Error deleting account:", error);
-    return false;
-  }
+  return result.changes > 0 ? true : false;
 }
 
 function getUserID(name: string)
@@ -207,7 +193,7 @@ function joinGame(user: User, message: any) {
 
 export function insertGameHistory(data: {name1: string, name2: string, score1: number, score2: number, date: string})
 {
-  const result = sqlite.prepare(`INSERT INTO games (name1, name2, score1, score2, date) VALUES (?, ?, ?, ?, ?)`)
+  sqlite.prepare(`INSERT INTO games (name1, name2, score1, score2, date) VALUES (?, ?, ?, ?, ?)`)
     .run(data.name1, data.name2, data.score1, data.score2, data.date);
 }
 
@@ -218,12 +204,6 @@ function getDisplayName(userId: number): string[] {
 
   return row.displayName;
 }
-
-function getDisplayNameOpponent(userId: number): string[] {
-  const rows: any[] = sqlite.prepare(`SELECT name2 frome games WHERE name1 = ?`).all(getDisplayName(userId)); // JOIN users ON games.user2 = users.id 
-  return rows.map(row => row.displayName);
-}
-
 
 function getGamesHistory(socket: WebSocket, id_user: number) {
 
