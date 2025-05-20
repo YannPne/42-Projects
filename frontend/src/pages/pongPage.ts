@@ -16,7 +16,7 @@ export const pongPage: Page = {
 
   getPage(): string {
     return `
-      <div class="flex flex-col items-center justify-center h-full w-full">
+      <div class="flex flex-col items-center justify-center h-full w-full p-5">
         <div class="pb-5 w-full flex justify-around">
           <button id="start" class="p-2 rounded-xl bg-blue-900 hover:bg-blue-950 cursor-pointer">Start game</button>
           <form id="addLocalForm" class="bg-gray-900 items-center justify-center">
@@ -26,7 +26,7 @@ export const pongPage: Page = {
             <button class="p-2 bg-blue-900 hover:bg-blue-950">Add local player</button>
           </form>
         </div>
-        <canvas id="game" width="1200" height="600" class="w-[90%] aspect-[2/1] bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
+        <canvas id="game" width="1200" height="600" class="flex-1 overflow-hidden aspect-[2/1] bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
       </div>
     `;
   },

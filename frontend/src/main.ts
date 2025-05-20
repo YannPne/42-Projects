@@ -7,7 +7,7 @@ export function connectWs()  {
     if (ws)
       ws.close();
 
-    ws = new WebSocket("ws://" + document.location.hostname + ":3000/ws?token=" + sessionStorage.getItem("token"));
+    ws = new WebSocket("ws://" + document.location.host + "/api/ws?token=" + sessionStorage.getItem("token"));
     ws.onopen = _ => console.log("WebSocket connection opened");
     ws.onclose = _ => console.log("WebSocket connection closed");
 
