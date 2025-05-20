@@ -1,59 +1,76 @@
 import { sendAndWait } from "../Event.ts";
-import {connectWs, ws} from "../main.ts";
-import { homePage } from "./homePage.ts";
-import {loadPage, type Page } from "./Page.ts";
+import { closeWs, connectWs, ws } from "../main.ts";
+import { loadPage, type Page } from "./Page.ts";
 import { registerPage } from "./registerPage.ts";
+import { profilePage } from "./profilePage.ts";
 
 export const loginPage: Page = {
   url: "/login",
   title: "Login",
+  navbar: false,
 
   getPage(): string {
-	return `
-	<h2>Login</h2>
-
-
-	<form>
-
-		<input id="username" type="text" name="username" placeholder="Nom d'utilisateur" required />
-		<input id="password" type="password" name="password" placeholder="Mot de passe" required />
-		<button id="login" type="button">Login</button>
-	</form>
-	
-
-
-		<div class="link">
-		Pas encore de compte ? <a id="register" href="/register">register</a>
-		</div>
+    return `
+      <div class="h-full flex flex-col items-center justify-center">
+        <div class="bg-gray-700 flex flex-col items-center justify-center p-5 rounded-4xl">
+		      <h2 class="text-2xl font-bold">Login</h2>
+          <form id="login" class="flex flex-col mt-5 mb-5 space-y-2">
+            <label>
+              <p>Username: </p>
+              <input id="username" type="text" required class="p-1 bg-gray-600 rounded-lg w-full" />
+            </label>
+            <label>
+              <p>Password: </p>
+              <input id="password" type="password" required class="p-1 bg-gray-600 rounded-lg w-full" />
+            </label>
+            <div class="flex justify-center">
+              <button class="rounded-2xl bg-gray-900 hover:bg-gray-950 p-2 mt-5 cursor-pointer">Login</button>
+            </div>
+          </form>
+          <div>
+            <span>Not have an account? </span>
+            <a id="register" href="/register" class="underline">Register</a>
+          </div>
+        </div>
+      </div>
 	`;
   },
 
-  onMount() {
+  onMount(requestedPage: any) {
+    if (ws != undefined) {
+      loadPage(profilePage);
+      return;
+    }
 
-	const username = document.querySelector<HTMLInputElement>("#username")!;
-	const password = document.querySelector<HTMLInputElement>("#password")!;
+    const username = document.querySelector<HTMLInputElement>("#username")!;
+    const password = document.querySelector<HTMLInputElement>("#password")!;
+    const loginButton = document.querySelector<HTMLFormElement>("#login")!;
+    const registerLink = document.querySelector<HTMLAnchorElement>("#register")!;
 
-	document.querySelector<HTMLAnchorElement>("#register")!.onclick = (event) => {
-		event.preventDefault();
-		loadPage(registerPage)
-	}
+    registerLink.onclick = (event) => {
+      event.preventDefault();
+      loadPage(registerPage, requestedPage);
+    };
 
+    loginButton.onsubmit = async (event) => {
+      event.preventDefault();
 
-	document.querySelector<HTMLButtonElement>("#login")!.onclick = async () => {
-	  if (username.value.trim() == "" && password.value == "")
-		return;
+      if (username.value.trim() == "" && password.value == "")
+        return;
 
-	  if (!ws || ws.readyState !== WebSocket.OPEN) {
-		await connectWs();
-	  }
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        await connectWs();
+      }
 
-	  sendAndWait({event: "login", username: username.value.trim(), password: password.value}).then(message => {
-		if (message.success === true)
-			loadPage(homePage);
-		else
-			ws?.close();
-	  });
-	};
+      sendAndWait({ event: "login", username: username.value.trim(), password: password.value }).then(message => {
+        if (message.success === true)
+          loadPage(requestedPage ?? profilePage);
+        else {
+          closeWs();
+          alert("Invalid username / password");
+        }
+      });
+    };
   },
 
   onUnmount() {

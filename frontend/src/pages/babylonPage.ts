@@ -6,6 +6,7 @@ let keydownListener: ((event: KeyboardEvent) => void) | undefined;
 export const babylonPage: Page = {
   url: "/babylon",
   title: "Babylon.js",
+  navbar: true,
 
   getPage(): string {
     return `

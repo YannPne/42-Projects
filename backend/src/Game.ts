@@ -1,5 +1,7 @@
 import Ball from "./Ball";
 import Player from "./Player";
+import User from "./User";
+import {insertGameHistory, onlineUsers} from "./websocket";
 
 export let games: Game[] = [];
 
@@ -8,7 +10,7 @@ export enum GameState {
 }
 
 export class Game {
-  readonly winScore: number = 5;
+  readonly winScore: number = 2;
   readonly width: number = 1200;
   readonly height: number = 600;
 
@@ -17,14 +19,49 @@ export class Game {
   state: GameState = GameState.CREATING;
   ball: Ball = new Ball(this);
   players: Player[] = [];
+  users: User[] = [];
+  tournament: { player1: Player, player2: Player, score1: number, score2: number }[] = [];
 
   constructor(name: string, uid: string) {
     this.name = name;
     this.uid = uid;
 
     this.loop()
-        .then(() => console.log("Game finished"))
-        .catch(console.error);
+      .then(() => console.log("Game finished"))
+      .catch(console.error);
+  }
+
+  addUser(user: User) {
+    if (this.state == GameState.CREATING) {
+      const player = new Player(this, user.name, false);
+      this.players.push(player);
+      user.players.push(player);
+    }
+
+    this.users.push(user);
+    user.game = this;
+  }
+
+  /**
+   * @param name The name of the local player
+   * @param user Let undefined if it is an AI player
+   */
+  addLocalPlayer(name: string, user?: User) {
+    if (this.state != GameState.CREATING)
+      return;
+
+    const player = new Player(this, name, user == undefined);
+    this.players.push(player);
+    user?.players.push(player);
+  }
+
+  resetPos() {
+    this.ball.resetPos();
+    const [player1, player2] = this.players;
+    player1.x = 30;
+    player1.y = (this.height - player1.height) / 2;
+    player2.x = this.width - player2.width - 30;
+    player2.y = (this.height - player2.height) / 2;
   }
 
   checkWin() {
@@ -39,8 +76,14 @@ export class Game {
 
     player.score++;
     if (player.score >= this.winScore) {
-      this.players.splice(0, 2);
+
+      const [player1, player2] = this.players.splice(0, 2);
+      this.tournament.push({ player1, player2, score1: player1.score, score2: player2.score });
       this.players.push(player);
+
+      let date = new Date();
+      const convertDate = date.toISOString().split('T')[0];
+      insertGameHistory({name1: player1.name, name2: player2.name, score1: player1.score, score2: player2.score, date: convertDate});
     }
 
     if (this.players.length == 1) {
@@ -48,11 +91,7 @@ export class Game {
       return true;
     }
 
-    this.ball.resetPos();
-    this.players[0].x = 30;
-    this.players[0].y = (this.height - this.players[0].height) / 2;
-    this.players[1].x = this.width - this.players[1].width - 30;
-    this.players[1].y = (this.height - this.players[1].height) / 2;
+    this.resetPos();
     return true;
   }
 
@@ -60,12 +99,8 @@ export class Game {
     while (this.state == GameState.CREATING)
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-    let [ player1, player2 ] = this.players;
-
-    player1.x = 30;
-    player1.y = (this.height - player1.height) / 2;
-    player2.x = this.width - player2.width - 30;
-    player2.y = (this.height - player2.height) / 2;
+    let [player1, player2] = this.players;
+    this.resetPos();
 
     while (this.state == GameState.IN_GAME) {
       const startTime = Date.now();
@@ -79,25 +114,40 @@ export class Game {
         // @ts-ignore
         if (this.state == GameState.SHOW_WINNER)
           break;
-        [ player1, player2 ] = this.players;
+        [player1, player2] = this.players;
       }
 
-      for (let player of this.players) {
-        player.user?.socket?.send(JSON.stringify({
+      for (let user of this.users) {
+        user.socket?.send(JSON.stringify({
           event: "update",
           ball: this.ball,
-          players: [ player1, player2 ]
+          players: [player1, player2]
         }));
       }
 
       await new Promise(res => setTimeout(res, 10 - (Date.now() - startTime)));
     }
 
-    for (let player of this.players) {
-      player.user?.socket?.send(JSON.stringify({
+    for (let user of this.users) {
+      user.socket?.send(JSON.stringify({
         event: "win",
         player: this.players[0].name
       }));
+      user.game = undefined;
+      user.players = [];
+    }
+
+    games.splice(games.indexOf(this), 1);
+    for (let entry of onlineUsers)
+      entry.socket!.send(JSON.stringify({event: "get_games", games}));
+
+    // saveTournament(); -- TODO
+  }
+
+  toJSON() {
+    return {
+      uid: this.uid,
+      name: this.name
     }
   }
 }
