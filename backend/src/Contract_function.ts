@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import * as dotenv from "dotenv";
-import { abi } from "./Contract.json" assert { type: "json" };
+import abi from "./abi/Contract.json";
 
 dotenv.config();
 
@@ -12,7 +12,7 @@ const provider = new ethers.JsonRpcProvider(RPC_URL);
 const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
 const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, wallet);
 
-async function addTournamentMatches(
+export  async function addTournamentMatches(
   tournamentId: number,
   matchIds: number[],
   matchScores: number[][]
@@ -22,13 +22,13 @@ async function addTournamentMatches(
   console.log("Matchs ajoutés avec succès !");
 }
 
-async function getTournamentMatches(tournamentId: number) {
+export async function getTournamentMatches(tournamentId: number) {
   const [matchIds, scores] = await contract.getTournamentMatches(tournamentId);
   console.log("Match IDs:", matchIds.map((id: any) => id.toString()));
   console.log("Scores:", scores.map((score: any[]) => score.map(s => s.toString())));
 }
 
-async function getMatchScores(tournamentId: number, matchId: number) {
+export async function getMatchScores(tournamentId: number, matchId: number) {
   const scores = await contract.getMatchScores(tournamentId, matchId);
   console.log(`Scores du match ${matchId}:`, scores.map((s: any) => s.toString()));
 }
