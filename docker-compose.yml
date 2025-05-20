@@ -1,5 +1,3 @@
-#version: '3.8'
-
 services:
   backend:
     container_name: backend
@@ -10,7 +8,7 @@ services:
     ports: [ "3000:3000" ]
     working_dir: /app
     command: >
-      sh -c "npm ci
+      sh -c "npm i
       && npm run dev"
 
   frontend:
@@ -22,7 +20,7 @@ services:
     ports: [ "8000:8000" ]
     working_dir: /app
     command: >
-      sh -c "npm ci
+      sh -c "npm i
       && npm run dev"
 
   adminer:
