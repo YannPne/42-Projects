@@ -13,20 +13,21 @@ import fs from "fs";
 
 dotenv.config();
 
-export const sqlite = initSqlite("./database.sqlite", { verbose: (msg) => fs.appendFileSync("./log_db.sql", msg + ";\n")});
+export const sqlite = initSqlite("./database.sqlite", { verbose: (msg) => fs.appendFileSync("./log_db.sql", msg + ";\n") });
 
 sqlite.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, displayName TEXT, email TEXT, password TEXT, avatar BLOB)");
 
 sqlite.exec("CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY AUTOINCREMENT, name1 TEXT, name2 TEXT, score1 INTEGER, score2 INTEGER, date DATE)");
 
-sqlite.exec(`CREATE TABLE IF NOT EXISTS friends (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  userid INTEGER,
-  friendid INTEGER,
-  UNIQUE(userid, friendid),
-  FOREIGN KEY (userid) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (friendid) REFERENCES users(id) ON DELETE CASCADE
-)`);
+sqlite.exec(`CREATE TABLE IF NOT EXISTS friends
+             (
+                 id       INTEGER PRIMARY KEY AUTOINCREMENT,
+                 userid   INTEGER,
+                 friendid INTEGER,
+                 UNIQUE (userid, friendid),
+                 FOREIGN KEY (userid) REFERENCES users (id) ON DELETE CASCADE,
+                 FOREIGN KEY (friendid) REFERENCES users (id) ON DELETE CASCADE
+             )`);
 
 const app = fastify({ logger: true });
 
@@ -41,7 +42,7 @@ app.register(fastifyFormbody);
 
 app.register(cors, {
   origin: "*",
-  methods: ["GET", "POST"]
+  methods: [ "GET", "POST" ]
 });
 
 app.decorate("authenticate", async (req: FastifyRequest, reply: FastifyReply) => {
@@ -61,10 +62,10 @@ app.decorate("authenticate", async (req: FastifyRequest, reply: FastifyReply) =>
 });
 
 app.register(app => {
-  app.get("/ws", { websocket: true, preHandler: [app.authenticate] }, registerWebSocket);
+  app.get("/api/ws", { websocket: true, preHandler: [ app.authenticate ] }, registerWebSocket);
 });
 
-app.post("/login", async (request, reply) => {
+app.post("/api/login", async (request, reply) => {
   let username: string | undefined;
   let password: string | undefined;
 
@@ -81,7 +82,7 @@ app.post("/login", async (request, reply) => {
     return reply.status(400).send("Incomplete request");
 
   const row: any = sqlite.prepare("SELECT id, password FROM users WHERE username = ?")
-    .get(username);
+      .get(username);
 
   if (row == undefined || !bcrypt.compareSync(password, row.password))
     return reply.status(401).send({ error: "Unauthorized" });
@@ -99,7 +100,7 @@ function streamToBuffer(stream: Stream) {
   });
 }
 
-app.post("/register", async (request, reply) => {
+app.post("/api/register", async (request, reply) => {
   let username: string | undefined;
   let displayName: string | undefined;
   let email: string | undefined;
@@ -127,8 +128,9 @@ app.post("/register", async (request, reply) => {
   let buffer = avatar ? await streamToBuffer(avatar) : null;
 
   const result = sqlite.prepare(`INSERT INTO users (username, displayName, email, password, avatar)
-                                 SELECT ?, ?, ?, ?, ? WHERE NOT EXISTS(SELECT 1 FROM users WHERE username = ?)`)
-    .run(username, displayName, email, bcrypt.hashSync(password, 10), buffer, username);
+                                 SELECT ?, ?, ?, ?, ?
+                                 WHERE NOT EXISTS(SELECT 1 FROM users WHERE username = ?)`)
+      .run(username, displayName, email, bcrypt.hashSync(password, 10), buffer, username);
 
   if (result.changes == 0)
     return reply.status(409).send("Username already exist");

@@ -64,11 +64,10 @@ export default class Player {
 
       const ball = this.game.ball;
       if (ball.speedX != 0 && ball.goToLeft == this.isAtLeft) {
-        this.aiTargetY =
-          ((this.isAtLeft ? this.right - ball.left : this.left - ball.right) *
-            ball.speedY) /
-            ball.speedX +
-          ball.centerY;
+        this.aiTargetY = ((this.isAtLeft
+                ? this.right - ball.left
+                : this.left - ball.right)
+            * ball.speedY) / ball.speedX + ball.centerY;
       }
     }
 

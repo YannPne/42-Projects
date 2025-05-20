@@ -75,9 +75,8 @@ export const profilePage: Page = {
         if (message.success) {
           closeWs();
           loadPage(loginPage, profilePage);
-        }
-        else
-          alert("An error occurred.")
+        } else
+          alert("An error occurred.");
       });
     };
 
@@ -92,11 +91,11 @@ export const profilePage: Page = {
         return;
 
 
-      sendAndWait({ event: "set_friend", name: username.value.trim()}).then(message => {
+      sendAndWait({ event: "set_friend", name: username.value.trim() }).then(message => {
         if (message.success)
           loadPage(profilePage);
         else
-          alert("The user does not exist.")
+          alert("The user does not exist.");
       });
     };
 
@@ -109,40 +108,34 @@ export const profilePage: Page = {
 
         const message = await sendAndWait({ event: "remove_friend", name: friendName });
 
-        if (message.success)
-        {
+        if (message.success) {
           const li = target.closest("li");
           li?.remove();
-        }
-        else
-          alert("An error occurred.")
+        } else
+          alert("An error occurred.");
       }
     };
 
 
     // GET INFO PROFILE
-     sendAndWait({event: "get_info_profile"}).then( async (message: any) => {
+    sendAndWait({ event: "get_info_profile" }).then(async (message) => {
 
       // USERNAME
       document.querySelector("#username")!.innerHTML = message.name + " Profile";
 
       // FRIEND LIST
       const friendsList = document.querySelector<HTMLAnchorElement>("#friends-list")!;
-      const friendsCount = message.friends?.length;
+      const friendsCount = message.friends!.length;
 
-      if (friendsCount === 0)
-      {
+      if (friendsCount === 0) {
         const li = document.createElement("li");
         li.textContent = "No friend yet :'(";
         friendsList?.appendChild(li);
-      }
-      else
-      {
-        const status = await sendAndWait({event: "get_status", friends: message.friends});
+      } else {
+        const status = await sendAndWait({ event: "get_status", friends: message.friends });
 
-        for (let i = 0; i < friendsCount; i++)
-        {
-          const friend = message.friends[i];
+        for (let i = 0; i < friendsCount; i++) {
+          const friend = message.friends![i];
           const li = document.createElement("li");
 
           let status_display = status.status![i] ? "bg-green-500" : "bg-gray-500";
@@ -168,49 +161,43 @@ export const profilePage: Page = {
       const imageElement = document.querySelector<HTMLImageElement>("#image")!;
 
       if (!message.avatar)
-        imageElement.src = 'avatar.webp';
-      else
-      {
-        const mimeType = message.avatar.type || 'image/jpeg';
-        const byteArray = new Uint8Array(message.avatar.data);
-        const imageBlob = new Blob([byteArray], { type: mimeType });
+        imageElement.src = "avatar.webp";
+      else {
+        console.log(typeof message.avatar);
+        const mimeType = (message.avatar as any).type || "image/jpeg";
+        const byteArray = new Uint8Array((message.avatar as any).data);
+        const imageBlob = new Blob([ byteArray ], { type: mimeType });
         imageElement.src = URL.createObjectURL(imageBlob);
       }
     });
 
     // GAME HISTORY
-    sendAndWait({event: "get_games_history"}).then( (message: any) => {
-      const historyList = document.querySelector("#match-history")
-      const matchCount = message.name1?.length;
+    sendAndWait({ event: "get_games_history" }).then((message) => {
+      const historyList = document.querySelector("#match-history")!;
+      const matchCount = message.games!.length;
 
       if (matchCount === 0) {
         const li = document.createElement("li");
         li.textContent = "No matches played yet.";
-        historyList?.appendChild(li);
+        historyList.appendChild(li);
         document.querySelector("#winrate")!.innerHTML = "- %";
         return;
-      }
-      else
-      {
-        historyList!.innerHTML = `<li class="text-3xl pb-5">Match History:</li>`;
+      } else {
+        historyList.innerHTML = `<li class="text-3xl pb-5">Match History:</li>`;
         let winrate: number = 0;
 
-        for (let i = matchCount - 1; i >= 0; i--)
-        {
-          const myScore = message.score1[i];
-          const opponentScore = message.score2[i];
-
-          const win = myScore > opponentScore;
-          const outcomeText = win ? "WIN" : "LOSS";
-          const outcomeClass = win ? "text-green-500" : "text-red-500";
-          const date = message.date[i];
+        for (let game of message.games!.reverse()) {
           const li = document.createElement("li");
 
-          winrate += +win;
+          if (game.score1 > game.score2) {
+            winrate += 1;
+            li.innerHTML = `${game.date} | <span class="text-green-500">WIN</span> ${game.score1} - ${game.score2} versus ${game.name2}`;
+          } else
+            li.innerHTML = `${game.date} | <span class="text-red-500">LOSS</span> ${game.score1} - ${game.score2} versus ${game.name2}`;
 
-          li.innerHTML = `${date} | <span class="${outcomeClass}">${outcomeText}</span> ${myScore} - ${opponentScore} versus ${message.name2[i]}`;
-          historyList?.appendChild(li);
+          historyList.appendChild(li);
         }
+
         document.querySelector("#winrate")!.innerHTML = ~~(winrate / matchCount * 100) + "%";
       }
     });

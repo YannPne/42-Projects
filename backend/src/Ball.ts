@@ -46,7 +46,7 @@ export default class Ball {
   resetPos() {
     this.x = (this.game.width - this.size) / 2;
     this.y = (this.game.height - this.size) / 2;
-    const [player1, player2] = this.game.players;
+    const [ player1, player2 ] = this.game.players;
     this.speedX = player1.score < player2.score ? -3 : 3;
     this.speedY = 0;
   }

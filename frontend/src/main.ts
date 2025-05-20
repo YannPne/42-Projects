@@ -2,7 +2,7 @@ import { findPage, loadPage, pages } from "./pages/Page.ts";
 
 export let ws: WebSocket | undefined;
 
-export function connectWs()  {
+export function connectWs() {
   return new Promise((resolve, reject) => {
     if (ws)
       ws.close();
@@ -13,7 +13,7 @@ export function connectWs()  {
 
     ws.addEventListener("open", () => {
       resolve(undefined);
-    }, {once: true});
+    }, { once: true });
     setTimeout(() => reject("Timeout"), 8_000);
   });
 }
@@ -25,7 +25,7 @@ export function awaitWs(timeout: number = 5_000) {
     else if (ws!.readyState == ws!.CONNECTING) {
       ws!.addEventListener("open", () => {
         resolve(undefined);
-      }, {once: true});
+      }, { once: true });
 
       setTimeout(() => reject("Timeout"), timeout);
     } else
