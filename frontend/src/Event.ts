@@ -22,6 +22,12 @@ export type Event =
   | { event: "move", id: number, goUp?: boolean, goDown?: boolean }
   | { event: "update", ball: Ball, players: Player[] }
   | { event: "win", player: string }
+  | { event: "set_friend", name: string, success?: boolean}
+  | { event: "del_account", success?: boolean}
+  | { event: "get_games_history", score1?: number[], score2?: number[], name1?: string, name2?: string[], date?: string[]}
+  | { event: "get_info_profile", name?: string, avatar?: string, friends?: string[]}
+  | { event: "remove_friend", name?: string, success?: boolean}
+  | { event: "get_status", friends?: string[], status?: boolean[]}
 
 export function sendAndWait<T extends Event>(data: T, timeout: number = 5_000) {
   ws?.send(JSON.stringify(data));

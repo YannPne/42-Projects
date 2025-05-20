@@ -27,6 +27,10 @@ export const registerPage: Page = {
               <input name="password" type="password" required class="p-1 bg-gray-600 rounded-lg w-full" />
             </label>
             <label>
+              <p>Email:</p>
+              <input name="email" type="email" required class="p-1 bg-gray-600 rounded-lg w-full" />
+            </label>
+            <label>
               <p>Avatar:</p>
               <input name="avatar" type="file" accept="image/*" class="border rounded-lg cursor-pointer text-gray-400 bg-gray-700 border-gray-600" />
             </label>

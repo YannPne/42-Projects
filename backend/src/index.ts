@@ -9,12 +9,24 @@ import * as dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import fastifyFormbody from "@fastify/formbody";
 import Stream from "node:stream";
+import fs from "fs";
 
 dotenv.config();
 
-export const sqlite = initSqlite("./database.sqlite", { verbose: console.log });
+export const sqlite = initSqlite("./database.sqlite", { verbose: (msg) => fs.appendFileSync("./log_db.sql", msg + ";\n")});
 
-sqlite.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, displayName TEXT, password TEXT, avatar BLOB)");
+sqlite.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, displayName TEXT, email TEXT, password TEXT, avatar BLOB)");
+
+sqlite.exec("CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY AUTOINCREMENT, name1 TEXT, name2 TEXT, score1 INTEGER, score2 INTEGER, date DATE)");
+
+sqlite.exec(`CREATE TABLE IF NOT EXISTS friends (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  userid INTEGER,
+  friendid INTEGER,
+  UNIQUE(userid, friendid),
+  FOREIGN KEY (userid) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (friendid) REFERENCES users(id) ON DELETE CASCADE
+)`);
 
 const app = fastify({ logger: true });
 
@@ -29,7 +41,7 @@ app.register(fastifyFormbody);
 
 app.register(cors, {
   origin: "*",
-  methods: ["GET", "POST", "OPTIONS"]
+  methods: ["GET", "POST"]
 });
 
 app.decorate("authenticate", async (req: FastifyRequest, reply: FastifyReply) => {
@@ -90,6 +102,7 @@ function streamToBuffer(stream: Stream) {
 app.post("/register", async (request, reply) => {
   let username: string | undefined;
   let displayName: string | undefined;
+  let email: string | undefined;
   let password: string | undefined;
   let avatar: Stream | undefined;
 
@@ -98,6 +111,8 @@ app.post("/register", async (request, reply) => {
       username = part.value as string;
     else if (part.fieldname == "displayName" && part.type == "field")
       displayName = part.value as string;
+    else if (part.fieldname == "email" && part.type == "field")
+      email = part.value as string;
     else if (part.fieldname == "password" && part.type == "field")
       password = part.value as string;
     else if (part.fieldname == "avatar" && part.type == "file") {
@@ -107,14 +122,13 @@ app.post("/register", async (request, reply) => {
       return reply.status(400).send("Invalid part");
   }
 
-  if (!username || !displayName || !password)
+  if (!username || !displayName || !email || !password)
     return reply.status(400).send("Incomplete request");
   let buffer = avatar ? await streamToBuffer(avatar) : null;
-  console.log(buffer);
 
-  const result = sqlite.prepare(`INSERT INTO users (username, displayName, password, avatar)
-                                 SELECT ?, ?, ?, ? WHERE NOT EXISTS(SELECT 1 FROM users WHERE username = ?)`)
-    .run(username, displayName, bcrypt.hashSync(password, 10), buffer, username);
+  const result = sqlite.prepare(`INSERT INTO users (username, displayName, email, password, avatar)
+                                 SELECT ?, ?, ?, ?, ? WHERE NOT EXISTS(SELECT 1 FROM users WHERE username = ?)`)
+    .run(username, displayName, email, bcrypt.hashSync(password, 10), buffer, username);
 
   if (result.changes == 0)
     return reply.status(409).send("Username already exist");

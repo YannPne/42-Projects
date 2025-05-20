@@ -1,7 +1,7 @@
 import Ball from "./Ball";
 import Player from "./Player";
 import User from "./User";
-import { webSocketInstances } from "./websocket";
+import {insertGameHistory, onlineUsers} from "./websocket";
 
 export let games: Game[] = [];
 
@@ -12,7 +12,7 @@ export enum GameState {
 }
 
 export class Game {
-  readonly winScore: number = 5;
+  readonly winScore: number = 2;
   readonly width: number = 1200;
   readonly height: number = 600;
 
@@ -87,6 +87,10 @@ export class Game {
         score2: player2.score
       });
       this.players.push(player);
+
+      let date = new Date();
+      const convertDate = date.toISOString().split('T')[0];
+      insertGameHistory({name1: player1.name, name2: player2.name, score1: player1.score, score2: player2.score, date: convertDate});
     }
 
     if (this.players.length == 1) {
@@ -142,8 +146,8 @@ export class Game {
     }
 
     games.splice(games.indexOf(this), 1);
-    for (let webSocket of webSocketInstances)
-      webSocket.send(JSON.stringify({ event: "get_games", games }));
+    for (let user of onlineUsers)
+      user.socket.send(JSON.stringify({ event: "get_games", games }));
 
     // saveTournament(); -- TODO
   }
