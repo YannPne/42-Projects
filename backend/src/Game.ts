@@ -6,9 +6,7 @@ import {insertGameHistory, onlineUsers} from "./websocket";
 export let games: Game[] = [];
 
 export enum GameState {
-  CREATING,
-  IN_GAME,
-  SHOW_WINNER,
+  CREATING, IN_GAME, SHOW_WINNER
 }
 
 export class Game {
@@ -22,12 +20,7 @@ export class Game {
   ball: Ball = new Ball(this);
   players: Player[] = [];
   users: User[] = [];
-  tournament: {
-    player1: Player;
-    player2: Player;
-    score1: number;
-    score2: number;
-  }[] = [];
+  tournament: { player1: Player, player2: Player, score1: number, score2: number }[] = [];
 
   constructor(name: string, uid: string) {
     this.name = name;
@@ -54,7 +47,8 @@ export class Game {
    * @param user Let undefined if it is an AI player
    */
   addLocalPlayer(name: string, user?: User) {
-    if (this.state != GameState.CREATING) return;
+    if (this.state != GameState.CREATING)
+      return;
 
     const player = new Player(this, name, user == undefined);
     this.players.push(player);
@@ -73,20 +67,18 @@ export class Game {
   checkWin() {
     let player: Player;
 
-    if (this.ball.left < 0) player = this.players[1];
-    else if (this.ball.left > this.width) player = this.players[0];
-    else return false;
+    if (this.ball.x < 0)
+      player = this.players[1];
+    else if (this.ball.x + this.ball.size > this.width)
+      player = this.players[0];
+    else
+      return false;
 
     player.score++;
     if (player.score >= this.winScore) {
 
       const [player1, player2] = this.players.splice(0, 2);
-      this.tournament.push({
-        player1,
-        player2,
-        score1: player1.score,
-        score2: player2.score,
-      });
+      this.tournament.push({ player1, player2, score1: player1.score, score2: player2.score });
       this.players.push(player);
 
       let date = new Date();
@@ -120,32 +112,27 @@ export class Game {
 
       if (this.checkWin()) {
         // @ts-ignore
-        if (this.state == GameState.SHOW_WINNER) break;
+        if (this.state == GameState.SHOW_WINNER)
+          break;
         [player1, player2] = this.players;
       }
 
       for (let user of this.users) {
-        user.socket?.send(
-          JSON.stringify({
-            event: "update",
-            ball: this.ball,
-            players: [player1, player2],
-          }),
-        );
+        user.socket?.send(JSON.stringify({
+          event: "update",
+          ball: this.ball,
+          players: [player1, player2]
+        }));
       }
 
-      await new Promise((res) =>
-        setTimeout(res, 10 - (Date.now() - startTime)),
-      );
+      await new Promise(res => setTimeout(res, 10 - (Date.now() - startTime)));
     }
 
     for (let user of this.users) {
-      user.socket?.send(
-        JSON.stringify({
-          event: "win",
-          player: this.players[0].name,
-        }),
-      );
+      user.socket?.send(JSON.stringify({
+        event: "win",
+        player: this.players[0].name
+      }));
       user.game = undefined;
       user.players = [];
     }
@@ -155,40 +142,12 @@ export class Game {
       entry.socket!.send(JSON.stringify({event: "get_games", games}));
 
     // saveTournament(); -- TODO
-	
-	// await saveTournament.call(this); // mock a la fin du tournois , send to blockchain test
   }
 
   toJSON() {
     return {
       uid: this.uid,
-      name: this.name,
-    };
+      name: this.name
+    }
   }
 }
-
-async function saveTournament(this: Game)
-{
-  const tournamentId = 1;
-  const matchIds = [0];
-  const matchScores = [[5, 3]];
-
-  try {
-    await addTournamentMatches(tournamentId, matchIds, matchScores);
-    console.log("Transaction blockchain envoyée avec succès !");
-  } catch (err) {
-    console.error("Erreur lors de l'envoi du match au smart contract :", err);
-  }
-}
-
-// async function saveTournament(this: Game)
-// {
-// 	const matchIds: number[] = this.tournament.map((_, i) => i);
-// 	const matchScores: number[][] = this.tournament.map(match => [match.score1, match.score2]);
-	
-// 	try {
-// 		await addTournamentMatches(this.tournamentId, matchIds, matchScores);
-// 	} catch (err) {
-// 		console.error("Erreur lors de l'envoi des matchs au smart contract :", err);
-// 	}
-// }

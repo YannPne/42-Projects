@@ -16,18 +16,18 @@ export const pongPage: Page = {
 
   getPage(): string {
     return `
-      <div class="flex flex-col items-center justify-center h-full w-full">
-        <div class="pb-5 w-full flex justify-around">
-          <button id="start" class="p-2 rounded-xl bg-blue-900 hover:bg-blue-950 cursor-pointer">Start game</button>
-          <form class="bg-gray-900 items-center justify-center">
-            <input id="addLocalName" type="text" required placeholder="Local player's name" class="p-2 placeholder-gray-400">
-            <label for="addLocalCheck">Is AI?</label>
-            <input id="addLocalCheck" type="checkbox" required>
-            <button type="button" id="addLocalButton" class="p-2 bg-blue-900 hover:bg-blue-950">Create a new game</button>
-          </form>
-        </div>
-        <canvas id="game" width="1200" height="600" class="w-[90%] aspect-[2/1] bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
+    <div class="flex flex-col items-center justify-center h-full w-full">
+      <div class="pb-5 w-full flex justify-around">
+        <button id="start" class="p-2 rounded-xl bg-blue-900 hover:bg-blue-950 cursor-pointer">Start game</button>
+        <form class="bg-gray-900 items-center justify-center">
+          <input id="addLocalName" type="text" required placeholder="Local player's name" class="p-2 placeholder-gray-400">
+          <label for="addLocalCheck">Is AI?</label>
+          <input id="addLocalCheck" type="checkbox" required>
+          <button type="button" id="addLocalButton" class="p-2 bg-blue-900 hover:bg-blue-950">Create a new game</button>
+        </form>
       </div>
+      <canvas id="game" width="1200" height="600" class="w-[90%] aspect-[2/1] bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
+    </div>
     `;
   },
 
@@ -39,20 +39,13 @@ export const pongPage: Page = {
       return;
     }
 
-    // Header
-    const start = document.querySelector<HTMLButtonElement>("#start")!;
-    const addLocalName = document.querySelector<HTMLInputElement>("#addLocalName")!;
-    const addLocalCheck = document.querySelector<HTMLInputElement>("#addLocalCheck")!;
-    const addLocalButton = document.querySelector<HTMLButtonElement>("#addLocalButton")!;
-    // Game
-    const canvas = document.querySelector<HTMLCanvasElement>("#game")!;
-    const context = canvas.getContext("2d")!;
-
-    start.onclick = () => {
+    document.querySelector<HTMLButtonElement>("#start")!.onclick = () => {
       ws!.send(JSON.stringify({ event: "play" }));
     };
 
-    addLocalButton.onclick = () => {
+    const addLocalName = document.querySelector<HTMLInputElement>("#addLocalName")!;
+    const addLocalCheck = document.querySelector<HTMLInputElement>("#addLocalCheck")!;
+    document.querySelector<HTMLButtonElement>("#addLocalButton")!.onclick = () => {
       if (addLocalName.value.trim() != "") {
         ws!.send(JSON.stringify({ event: "add_local_player", name: addLocalName.value, isAi: addLocalCheck.checked }));
         addLocalName.value = "";
@@ -61,15 +54,19 @@ export const pongPage: Page = {
     };
 
     document.addEventListener("keydown", keydownListener = event => {
-      if (!event.repeat)
-        move(event, false);
+      if (event.repeat)
+        return;
+      move(event, false);
     });
 
     document.addEventListener("keyup", keyupListener = event => {
       move(event, true);
     });
 
-    ws!.addEventListener("message", wsListener = (event) => {
+    const canvas = document.querySelector<HTMLCanvasElement>("#game")!;
+    const context = canvas.getContext("2d")!;
+
+    ws?.addEventListener("message", wsListener = (event) => {
       const message: Event = JSON.parse(event.data);
 
       switch (message.event) {
@@ -140,7 +137,7 @@ function drawBall(context: CanvasRenderingContext2D, ball: Ball) {
   const drawY = Math.round(ball.y + ball.size / 2);
 
   context.beginPath();
-  context.arc(drawX, drawY, ball.size / 2, 0, 2 * Math.PI);
+  context.arc(drawX, drawY, ball.size / 2, 0, Math.PI * 2);
   context.fillStyle = "white";
   context.fill();
   context.closePath();
@@ -154,14 +151,14 @@ function drawScore(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D,
   context.globalAlpha = 1;
 
   context.fillText(player1.name, canvas.width / 4, 20);
-  context.fillText(player2.name, canvas.width / 4 * 3, 20);
+  context.fillText(player2.name, canvas.width * 3 / 4, 20);
 
   context.font = "150px Arial";
   context.textBaseline = "middle";
   context.globalAlpha = 0.4;
 
   context.fillText(player1.score.toString(), canvas.width / 4, canvas.height / 2);
-  context.fillText(player2.score.toString(), canvas.width / 4 * 3, canvas.height / 2);
+  context.fillText(player2.score.toString(), canvas.width * 3 / 4, canvas.height / 2);
 
   context.globalAlpha = 1;
 }
@@ -171,5 +168,7 @@ function drawEndGame(canvas: HTMLCanvasElement, context: CanvasRenderingContext2
   context.fillStyle = "white";
   context.textAlign = "center";
   context.textBaseline = "middle";
-  context.fillText(player + " win", canvas.width / 2, canvas.height / 4);
+
+  const message = player + " win";
+  context.fillText(message, canvas.width / 2, canvas.height / 4);
 }

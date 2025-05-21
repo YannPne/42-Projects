@@ -22,39 +22,14 @@ export default class Player {
     this.isAi = isAi;
   }
 
-  get isAtLeft() {
-    return this.x - this.game.width / 2 < 0;
-  }
-
-  get left() {
-    return this.x;
-  }
-
-  get right() {
-    return this.x + this.width;
-  }
-
-  get top() {
-    return this.y;
-  }
-
-  get bottom() {
-    return this.y + this.height;
-  }
-
-  get centerX() {
-    return this.x + this.width / 2;
-  }
-
-  get centerY() {
-    return this.y + this.height / 2;
-  }
-
   move() {
-    if (this.isAi) this.playAi();
+    if (this.isAi)
+      this.playAi();
 
-    if (this.goUp) this.y -= 5;
-    if (this.goDown) this.y += 5;
+    if (this.goUp)
+      this.y -= 5;
+    if (this.goDown)
+      this.y += 5;
     this.y = Math.min(Math.max(this.y, 0), this.game.height - this.height);
   }
 
@@ -63,17 +38,18 @@ export default class Player {
       this.aiLastCheck = Date.now();
 
       const ball = this.game.ball;
-      if (ball.speedX != 0 && ball.goToLeft == this.isAtLeft) {
-        this.aiTargetY =
-          ((this.isAtLeft ? this.right - ball.left : this.left - ball.right) *
-            ball.speedY) /
-            ball.speedX +
-          ball.centerY;
+      if (ball.speedX != 0 && ball.speedX * (this.x - this.game.width / 2) >= 0) {
+        let ballX = ball.x;
+        if (this.x > this.game.width / 2)
+          ballX += ball.size;
+        const ballY = ball.y + ball.size / 2;
+        this.aiTargetY = (this.x - ballX) * ball.speedY / ball.speedX + ballY;
       }
     }
 
-    this.goUp = this.centerY > this.aiTargetY + 30;
-    this.goDown = this.centerY < this.aiTargetY - 30;
+    const centerY = this.y + this.height / 2;
+    this.goUp = centerY > this.aiTargetY + 30;
+    this.goDown = centerY < this.aiTargetY - 30;
   }
 
   toJSON() {
@@ -83,7 +59,7 @@ export default class Player {
       y: this.y,
       width: this.width,
       height: this.height,
-      score: this.score,
+      score: this.score
     };
   }
 }
