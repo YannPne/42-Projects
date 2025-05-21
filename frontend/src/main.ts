@@ -47,8 +47,9 @@ for (let page of pages) {
   button.className = "flex-1 text-center p-3 bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950 transition-all hover:via-gray-950";
   button.innerHTML = typeof page.navbar == "string" ? page.navbar : page.title;
   button.href = page.url;
-  button.onclick = event => {
+  button.onclick = async event => {
     event.preventDefault();
+    await ws!.send(JSON.stringify({ event: "set_profile", name: null }));
     loadPage(page);
   };
 

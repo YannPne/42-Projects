@@ -9,6 +9,7 @@ export let onlineUsers: User[] = [];
 
 export default function registerWebSocket(socket: WebSocket, req: FastifyRequest) {
   let user: User | undefined;
+  let userProfileId: number;
 
   socket.addEventListener("close", () => {
       onlineUsers.splice(onlineUsers.indexOf(user!), 1);
@@ -17,6 +18,9 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
   socket.addEventListener("message", async (event) => {
     const message = JSON.parse(event.data);
     switch (message.event) {
+      case "set_profile":
+        userProfileId = message.name ? getUserID(message.name) : user!.id;
+        break;
       case "get_games":
         getGames(socket);
         break;
@@ -29,14 +33,17 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
       case "set_friend":
         setFriend(socket, user?.id, message);
         break;
+      case "set_hide_profile":
+        set_hide_profile(user!.id, message.hide);
+        break;
       case "remove_friend":
         removeFriend(socket, user!.id, message.name);
         break;
       case "get_info_profile" :
-        getInfoProfile(socket, user!.id);
+        getInfoProfile(socket, userProfileId || user?.id);
         break;
       case "get_games_history":
-        getGamesHistory(socket, user!.id);
+        getGamesHistory(socket, userProfileId || user?.id);
         break;
       case "add_local_player":
         addLocalPlayer(user!, message);
@@ -46,6 +53,9 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         break;
       case "move":
         move(user!, message);
+        break;
+      case "update_info":
+        updateInfo(socket, user!, message);
         break;
       case "del_account":
         const success = deleteAccount(user!.id);
@@ -64,6 +74,47 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         break;
     }
   });
+}
+
+function set_hide_profile(id_user: number, hide: boolean)
+{
+  sqlite.prepare(`UPDATE users SET hideProfile = ? WHERE id = ?`).run(hide ? 1 : 0, id_user);
+}
+
+function updateInfo(socket: WebSocket, user: User, msg: any)
+{
+  let result;
+  console.log(msg);
+  if (!msg.password)
+  {
+    result = sqlite.prepare(`UPDATE users
+      SET username = ?, displayName = ?, email = ?
+      WHERE id = ?
+      AND NOT EXISTS (
+      SELECT 1 FROM users
+      WHERE (username = ? OR displayName = ?) AND id != ?
+    )`).run(msg.username, msg.displayName, msg.email, user.id, msg.username, msg.displayName, user.id);
+  }
+  else
+  {
+    result = sqlite.prepare(`UPDATE users
+      SET username = ?, displayName = ?, email = ?, password = ?
+      WHERE id = ?
+      AND NOT EXISTS (
+      SELECT 1 FROM users
+      WHERE (username = ? OR displayName = ?) AND id != ?
+      )`).run(msg.username, msg.displayName, msg.email, bcrypt.hashSync(msg.password, 10), user.id, msg.username, msg.displayName, user.id);
+  }
+  
+    
+
+  socket.send(JSON.stringify({ 
+    event: "update_info", 
+    success: result.changes > 0,
+  }));
+
+  if (result.changes > 0)
+    user.name = msg.displayName;
 }
 
 function getStatus(socket: WebSocket, message: any)
@@ -142,16 +193,20 @@ function getFriends(socket: WebSocket, id_user: Number)
 
 function getInfoProfile(socket: WebSocket, id_user: number) 
 {
-  const row: any = sqlite.prepare("SELECT displayName, avatar FROM users WHERE id = ?")
+  const row: any = sqlite.prepare("SELECT * FROM users WHERE id = ?")
     .get(id_user);
 
-  const friends = getFriends(socket, id_user);  
+  const friends = getFriends(socket, id_user); 
 
     socket.send(JSON.stringify({
       event: "get_info_profile",
-      name: row.displayName,
+      name: row.username,
+      displayName: row.displayName,
       avatar: row.avatar,
+      email: row.email,
       friends: friends,
+      status: !!onlineUsers.find(u => u.id == id_user),
+      hideProfile: row.hideProfile,
     }));
 }
 
