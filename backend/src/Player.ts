@@ -13,7 +13,7 @@ export default class Player {
   goDown: boolean = false;
   score: number = 0;
 
-  aiLastCheck: number = Date.now();
+  aiLastCheck: number = Date.now() - 1000;
   aiTargetY: number = 0;
 
   constructor(game: Game, name: string, isAi: boolean) {
@@ -34,16 +34,23 @@ export default class Player {
   }
 
   playAi() {
-    if (Date.now() - this.aiLastCheck >= 1_000) {
+    if (Date.now() - this.aiLastCheck >= 1_000) 
+    {
       this.aiLastCheck = Date.now();
 
       const ball = this.game.ball;
+      
       if (ball.speedX != 0 && ball.speedX * (this.x - this.game.width / 2) >= 0) {
         let ballX = ball.x;
         if (this.x > this.game.width / 2)
           ballX += ball.size;
         const ballY = ball.y + ball.size / 2;
         this.aiTargetY = (this.x - ballX) * ball.speedY / ball.speedX + ballY;
+
+        if (this.aiTargetY < 0)
+          this.aiTargetY = (-this.aiTargetY) * 1.25;
+        else if (this.aiTargetY > 600)
+          this.aiTargetY = 600 - ((this.aiTargetY - 600) * 1.25);
       }
     }
 
