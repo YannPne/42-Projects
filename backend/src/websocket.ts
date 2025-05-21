@@ -2,15 +2,23 @@ import { FastifyRequest } from "fastify";
 import User from "./User";
 import { Game, games, GameState } from "./Game";
 import { sqlite } from ".";
+import { generateRandomSecret, getTotpCode } from "./2fa";
 
 
 export let onlineUsers: User[] = [];
 
 export default function registerWebSocket(socket: WebSocket, req: FastifyRequest) {
-  const row: any = sqlite.prepare("SELECT displayName FROM users WHERE id = ?")
-      .get(req.jwtUserId);
+  const row: any = sqlite.prepare("SELECT username, displayName, secret2fa FROM users WHERE id = ?")
+    .get(req.jwtUserId);
+
+  if (row == undefined) {
+    socket.close();
+    return;
+  }
 
   const user = new User(req.jwtUserId, row.displayName, socket);
+  const username = row.username;
+  let secret2fa: string | undefined = row.secret2fa ?? undefined;
 
   socket.addEventListener("close", () => {
     onlineUsers.splice(onlineUsers.indexOf(user), 1);
@@ -55,6 +63,24 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         if (success)
           socket.close();
         break;
+      case "2fa":
+        if (message.enable) {
+          secret2fa = generateRandomSecret();
+          socket.send(JSON.stringify({ event: "2fa", secret: secret2fa, username }));
+        } else {
+          sqlite.prepare("UPDATE users SET secret2fa = NULL WHERE id = ?")
+            .run(user.id);
+        }
+
+        break;
+      case "2fa_check":
+        if (secret2fa != undefined) {
+          socket.send(JSON.stringify({
+            event: "2fa_check",
+            success: getTotpCode(secret2fa) == message.code
+          }));
+        }
+        break;
     }
   });
 }
@@ -66,7 +92,7 @@ function getStatus(socket: WebSocket, message: any) {
 
   socket.send(JSON.stringify({
     event: "get_status",
-    status: allStatus,
+    status: allStatus
   }));
 }
 
@@ -77,7 +103,7 @@ function deleteAccount(id_user: number): boolean {
 
 function getUserID(name: string) {
   const result: any = sqlite.prepare("SELECT id FROM users WHERE displayName = ?")
-      .get(name);
+    .get(name);
   return result && result.id;
 }
 
@@ -86,11 +112,11 @@ function removeFriend(socket: WebSocket, id_user: number, friend: string) {
   const friendid = getUserID(friend);
 
   const result = sqlite.prepare("DELETE FROM friends WHERE userid = ? AND friendid = ?")
-      .run(id_user, friendid);
+    .run(id_user, friendid);
 
   socket.send(JSON.stringify({
     event: "remove_friend",
-    success: result.changes != 0,
+    success: result.changes != 0
   }));
 }
 
@@ -128,7 +154,7 @@ function getFriends(user: User) {
 
 function getInfoProfile(user: User) {
   const row: any = sqlite.prepare("SELECT displayName, avatar FROM users WHERE id = ?")
-      .get(user.id);
+    .get(user.id);
 
   const friends = getFriends(user);
 
@@ -136,7 +162,7 @@ function getInfoProfile(user: User) {
     event: "get_info_profile",
     name: row.displayName,
     avatar: row.avatar,
-    friends: friends,
+    friends: friends
   }));
 }
 
@@ -163,7 +189,7 @@ export function insertGameHistory(data: {
 }) {
   sqlite.prepare(`INSERT INTO games (name1, name2, score1, score2, date)
                   VALUES (?, ?, ?, ?, ?)`)
-      .run(data.name1, data.name2, data.score1, data.score2, data.date);
+    .run(data.name1, data.name2, data.score1, data.score2, data.date);
 }
 
 function getDisplayName(userId: number): string[] {
@@ -176,7 +202,7 @@ function getDisplayName(userId: number): string[] {
 
 function getGamesHistory(socket: WebSocket, userId: number) {
   const rows = sqlite.prepare("SELECT name2, score1, score2, date FROM games WHERE name1 = ?")
-      .all(getDisplayName(userId));
+    .all(getDisplayName(userId));
 
   socket.send(JSON.stringify({
     event: "get_games_history",

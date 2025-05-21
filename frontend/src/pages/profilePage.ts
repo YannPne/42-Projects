@@ -1,7 +1,8 @@
 import { loadPage, type Page } from "./Page.ts";
-import { awaitWs, closeWs, ws } from "../main.ts";
+import { closeWs, ws } from "../main.ts";
 import { loginPage } from "./loginPage.ts";
 import { sendAndWait } from "../Event.ts";
+import qrcode from "qrcode";
 
 export const profilePage: Page = {
   url: "/profile",
@@ -9,7 +10,7 @@ export const profilePage: Page = {
   navbar: true,
 
   getPage(): string {
-    return /*html*/`
+    return /*html*/ `
       <div class="h-full flex flex-col justify-start items-center">
         <img id="image" alt="avatar" class="w-32 h-32 border-4 border-gray-700 bg-gray-700" />
         <p id="username" class="text-5xl pb-5 font-bold"></p>
@@ -31,7 +32,8 @@ export const profilePage: Page = {
   
             <div class="bg-gray-700 p-6 rounded-xl text-white flex flex-col items-center mt-4 space-y-3">
               <p class="text-3xl pb-2">Manage:</p>
-              <button class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200 w-40">2FA</button>
+              <button id="button2fa" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200 w-40">2FA</button>
+              <canvas id="qrcode_2fa"></canvas>
               <button class="bg-white hover:bg-gray-400 text-black font-bold py-2 px-4 rounded transition duration-200 w-40">Google</button>
               <button id="delete" class="bg-red-600 hover:bg-red-800 text-white font-bold py-2 px-4 rounded transition duration-200 w-40">Delete Account</button>
             </div>
@@ -189,6 +191,13 @@ export const profilePage: Page = {
         document.querySelector<HTMLParagraphElement>("#winrate")!.innerHTML = ~~(winrate / matchCount * 100) + "%";
       }
     });
+
+    document.querySelector<HTMLButtonElement>("#button2fa")!.onclick = async () => {
+      const message = await sendAndWait({event: "2fa", enable: true});
+
+      qrcode.toCanvas(document.querySelector<HTMLCanvasElement>("#qrcode_2fa"),
+        `otpauth://totp/ft_transcendence:${message.username}?secret=${message.secret}&issuer=ft_transcendence`);
+    }
   },
 
   onUnmount() {

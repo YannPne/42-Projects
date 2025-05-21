@@ -14,25 +14,26 @@ dotenv.config();
 export const sqlite = initSqlite("./database.sqlite", { verbose: (msg) => fs.appendFileSync("./log_db.sql", msg + ";\n") });
 
 sqlite.exec(`CREATE TABLE IF NOT EXISTS users (
-    id INT PRIMARY KEY AUTOINCREMENT,
-    username TEXT,
-    displayName TEXT,
-    email TEXT,
-    password TEXT,
-    avatar BLOB
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    username TEXT NOT NULL,
+    displayName TEXT NOT NULL,
+    email TEXT NOT NULL,
+    password TEXT NOT NULL,
+    avatar BLOB DEFAULT NULL,
+    secret2fa TEXT DEFAULT NULL
 )`);
 sqlite.exec(`CREATE TABLE IF NOT EXISTS games (
-    id     INT PRIMARY KEY AUTOINCREMENT,
-    name1  TEXT,
-    name2  TEXT,
-    score1 INT,
-    score2 INT,
-    date DATE
+    id     INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    name1  TEXT NOT NULL,
+    name2  TEXT NOT NULL,
+    score1 INT NOT NULL,
+    score2 INT NOT NULL,
+    date DATE NOT NULL
 )`);
 sqlite.exec(`CREATE TABLE IF NOT EXISTS friends (
-    id       INT PRIMARY KEY AUTOINCREMENT,
-    userid   INT,
-    friendid INT,
+    id       INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    userid   INTEGER NOT NULL,
+    friendid INTEGER NOT NULL,
     UNIQUE (userid, friendid),
     FOREIGN KEY (userid) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (friendid) REFERENCES users (id) ON DELETE CASCADE
@@ -116,11 +117,8 @@ app.post("/api/register", async (request, reply) => {
     return reply.status(400).send("Incomplete request");
 
   const result = sqlite.prepare(`INSERT INTO users (username, displayName, email, password, avatar)
-                                 SELECT ?,
-                                        ?,
-                                        ?,
-                                        ?,
-                                        ? WHERE NOT EXISTS(SELECT 1 FROM users WHERE username = ?)`)
+        SELECT ?, ?, ?, ?, ?
+        WHERE NOT EXISTS(SELECT 1 FROM users WHERE username = ?)`)
     .run(username, displayName, email, bcrypt.hashSync(password, 10), avatar, username);
 
   if (result.changes == 0)

@@ -18,6 +18,8 @@ services:
     volumes: [ ./frontend:/app ]
     ports: [ "8000:8000" ]
     working_dir: /app
+    environment:
+      IS_DOCKER: true
     command: >
       sh -c "npm ci
       && npm run dev"
