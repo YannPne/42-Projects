@@ -94,8 +94,8 @@ function removeFriend(socket: WebSocket, id_user: number, friend: string) {
   }));
 }
 
-function setFriend(socket: WebSocket, id_user: any, friend: any) {
-  const friendid = getUserID(friend.name);
+function setFriend(socket: WebSocket, id_user: any, message: any) {
+  const friendid = getUserID(message.name);
 
   if (!friendid || id_user == friendid) {
     socket.send(JSON.stringify({
@@ -174,10 +174,9 @@ function getDisplayName(userId: number): string[] {
   return row.displayName;
 }
 
-function getGamesHistory(socket: WebSocket, id_user: number) {
-
-  const rows: any[] = sqlite.prepare("SELECT (name2, score1, score2, date) FROM games WHERE name1 = ?")
-      .all(getDisplayName(id_user));
+function getGamesHistory(socket: WebSocket, userId: number) {
+  const rows = sqlite.prepare("SELECT name2, score1, score2, date FROM games WHERE name1 = ?")
+      .all(getDisplayName(userId));
 
   socket.send(JSON.stringify({
     event: "get_games_history",

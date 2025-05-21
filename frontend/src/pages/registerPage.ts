@@ -3,7 +3,7 @@ import { loginPage } from "./loginPage.ts";
 import { loadPage, type Page } from "./Page.ts";
 import { profilePage } from "./profilePage.ts";
 
-export const registerPage: Page = {
+export const registerPage: Page<Page> = {
   url: "/register",
   title: "Register",
   navbar: false,
@@ -47,9 +47,9 @@ export const registerPage: Page = {
     `;
   },
 
-  onMount(requestedPage: Page) {
+  onMount(requestedPage) {
     if (ws != undefined) {
-      loadPage(profilePage);
+      loadPage(requestedPage ?? profilePage);
       return;
     }
 
@@ -80,7 +80,6 @@ export const registerPage: Page = {
         console.error(response.body);
     };
   },
-
 
   onUnmount() {
   }

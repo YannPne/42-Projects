@@ -3,7 +3,7 @@ import { loadPage, type Page } from "./Page.ts";
 import { registerPage } from "./registerPage.ts";
 import { profilePage } from "./profilePage.ts";
 
-export const loginPage: Page = {
+export const loginPage: Page<Page> = {
   url: "/login",
   title: "Login",
   navbar: false,
@@ -26,28 +26,6 @@ export const loginPage: Page = {
               <button class="rounded-2xl bg-gray-900 hover:bg-gray-950 p-2 mt-5 cursor-pointer">Login</button>
             </div>
           </form>
-<div id="g_id_onload"
-     data-client_id="1080588122146-go7c38cforgnq55q4bidatg5dd2jh5qo.apps.googleusercontent.com"
-     data-callback="handleCredentialResponse"
-     data-auto_prompt="false">
-</div>
-
-<div class="g_id_signin"
-     data-type="standard"
-     data-shape="rectangular"
-     data-theme="outline"
-     data-text="signin_with"
-     data-size="large">
-</div>      
-<script>
-  function handleCredentialResponse(response) {
-    // Le JWT (ID token) retourné par Google
-    console.log("Encoded JWT ID token: " + response.credential);
-
-    // Envoyer ce token à votre backend pour vérification
-    // Exemple : fetch("/auth/google", { method: "POST", body: response.credential })
-  }
-</script>
           <div>
             <span>Not have an account? </span>
             <a id="register" href="/register" class="underline">Register</a>
@@ -57,9 +35,9 @@ export const loginPage: Page = {
 	`;
   },
 
-  onMount(requestedPage?: Page) {
+  onMount(requestedPage) {
     if (ws != undefined) {
-      loadPage(profilePage);
+      loadPage(requestedPage ?? profilePage);
       return;
     }
 

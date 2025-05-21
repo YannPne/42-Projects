@@ -10,48 +10,45 @@ export const profilePage: Page = {
 
   getPage(): string {
     return /*html*/`
-    <div class="h-full flex flex-col justify-start items-center">
-    <img id="image" alt="avatar" class="w-32 h-32 border-4 border-gray-700 bg-gray-700" />
+      <div class="h-full flex flex-col justify-start items-center">
+        <img id="image" alt="avatar" class="w-32 h-32 border-4 border-gray-700 bg-gray-700" />
+        <p id="username" class="text-5xl pb-5 font-bold"></p>
+        <p class="text-xl pb-5 text-green-500 font-bold">online</p>
 
-    <p id="username" class="text-5xl pb-5 font-bold"></p>
-    <p class="text-xl pb-5 text-green-500 font-bold">online</p>
-
-    <div class="flex justify-between space-x-8 w-full max-w-7xl px-4 mt-6">
+        <div class="flex justify-between space-x-8 w-full max-w-7xl px-4 mt-6">
     
-    <div class="bg-gray-700 space-y-1 p-4 w-1/3 min-h-[200px] rounded-xl">
-        <ul id="match-history" class="pl-3 text-white">
-          <li class="text-3xl pb-5">Match History:</li>
-        </ul>
-      </div>
+          <div class="bg-gray-700 space-y-1 p-4 w-1/3 min-h-[200px] rounded-xl">
+            <ul id="match-history" class="pl-3 text-white">
+              <li class="text-3xl pb-5">Match History:</li>
+            </ul>
+          </div>
     
-      <div class="flex flex-col space-y-40">
-        <div class="bg-gray-700 p-6 rounded-xl text-white flex flex-col items-center">
-          <p class="text-3xl pb-2">Winrate:</p>
-          <p id="winrate" class="text-4xl font-bold pb-4">50%</p>
-        </div>
+          <div class="flex flex-col space-y-40">
+            <div class="bg-gray-700 p-6 rounded-xl text-white flex flex-col items-center">
+              <p class="text-3xl pb-2">Winrate:</p>
+              <p id="winrate" class="text-4xl font-bold pb-4">50%</p>
+            </div>
+  
+            <div class="bg-gray-700 p-6 rounded-xl text-white flex flex-col items-center mt-4 space-y-3">
+              <p class="text-3xl pb-2">Manage:</p>
+              <button class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200 w-40">2FA</button>
+              <button class="bg-white hover:bg-gray-400 text-black font-bold py-2 px-4 rounded transition duration-200 w-40">Google</button>
+              <button id="delete" class="bg-red-600 hover:bg-red-800 text-white font-bold py-2 px-4 rounded transition duration-200 w-40">Delete Account</button>
+            </div>
+          </div>
 
-        <div class="bg-gray-700 p-6 rounded-xl text-white flex flex-col items-center mt-4 space-y-3">
-          <p class="text-3xl pb-2">Manage:</p>
-          <button class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200 w-40">2FA</button>
-          <button class="bg-white hover:bg-gray-400 text-black font-bold py-2 px-4 rounded transition duration-200 w-40">Google</button>
-          <button id="delete" class="bg-red-600 hover:bg-red-800 text-white font-bold py-2 px-4 rounded transition duration-200 w-40">Delete Account</button>
+          <div class="bg-gray-700 p-4 w-1/3 min-h-[200px] rounded-xl flex flex-col justify-between">
+            <ul id="friends-list" class="pl-3 text-white space-y-1 overflow-y-auto">
+              <li class="text-3xl pb-5">Friend List:</li>
+            </ul>
+  
+            <form id="add_friend" class="flex items-center space-x-2 mt-5 w-full">
+              <input id="username_to_add" placeholder="username" type="text" required class="p-1 bg-gray-600 rounded-lg flex-1" />
+              <button class="rounded-2xl bg-green-600 hover:bg-green-600 p-2 cursor-pointer">ADD</button>
+            </form>
+          </div>
         </div>
       </div>
-
-      <div class="bg-gray-700 p-4 w-1/3 min-h-[200px] rounded-xl flex flex-col justify-between">
-      <ul id="friends-list" class="pl-3 text-white space-y-1 overflow-y-auto">
-        <li class="text-3xl pb-5">Friend List:</li>
-      </ul>
-
-      <form id="add_friend" class="flex items-center space-x-2 mt-5 w-full">
-        <input id="username_to_add" placeholder="username" type="text" required class="p-1 bg-gray-600 rounded-lg flex-1" />
-        <button class="rounded-2xl bg-green-600 hover:bg-green-600 p-2 cursor-pointer">ADD</button>
-      </form>
-    </div>
-
-
-    </div>
-  </div>
     `;
   },
 
@@ -61,8 +58,6 @@ export const profilePage: Page = {
       loadPage(loginPage, profilePage);
       return;
     }
-
-    await awaitWs();
 
     // DELETE ACCOUNT
     document.querySelector<HTMLButtonElement>("#delete")!.onclick = async () => {
@@ -119,9 +114,8 @@ export const profilePage: Page = {
 
     // GET INFO PROFILE
     sendAndWait({ event: "get_info_profile" }).then(async (message) => {
-
       // USERNAME
-      document.querySelector("#username")!.innerHTML = message.name + " Profile";
+      document.querySelector<HTMLParagraphElement>("#username")!.innerText = message.name + " Profile";
 
       // FRIEND LIST
       const friendsList = document.querySelector<HTMLAnchorElement>("#friends-list")!;
@@ -159,28 +153,21 @@ export const profilePage: Page = {
 
       // AVATAR
       const imageElement = document.querySelector<HTMLImageElement>("#image")!;
-
-      if (!message.avatar)
-        imageElement.src = "avatar.webp";
-      else {
-        console.log(typeof message.avatar);
-        const mimeType = (message.avatar as any).type || "image/jpeg";
-        const byteArray = new Uint8Array((message.avatar as any).data);
-        const imageBlob = new Blob([ byteArray ], { type: mimeType });
-        imageElement.src = URL.createObjectURL(imageBlob);
-      }
+      imageElement.src = message.avatar != null
+        ? URL.createObjectURL(new Blob([new Uint8Array(message.avatar.data)]))
+        : "/avatar.webp";
     });
 
     // GAME HISTORY
     sendAndWait({ event: "get_games_history" }).then((message) => {
-      const historyList = document.querySelector("#match-history")!;
+      const historyList = document.querySelector<HTMLUListElement>("#match-history")!;
       const matchCount = message.games!.length;
 
       if (matchCount === 0) {
         const li = document.createElement("li");
         li.textContent = "No matches played yet.";
         historyList.appendChild(li);
-        document.querySelector("#winrate")!.innerHTML = "- %";
+        document.querySelector<HTMLParagraphElement>("#winrate")!.innerHTML = "- %";
         return;
       } else {
         historyList.innerHTML = `<li class="text-3xl pb-5">Match History:</li>`;
@@ -191,6 +178,7 @@ export const profilePage: Page = {
 
           if (game.score1 > game.score2) {
             winrate += 1;
+            // TODO: XSS attack
             li.innerHTML = `${game.date} | <span class="text-green-500">WIN</span> ${game.score1} - ${game.score2} versus ${game.name2}`;
           } else
             li.innerHTML = `${game.date} | <span class="text-red-500">LOSS</span> ${game.score1} - ${game.score2} versus ${game.name2}`;
@@ -198,7 +186,7 @@ export const profilePage: Page = {
           historyList.appendChild(li);
         }
 
-        document.querySelector("#winrate")!.innerHTML = ~~(winrate / matchCount * 100) + "%";
+        document.querySelector<HTMLParagraphElement>("#winrate")!.innerHTML = ~~(winrate / matchCount * 100) + "%";
       }
     });
   },

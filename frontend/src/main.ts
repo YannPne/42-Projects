@@ -8,13 +8,18 @@ export function connectWs() {
       ws.close();
 
     ws = new WebSocket("ws://" + document.location.host + "/api/ws?token=" + sessionStorage.getItem("token"));
-    ws.onopen = _ => console.log("WebSocket connection opened");
-    ws.onclose = _ => console.log("WebSocket connection closed");
+    ws.onopen = () => console.log("WebSocket connection opened");
+    ws.onclose = () => console.log("WebSocket connection closed");
+    ws.onerror = () => {
+      sessionStorage.removeItem("token");
+      ws = undefined;
+      reject("Connection failed");
+    };
 
     ws.addEventListener("open", () => {
       resolve(undefined);
     }, { once: true });
-    setTimeout(() => reject("Timeout"), 8_000);
+    setTimeout(() => reject("Timeout"), 5_000);
   });
 }
 

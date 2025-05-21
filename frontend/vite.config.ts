@@ -11,7 +11,10 @@ export default defineConfig({
       "Cross-Origin-Embedder-Policy": "unsafe-none",
     },
     proxy: {
-      "/api": "http://backend:3000"
+      "/api": {
+        target: "http://localhost:3000",
+        ws: true,
+      }
     }
   }
 });

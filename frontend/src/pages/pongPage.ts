@@ -9,7 +9,7 @@ let wsListener: ((event: MessageEvent) => void) | undefined;
 let keydownListener: ((event: KeyboardEvent) => void) | undefined;
 let keyupListener: ((event: KeyboardEvent) => void) | undefined;
 
-export const pongPage: Page = {
+export const pongPage: Page<any> = {
   url: "/pong",
   title: "Pong",
   navbar: false,
@@ -31,7 +31,7 @@ export const pongPage: Page = {
     `;
   },
 
-  onMount(data?: any) {
+  onMount(data) {
     if (data != undefined) {
       ws!.send(JSON.stringify(data)); // join_game event
     } else {
