@@ -2,7 +2,7 @@ import Ball from "./Ball";
 import Player from "./Player";
 import User from "./User";
 import {insertGameHistory, onlineUsers} from "./websocket";
-import { addTournamentMatches } from "./Contract_function";
+import { addTournamentMatches, getTournamentMatches } from "./Contract_function";
 
 export let games: Game[] = [];
 
@@ -144,6 +144,7 @@ export class Game {
 
     // saveTournament(); -- TODO
     await saveTournament.call(this);
+    await getTournament();
   }
 
   toJSON() {
@@ -165,6 +166,17 @@ async function saveTournament(this: Game)
     console.log("Transaction blockchain envoyée avec succès !");
   } catch (err) {
     console.error("Erreur lors de l'envoi du match au smart contract :", err);
+  }
+}
+async function getTournament()
+{
+  const tournamentId = 1;
+
+  try {
+    await getTournamentMatches(tournamentId);
+    console.log("Transaction get blockchain envoyée avec succès !");
+  } catch (err) {
+    console.error("Erreur lors de la recuperation du match au smart contract :", err);
   }
 }
 
