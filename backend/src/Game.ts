@@ -143,6 +143,7 @@ export class Game {
       entry.socket!.send(JSON.stringify({event: "get_games", games}));
 
     // saveTournament(); -- TODO
+    await saveTournament.call(this);
   }
 
   toJSON() {
@@ -152,3 +153,29 @@ export class Game {
     }
   }
 }
+
+async function saveTournament(this: Game)
+{
+  const tournamentId = 3;
+  const matchIds = [0];
+  const matchScores = [[5, 3]];
+
+  try {
+    await addTournamentMatches(tournamentId, matchIds, matchScores);
+    console.log("Transaction blockchain envoyée avec succès !");
+  } catch (err) {
+    console.error("Erreur lors de l'envoi du match au smart contract :", err);
+  }
+}
+
+// async function saveTournament(this: Game)
+// {
+// 	const matchIds: number[] = this.tournament.map((_, i) => i);
+// 	const matchScores: number[][] = this.tournament.map(match => [match.score1, match.score2]);
+	
+// 	try {
+// 		await addTournamentMatches(this.tournamentId, matchIds, matchScores);
+// 	} catch (err) {
+// 		console.error("Erreur lors de l'envoi des matchs au smart contract :", err);
+// 	}
+// }
