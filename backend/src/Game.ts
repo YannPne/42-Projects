@@ -2,6 +2,7 @@ import Ball from "./Ball";
 import Player from "./Player";
 import User from "./User";
 import {insertGameHistory, onlineUsers} from "./websocket";
+import { addTournamentMatches } from "./Contract_function";
 
 export let games: Game[] = [];
 
