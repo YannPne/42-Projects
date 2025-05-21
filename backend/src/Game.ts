@@ -12,7 +12,7 @@ export enum GameState {
 }
 
 export class Game {
-  readonly winScore: number = 2;
+  readonly winScore: number = 5;
   readonly width: number = 1200;
   readonly height: number = 600;
 

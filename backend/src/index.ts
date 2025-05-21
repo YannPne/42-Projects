@@ -14,7 +14,7 @@ dotenv.config();
 export const sqlite = initSqlite("./database.sqlite", { verbose: (msg) => fs.appendFileSync("./log_db.sql", msg + ";\n") });
 
 sqlite.exec(`CREATE TABLE IF NOT EXISTS users (
-    id INT PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT,
     displayName TEXT,
     email TEXT,
@@ -22,17 +22,17 @@ sqlite.exec(`CREATE TABLE IF NOT EXISTS users (
     avatar BLOB
 )`);
 sqlite.exec(`CREATE TABLE IF NOT EXISTS games (
-    id     INT PRIMARY KEY AUTOINCREMENT,
+    id     INTEGER PRIMARY KEY AUTOINCREMENT,
     name1  TEXT,
     name2  TEXT,
-    score1 INT,
-    score2 INT,
+    score1 INTEGER,
+    score2 INTEGER,
     date DATE
 )`);
 sqlite.exec(`CREATE TABLE IF NOT EXISTS friends (
-    id       INT PRIMARY KEY AUTOINCREMENT,
-    userid   INT,
-    friendid INT,
+    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    userid   INTEGER,
+    friendid INTEGER,
     UNIQUE (userid, friendid),
     FOREIGN KEY (userid) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (friendid) REFERENCES users (id) ON DELETE CASCADE

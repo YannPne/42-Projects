@@ -1,7 +1,6 @@
 import { homePage } from "./homePage.ts";
 import { chooseGamePage } from "./chooseGamePage.ts";
 import { pongPage } from "./pongPage.ts";
-import { babylonPage } from "./babylonPage.ts";
 import { loginPage } from "./loginPage.ts";
 import { registerPage } from "./registerPage.ts";
 import { profilePage } from "./profilePage.ts";
@@ -20,7 +19,6 @@ export const pages: Page[] = [
   homePage,
   chooseGamePage,
   pongPage,
-  babylonPage,
   loginPage,
   registerPage,
   profilePage
