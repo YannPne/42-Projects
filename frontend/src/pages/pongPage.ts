@@ -2,7 +2,8 @@ import { loadPage, type Page } from "./Page.ts";
 import { ws } from "../main.ts";
 import type { Ball, Event, Player } from "../Event.ts";
 import { chooseGamePage } from "./chooseGamePage.ts";
-import { ArcRotateCamera, Color3, Color4, Engine, GlowLayer, HemisphericLight, MeshBuilder, Scene, SpotLight, StandardMaterial, Texture, TransformNode, Vector3 } from "@babylonjs/core";
+import { ArcRotateCamera, Color3, Color4, Engine, HemisphericLight, MeshBuilder, Scene, SpotLight, StandardMaterial, Texture, Vector3} from "@babylonjs/core";
+import * as GUI from "@babylonjs/gui";
 
 // TODO: Leave game
 
@@ -95,8 +96,10 @@ export const pongPage: Page<any> = {
         case "update":
           if (is3d.checked) {
             context3d.ball.position.set(message.ball.x + 25, -message.ball.y - 25, 0);
-            context3d.player2.position.set(message.players[1].x + 10, -message.players[1].y - 100, 0);
-            context3d.player1.position.set(message.players[0].x + 10, -message.players[0].y - 100, 0);
+            context3d.player2.position.set(message.players[1].x + 10, -message.players[1].y - 100, 5);
+            context3d.player1.position.set(message.players[0].x + 10, -message.players[0].y - 100, 5);
+            //drawScore(canvas3d, context2d, message.players[0], message.players[1]);
+            drawScore3D( context3d, message.players[0], message.players[1]);
           } else {
             drawMap(canvas2d, context2d);
             for (let player of message.players)
@@ -107,6 +110,9 @@ export const pongPage: Page<any> = {
 
           break;
         case "win":
+          context3d.textNameP1.text = "";
+          context3d.textNameP2.text = "";
+
           drawEndGame(canvas2d, context2d, message.player);
           break;
       }
@@ -146,14 +152,12 @@ function setup3d(canvas: HTMLCanvasElement) {
   const scene = new Scene(engine);
   scene.clearColor = new Color4(0, 0, 0, 0);
 
-
   // CAMERA //
   const camera = new ArcRotateCamera("Camera", Math.PI / 2, Math.PI / 4, -2000, new Vector3(600, 0, 275), scene);
   camera.attachControl(canvas, true);
 
   // TARGET //
   const targetPoint = new Vector3(600, -300, 25);
-
 
   // LIGHT //
   const lightPosition1 = new Vector3(600, 5000, 0);
@@ -170,7 +174,6 @@ function setup3d(canvas: HTMLCanvasElement) {
   light.diffuse = new Color3(1, 1, 1);
   light.specular = new Color3(1, 1, 1);
   light.groundColor = new Color3(0.2, 0.2, 0.5);
-
 
   const spotLight1 = new SpotLight("spotLight1", lightPosition1, lightDirection1, Math.PI / 4, 2, scene );
   const spotLight2 = new SpotLight("spotLight2", lightPosition2, lightDirection2, Math.PI / 4, 2, scene );
@@ -201,13 +204,13 @@ function setup3d(canvas: HTMLCanvasElement) {
   const ledMaterial = new StandardMaterial("ledMaterial", scene);
   ledMaterial.emissiveColor = new Color3(1, 1, 1);
 
-  const glowLayer = new GlowLayer("glow", scene);
+  //const glowLayer = new GlowLayer("glow", scene);
   //glowLayer.intensity = 0.2;
   //glowLayer.addIncludedOnlyMesh(ledPlane);
 
   const ball = MeshBuilder.CreateSphere("ball", { diameter: 50 }, scene);
-
-  const table = new TransformNode("table", scene);
+  ball.position.set(600, -300, 200);
+  //const table = new TransformNode("table", scene);
 
   const box1 = MeshBuilder.CreateBox("box1", { width: 1280, height: 680, depth: 100 }, scene);
   box1.position.set(600, -300, 75);
@@ -273,9 +276,9 @@ function setup3d(canvas: HTMLCanvasElement) {
   box14.position.set(1215, -300, -25);
   box14.material = materialBlackMat;
 
-
   const plane1 = MeshBuilder.CreatePlane("plane", { width: 500, height: 170 }, scene);
   plane1.position.set(600, -600.5, 225);
+
   plane1.material = material42;
   plane1.rotation.set(-Math.PI / 2, 0 , 0);
 
@@ -292,8 +295,6 @@ function setup3d(canvas: HTMLCanvasElement) {
   const plane4 = MeshBuilder.CreatePlane("plane", { width: 1200, height: 600 }, scene);
   plane4.position.set(600, -300, 24);
   plane4.material = materialBlueMat;
-
-
 
   //pied
   const box16 = MeshBuilder.CreateBox("box1", { width: 60, height: 60, depth: 60 }, scene);
@@ -312,23 +313,60 @@ function setup3d(canvas: HTMLCanvasElement) {
   box19.position.set(1170, -570, 455);
   box19.material = materialBlackMat;
 
-  const player1 = MeshBuilder.CreateBox("player1", {
-    width: 20,
-    height: 200,
-    depth: 50
-  }, scene);
+  const player1 = MeshBuilder.CreateBox("player1", { width: 20, height: 200, depth: 40 }, scene);
+  player1.position.set(600, -300, 200);
+  const player2 = MeshBuilder.CreateBox("player2", { width: 20, height: 200, depth: 40 }, scene);
+  player2.position.set(600, -300, 200);
 
-  const player2 = MeshBuilder.CreateBox("player2", {
-    width: 20,
-    height: 200,
-    depth: 50
-  }, scene);
+  const planeScoreP1 = MeshBuilder.CreatePlane("label", { width: 600, height: 300 }, scene);
+  planeScoreP1.position.set(300, -300, 23);
+  const guiScoreP1 = GUI.AdvancedDynamicTexture.CreateForMesh(planeScoreP1);
+
+  const planeScoreP2 = MeshBuilder.CreatePlane("label", { width: 600, height: 300 }, scene);
+  planeScoreP2.position.set(900, -300, 23);
+  const guiScoreP2 = GUI.AdvancedDynamicTexture.CreateForMesh(planeScoreP2);
+
+  const textScoreP1 = new GUI.TextBlock();
+  textScoreP1.text = "";
+  textScoreP1.color = "white";
+  textScoreP1.fontSize = 600;
+
+  const textScoreP2 = new GUI.TextBlock();
+  textScoreP2.text = "";
+  textScoreP2.color = "white";
+  textScoreP2.fontSize = 600;
+
+  guiScoreP1.addControl(textScoreP1);
+  guiScoreP2.addControl(textScoreP2);
+
+  const planeNameP1 = MeshBuilder.CreatePlane("label", { width: 600, height: 600 }, scene);
+  planeNameP1.position.set(300, -641, 62.5);
+  planeNameP1.rotation.set(-Math.PI / 2,  0,  0);
+  const guiNameP1 = GUI.AdvancedDynamicTexture.CreateForMesh(planeNameP1);
+
+  const planeNameP2 = MeshBuilder.CreatePlane("label", { width: 600, height: 600 }, scene);
+  planeNameP2.position.set(900, -641, 62.5);
+  planeNameP2.rotation.set(-Math.PI / 2,  0,  0);
+  const guiNameP2 = GUI.AdvancedDynamicTexture.CreateForMesh(planeNameP2);
+
+  const textNameP1 = new GUI.TextBlock();
+  textNameP1.text = "";
+  textNameP1.color = "white";
+  textNameP1.fontSize = 150;
+
+  const textNameP2 = new GUI.TextBlock();
+  textNameP2.text = "";
+  textNameP2.color = "white";
+  textNameP2.fontSize = 150;
+
+  guiNameP1.addControl(textNameP1);
+  guiNameP2.addControl(textNameP2);
 
   engine.runRenderLoop(() => {
     scene.render();
   });
 
-  return {ball, player1, player2};
+  return {ball, player1, player2, textNameP1, textNameP2, textScoreP1, textScoreP2};
 }
 
 function drawMap(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
@@ -360,6 +398,35 @@ function drawBall(context: CanvasRenderingContext2D, ball: Ball) {
   context.fillStyle = "white";
   context.fill();
   context.closePath();
+}
+
+let scoreP1 = -1;
+let scoreP2 = -1;
+let nameP1IsSet = false;
+let nameP2IsSet = false;
+
+function  drawScore3D(context: any, player1: Player, player2: Player)
+{
+  if (scoreP1 != player1.score) {
+    scoreP1 = player1.score;
+    context.textScoreP1.text = String(player1.score);
+  }
+
+  if (scoreP2 != player2.score) {
+    scoreP2 = player2.score;
+    context.textScoreP2.text = String(player2.score);
+  }
+
+  if (!nameP1IsSet) {
+    nameP1IsSet = true;
+    context.textNameP1.text = String(player1.name);
+  }
+
+  if (!nameP2IsSet) {
+    nameP2IsSet = true;
+    context.textNameP2.text = String(player2.name);
+  }
+
 }
 
 function drawScore(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, player1: Player, player2: Player) {
