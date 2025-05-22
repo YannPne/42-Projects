@@ -38,6 +38,16 @@ export function closeWs() {
   ws = undefined;
 }
 
+const privacyLink = document.querySelector("#footer-privacy");
+
+if (privacyLink) {
+  privacyLink.addEventListener("click", async event => {
+    event.preventDefault();
+    await ws!.send(JSON.stringify({ event: "set_profile", name: null }));
+    loadPage(findPage("/privacy"));
+  });
+}
+
 const nav = document.querySelector<HTMLElement>("nav")!;
 
 for (let page of pages) {
@@ -49,7 +59,8 @@ for (let page of pages) {
   button.href = page.url;
   button.onclick = async event => {
     event.preventDefault();
-    await ws!.send(JSON.stringify({ event: "set_profile", name: null }));
+    if (ws != undefined && page.title == "Profile")
+      await ws!.send(JSON.stringify({ event: "set_profile", name: null }));
     loadPage(page);
   };
 
