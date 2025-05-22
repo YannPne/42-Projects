@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.30;
 
 contract TournamentScores {
 
@@ -29,9 +29,11 @@ contract TournamentScores {
         admins[_admin] = true;
     }
 
-    function addTournamentMatches(uint256 tournamentId, uint256[] calldata matchIds_, uint256[][] calldata matchScores) external onlyAdmin {
+    function addTournamentMatches(uint256[] calldata matchIds_, uint256[][] calldata matchScores) external onlyAdmin {
         require(matchIds_.length == matchScores.length, "Match IDs and scores length mismatch");
+        uint256 tournamentId = totalTournaments;
         totalTournaments++;
+        
         for (uint256 i = 0; i < matchIds_.length; i++) {
             tournaments[tournamentId][matchIds_[i]].scores = matchScores[i];
             matchIds[tournamentId].push(matchIds_[i]);

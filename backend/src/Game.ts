@@ -5,7 +5,6 @@ import {insertGameHistory, onlineUsers} from "./websocket";
 import { addTournamentMatches, getTotalTournaments, getTournamentMatches } from "./Contract_function";
 
 export let games: Game[] = [];
-
 export enum GameState {
   CREATING, IN_GAME, SHOW_WINNER
 }
@@ -157,7 +156,6 @@ export class Game {
 
 async function saveTournament(this: Game)
 {
-  const tournamentId = await getTotalTournaments();
   const matchIds: number[] = [];
   const matchScores: number[][] = [];
 
@@ -169,7 +167,7 @@ async function saveTournament(this: Game)
   }
 
   try {
-    await addTournamentMatches(tournamentId, matchIds, matchScores);
+    await addTournamentMatches(matchIds, matchScores);
     console.log("Transaction blockchain envoyée avec succès !");
   } catch (err) {
     console.error("Erreur lors de l'envoi du match au smart contract :", err);
@@ -187,15 +185,3 @@ async function getTournament()
     console.error("Erreur lors de la recuperation du match au smart contract :", err);
   }
 }
-
-// async function saveTournament(this: Game)
-// {
-// 	const matchIds: number[] = this.tournament.map((_, i) => i);
-// 	const matchScores: number[][] = this.tournament.map(match => [match.score1, match.score2]);
-	
-// 	try {
-// 		await addTournamentMatches(this.tournamentId, matchIds, matchScores);
-// 	} catch (err) {
-// 		console.error("Erreur lors de l'envoi des matchs au smart contract :", err);
-// 	}
-// }

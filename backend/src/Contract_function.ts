@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import * as dotenv from "dotenv";
 import abi from "./abi/Contract.json";
+import { promises } from "dns";
 
 dotenv.config();
 
@@ -13,14 +14,26 @@ const provider = new ethers.JsonRpcProvider(RPC_URL);
 const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
 const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, wallet);
 
+let txQueue: Promise<void> = Promise.resolve();
+
 export  async function addTournamentMatches(
-  tournamentId: number,
   matchIds: number[],
   matchScores: number[][]
-) {
-  const tx = await contract.addTournamentMatches(tournamentId, matchIds, matchScores);
-  await tx.wait();
-  console.log("Matchs ajoutés avec succès !");
+): Promise<void> 
+{
+  txQueue = txQueue.then(async () => {
+    try {
+      const tx = await contract.addTournamentMatches(matchIds, matchScores);
+      await tx.wait();
+      console.log("Matchs ajoutés avec succès !");
+    } 
+    catch (err)
+    {
+      console.error("Erreur lors de l'envoi du match au smart contract :", err);
+    }
+  });
+
+  return txQueue;
 }
 
 export async function getTournamentMatches(tournamentId: number) {
@@ -38,17 +51,3 @@ export async function getTotalTournaments(): Promise<number> {
   const total = await contract.getTotalTournaments();
   return Number(total);
 }
-
-// model test
-// (async () => {
-//   const tournamentId = 1;
-//   const matchIds = [101, 102];
-//   const matchScores = [
-//     [10, 20],
-//     [15, 25]
-//   ];
-
-//   await addTournamentMatches(tournamentId, matchIds, matchScores);
-//   await getTournamentMatches(tournamentId);
-//   await getMatchScores(tournamentId, 101);
-// })();
