@@ -127,7 +127,15 @@ function getStatus(socket: WebSocket, message: any)
 }
 
 function deleteAccount(id_user: number): boolean {
+  const name: string = getDisplayName(id_user);
+
   const result = sqlite.prepare("DELETE FROM users WHERE id = ?").run(id_user);
+  sqlite.prepare(`UPDATE games
+                  SET
+                    name1 = CASE WHEN name1 = ? THEN ? ELSE name1 END,
+                    name2 = CASE WHEN name2 = ? THEN ? ELSE name2 END
+                  WHERE name1 = ? OR name2 = ?;
+`).run(name, '{Deleted User}', name, '{Deleted User}', name, name);
 
   return result.changes > 0 ? true : false;
 }
@@ -251,7 +259,7 @@ export function insertGameHistory(data: {name1: string, name2: string, score1: n
     .run(data.name1, data.name2, data.score1, data.score2, data.date);
 }
 
-function getDisplayName(userId: number): string[] {
+function getDisplayName(userId: number): string {
   const row: any = sqlite.prepare(`SELECT displayName 
                               FROM users
                               WHERE id = ?`).get(userId);
