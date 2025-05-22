@@ -84,7 +84,6 @@ function set_hide_profile(id_user: number, hide: boolean)
 function updateInfo(socket: WebSocket, user: User, msg: any)
 {
   let result;
-  console.log(msg);
   if (!msg.password)
   {
     result = sqlite.prepare(`UPDATE users

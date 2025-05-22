@@ -43,7 +43,6 @@ const privacyLink = document.querySelector("#footer-privacy");
 if (privacyLink) {
   privacyLink.addEventListener("click", async event => {
     event.preventDefault();
-    await ws!.send(JSON.stringify({ event: "set_profile", name: null }));
     loadPage(findPage("/privacy"));
   });
 }
