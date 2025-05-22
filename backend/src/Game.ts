@@ -2,7 +2,7 @@ import Ball from "./Ball";
 import Player from "./Player";
 import User from "./User";
 import {insertGameHistory, onlineUsers} from "./websocket";
-import { addTournamentMatches, getTournamentMatches } from "./Contract_function";
+import { addTournamentMatches, getTotalTournaments, getTournamentMatches } from "./Contract_function";
 
 export let games: Game[] = [];
 
@@ -157,9 +157,16 @@ export class Game {
 
 async function saveTournament(this: Game)
 {
-  const tournamentId = 3;
-  const matchIds = [0];
-  const matchScores = [[5, 3]];
+  const tournamentId = await getTotalTournaments();
+  const matchIds: number[] = [];
+  const matchScores: number[][] = [];
+
+  for (let i = 0; i < this.tournament.length; i++) {
+    const match = this.tournament[i];
+
+    matchIds.push(i);
+    matchScores.push([match.score1, match.score2]);
+  }
 
   try {
     await addTournamentMatches(tournamentId, matchIds, matchScores);
@@ -168,9 +175,10 @@ async function saveTournament(this: Game)
     console.error("Erreur lors de l'envoi du match au smart contract :", err);
   }
 }
+
 async function getTournament()
 {
-  const tournamentId = 1;
+  const tournamentId = 0;
 
   try {
     await getTournamentMatches(tournamentId);

@@ -34,6 +34,11 @@ export async function getMatchScores(tournamentId: number, matchId: number) {
   console.log(`Scores du match ${matchId}:`, scores.map((s: any) => s.toString()));
 }
 
+export async function getTotalTournaments(): Promise<number> {
+  const total = await contract.getTotalTournaments();
+  return Number(total);
+}
+
 // model test
 // (async () => {
 //   const tournamentId = 1;

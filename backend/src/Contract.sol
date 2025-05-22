@@ -5,6 +5,7 @@ contract TournamentScores {
 
     address public owner;
     mapping(address => bool) public admins;
+    uint256 public totalTournaments;
 
     struct Match {
         uint256[] scores;
@@ -30,6 +31,7 @@ contract TournamentScores {
 
     function addTournamentMatches(uint256 tournamentId, uint256[] calldata matchIds_, uint256[][] calldata matchScores) external onlyAdmin {
         require(matchIds_.length == matchScores.length, "Match IDs and scores length mismatch");
+        totalTournaments++;
         for (uint256 i = 0; i < matchIds_.length; i++) {
             tournaments[tournamentId][matchIds_[i]].scores = matchScores[i];
             matchIds[tournamentId].push(matchIds_[i]);
@@ -49,5 +51,10 @@ contract TournamentScores {
 
     function getMatchScores(uint256 tournamentId, uint256 matchId) external view returns (uint256[] memory) {
         return tournaments[tournamentId][matchId].scores;
+    }
+
+    function getTotalTournaments() external view returns (uint256)
+    {
+        return totalTournaments;
     }
 }
