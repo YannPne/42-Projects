@@ -30,6 +30,9 @@ export type Event =
   | { event: "get_info_profile", name?: string, avatar?: string, friends?: string[]}
   | { event: "remove_friend", name?: string, success?: boolean}
   | { event: "get_status", friends?: string[], status?: boolean[]}
+  | { event: "broadcast_message", content: string}
+  | { event: "swap_blocked", id: number, success?: boolean}
+  | { event: "check_is_blocked", blocked: string, result?: boolean}
 
 
 export function sendAndWait<T extends Event>(data: T, timeout: number = 5_000) {

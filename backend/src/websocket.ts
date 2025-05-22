@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import User from "./User";
 import { Game, games, GameState } from "./Game";
 import { sqlite } from ".";
+import { stringify } from "querystring";
 
 
 export let onlineUsers: User[] = [];
@@ -32,6 +33,15 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
       case "remove_friend":
         removeFriend(socket, user!.id, message.name);
         break;
+      case "broadcast_message":
+          broadcastMessage(socket, message, user!.id);
+          break;
+      case "swap_blocked":
+          swapBlocked(socket, user?.id, message.id);
+          break;
+      case "check_is_blocked":
+          checkIsBlocked(socket, user!.id, message.blocked);
+          break;
       case "get_info_profile" :
         getInfoProfile(socket, user!.id);
         break;
@@ -104,7 +114,6 @@ function getUserID(name: string)
     return result && result.id;
 }
 
-
 function removeFriend(socket: WebSocket, id_user: number, friend: string)
 {
   const friendid = getUserID(friend);
@@ -153,6 +162,150 @@ function getFriends(socket: WebSocket, id_user: Number)
                                       `).all(id_user);
   return rows.map(row => row.displayName);
 }
+
+function broadcastMessage(socket: WebSocket, message: any, id_user: number)
+{
+  let blocked_list: string[];
+  const dm: any = parseMessage(message.content);
+  
+  for (let entry of onlineUsers)
+  {
+    blocked_list = getBlocked(entry.id);
+    if (dm.is_dm == true)
+    {
+        if (entry.name == dm.user && !blocked_list.includes(getDisplayName(id_user)) && (id_user != entry.id))
+          entry.socket!.send(JSON.stringify({
+            event: "broadcast_message",
+            sender: getDisplayName(id_user),
+            senderid: id_user,
+            content: dm.content,
+            is_blocked: false,
+            is_dm: true
+          }));
+        if (entry.name == dm.user && (id_user != entry.id))
+          entry.socket!.send(JSON.stringify({
+            event: "broadcast_message",
+            sender: getDisplayName(id_user),
+            senderid: id_user,
+            content: dm.content,
+            is_blocked: true,
+            is_dm: true
+        }));
+    }
+    else if (dm.is_dm == false)
+    {
+      if (!blocked_list.includes(getDisplayName(id_user)) && (id_user !== entry.id))
+        entry.socket!.send(JSON.stringify({
+          event: "broadcast_message",
+          sender: getDisplayName(id_user),
+          senderid: id_user,
+          content: message.content,
+          is_blocked: false,
+          is_dm: false
+      }));
+
+      if (blocked_list.includes(getDisplayName(id_user)) && (id_user !== entry.id))
+        entry.socket!.send(JSON.stringify({
+          event: "broadcast_message",
+          sender: getDisplayName(id_user),
+          senderid: id_user,
+          content: "blocked message",
+          is_blocked: true,
+          is_dm: false
+      }));
+    }
+  }
+}
+
+function parseMessage(message: string)
+{
+  if (!message.startsWith('#'))
+    return { user: "", content: "", is_dm: false };
+
+  let i = 1;
+  let tempname = "";
+
+  while (i < message.length && message[i] !== ' ')
+  {
+    tempname += message[i];
+    i++;
+  }
+
+  if (i >= message.length)
+    return { user: "", content: "", is_dm: false };
+
+  i++;
+
+  let tempcontent = message.slice(i);
+
+  return { user: tempname, content: tempcontent , is_dm: true };
+}
+
+//block
+function swapBlocked(socket: WebSocket, id_user: any, blockedid: any) {
+  const blocked_list: any[] = getBlocked(id_user);
+
+  if (!blockedid || id_user == blockedid) {
+    socket.send(JSON.stringify({
+      event: "swap_blocked",
+      success: false
+    }));
+    return;
+  }
+
+  const isBlocked = blocked_list.includes(getDisplayName(blockedid));
+
+  let result;
+
+  if (!isBlocked) {
+    result = sqlite.prepare(`
+      INSERT INTO blocked (userid, blockedid)
+      VALUES (?, ?)
+      ON CONFLICT(userid, blockedid) 
+      DO NOTHING
+    `).run(id_user, blockedid);
+  } 
+  else 
+  {
+    result = sqlite.prepare("DELETE FROM blocked WHERE userid = ? AND blockedid = ?")
+      .run(id_user, blockedid);
+  }
+
+  socket.send(JSON.stringify({
+    event: "swap_blocked",
+    success: result.changes != 0
+  }));
+}
+
+function checkIsBlocked(socket: WebSocket, id_user: number, blocked: string)
+{
+  if (getDisplayName(id_user) != blocked)
+  {
+    const blocked_list: string[] = getBlocked(id_user);
+
+    if (blocked_list.includes(blocked))
+      socket.send(JSON.stringify({
+        event: "check_is_blocked",
+        result: true
+      }));
+  }
+  socket.send(JSON.stringify({
+    event: "check_is_blocked",
+    result: false
+  }));
+}
+
+function getBlocked(id_user: Number) 
+{
+  const rows: any[] = sqlite.prepare(`SELECT u.displayName
+                                      FROM blocked b
+                                      JOIN users u ON b.blockedid = u.id
+                                      WHERE b.userid = ?;
+                                      `).all(id_user);
+  return rows.map(row => row.displayName);
+
+}
+
 
 function getInfoProfile(socket: WebSocket, id_user: number) 
 {
@@ -211,7 +364,7 @@ export function insertGameHistory(data: {name1: string, name2: string, score1: n
     .run(data.name1, data.name2, data.score1, data.score2, data.date);
 }
 
-function getDisplayName(userId: number): string[] {
+function getDisplayName(userId: number): string {
   const row: any = sqlite.prepare(`SELECT displayName 
                               FROM users
                               WHERE id = ?`).get(userId);

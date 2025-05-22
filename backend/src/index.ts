@@ -20,6 +20,7 @@ sqlite.exec("CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY AUTOINCREM
 
 sqlite.exec("CREATE TABLE IF NOT EXISTS friends (id INTEGER PRIMARY KEY AUTOINCREMENT, userid INTEGER, friendid INTEGER, UNIQUE(userid, friendid))");
 
+sqlite.exec("CREATE TABLE IF NOT EXISTS blocked (id INTEGER PRIMARY KEY AUTOINCREMENT, userid INTEGER, blockedid INTEGER, UNIQUE(userid, blockedid))");
 
 function log(msg) {
   fs.appendFileSync("./log_db.sql", msg + "\n");
