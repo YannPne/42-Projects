@@ -32,7 +32,7 @@ export type Event =
   | { event: "get_status", friends?: string[], status?: boolean[]}
   | { event: "broadcast_message", content: string}
   | { event: "swap_blocked", id: number, success?: boolean}
-  | { event: "check_is_blocked", blocked: string, result?: boolean}
+  | { event: "getInfoDm", other_user: string, blocked?: boolean, id?: any}
 
 
 export function sendAndWait<T extends Event>(data: T, timeout: number = 5_000) {

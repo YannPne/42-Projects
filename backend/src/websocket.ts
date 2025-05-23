@@ -39,8 +39,8 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
       case "swap_blocked":
           swapBlocked(socket, user?.id, message.id);
           break;
-      case "check_is_blocked":
-          checkIsBlocked(socket, user!.id, message.blocked);
+      case "getInfoDm":
+          getInfoDm(socket, user!.id, message.other_user);
           break;
       case "get_info_profile" :
         getInfoProfile(socket, user!.id);
@@ -277,21 +277,27 @@ function swapBlocked(socket: WebSocket, id_user: any, blockedid: any) {
   }));
 }
 
-function checkIsBlocked(socket: WebSocket, id_user: number, blocked: string)
+function getInfoDm(socket: WebSocket, id_user: number, other_user: string)
 {
-  if (getDisplayName(id_user) != blocked)
+  if (getDisplayName(id_user) != other_user)
   {
+    console.log("-------");
+    console.log(other_user + "'s id is " + getUserID(other_user));
+    console.log("-------");
+
     const blocked_list: string[] = getBlocked(id_user);
 
-    if (blocked_list.includes(blocked))
+    if (blocked_list.includes(other_user))
       socket.send(JSON.stringify({
-        event: "check_is_blocked",
-        result: true
+        event: "getInfoDm",
+        blocked: true,
+        id: getUserID(other_user)
       }));
   }
   socket.send(JSON.stringify({
-    event: "check_is_blocked",
-    result: false
+    event: "getInfoDm",
+    blocked: false,
+    id: getUserID(other_user)
   }));
 }
 
