@@ -49,7 +49,6 @@ export const chatPage: Page = {
       const data = JSON.parse(event.data);
       if (data.event === "broadcast_message") {
         let dm_html: [string, string, string];
-
         if (data.is_dm)
           dm_html = ["bg-pink-800", "text-purple-300", " whispered: "];
         else
@@ -80,11 +79,11 @@ export const chatPage: Page = {
         e.preventDefault();
         parseMessage(input.value).then(dm => {
         const value = input.value.trim();
-        console.log(dm.is_dm);
         if (!value) return;
         
         const MyMessage = document.createElement('div');
-        console.log(dm.is_dm);
+        if (dm.is_me || !dm.is_exist)
+          dm.is_dm = false;
         if (dm.is_dm == false)
         {
           MyMessage.textContent = value;
@@ -92,7 +91,6 @@ export const chatPage: Page = {
         }
         else if (dm.is_dm == true)
         {
-          console.log("sending dm");
           MyMessage.className = 'text-white bg-pink-800 p-2 rounded w-fit self-end text-right';
           const mySpan = document.createElement('span');
           mySpan.textContent = dm.name;
@@ -128,8 +126,6 @@ function toggleUserMenu(target: HTMLElement, userid: number, username: string) {
   menu.className = 'user-menu absolute bg-gray-800 text-white border border-gray-600 rounded shadow-lg p-2 flex flex-col z-10';
 
   sendAndWait({ event: "getInfoDm", other_user: username}).then(blocked_message => {
-    console.log(blocked_message.blocked);
-
     let block_unblock: string;
 
     if (blocked_message.blocked === true)
@@ -147,7 +143,10 @@ function toggleUserMenu(target: HTMLElement, userid: number, username: string) {
       btn.addEventListener('click', () => {
 
         if (action === 'Profile')
+        {
           loadPage(profilePage);
+          menu.remove();
+        }
 
         if (action === 'Block')
         {
@@ -155,12 +154,34 @@ function toggleUserMenu(target: HTMLElement, userid: number, username: string) {
             if (message.success === false)
               alert("Couldn't " + block_unblock + " the user " + username + ".");
           });
+          menu.remove();
         }
 
-        menu.remove();
+        if (action === 'Invite')
+        {
+          btn.style.display = 'none';
+
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.placeholder = `Type the game name`;
+          input.className = 'p-1 rounded text-gray-200 ml-1';
+    
+          const sendBtn = document.createElement('button');
+          sendBtn.textContent = 'Send';
+          sendBtn.className = 'ml-2 px-2 py-1 bg-blue-600 rounded hover:bg-blue-700 text-white';
+    
+          btn.parentNode?.insertBefore(input, btn.nextSibling);
+          btn.parentNode?.insertBefore(sendBtn, input.nextSibling);
+    
+          sendBtn.addEventListener('click', () => {
+            input.remove();
+            sendBtn.remove();
+            btn.style.display = '';
+          });
+        }
       });
       menu.appendChild(btn);
-  });
+    });
   });
 
   const rect = target.getBoundingClientRect();
@@ -180,10 +201,10 @@ function toggleUserMenu(target: HTMLElement, userid: number, username: string) {
   }, 0);
 }
 
-function parseMessage(message: string): Promise<{ name: string, content: string, is_dm: boolean, id: number }>
+function parseMessage(message: string): Promise<{ name: string, content: string, is_dm: boolean, id: number, is_me: any, is_exist: any}>
 {
   if (!message.startsWith('#')) {
-    return Promise.resolve({ name: "", content: "", is_dm: false, id: 0});
+    return Promise.resolve({ name: "", content: "", is_dm: false, id: 0, is_me: false, is_exist: true});
   }
 
   let i = 1;
@@ -195,7 +216,7 @@ function parseMessage(message: string): Promise<{ name: string, content: string,
   }
 
   if (i >= message.length) {
-    return Promise.resolve({ name: "", content: "", is_dm: false, id: 0});
+    return Promise.resolve({ name: "", content: "", is_dm: false, id: 0, is_me: false, is_exist: true});
   }
 
   i++;
@@ -206,6 +227,8 @@ function parseMessage(message: string): Promise<{ name: string, content: string,
       name: tempname,
       content: tempcontent,
       is_dm: true,
-      id: info_message.id
+      id: info_message.id,
+      is_me: info_message.is_me,
+      is_exist: info_message.is_exist
     }));
 }

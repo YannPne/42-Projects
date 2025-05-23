@@ -166,8 +166,8 @@ function getFriends(socket: WebSocket, id_user: Number)
 function broadcastMessage(socket: WebSocket, message: any, id_user: number)
 {
   let blocked_list: string[];
-  const dm: any = parseMessage(message.content);
-  
+  const dm: any = parseMessage(message.content, id_user);
+
   for (let entry of onlineUsers)
   {
     blocked_list = getBlocked(entry.id);
@@ -217,7 +217,7 @@ function broadcastMessage(socket: WebSocket, message: any, id_user: number)
   }
 }
 
-function parseMessage(message: string)
+function parseMessage(message: string, id_user: number)
 {
   if (!message.startsWith('#'))
     return { user: "", content: "", is_dm: false };
@@ -235,6 +235,9 @@ function parseMessage(message: string)
     return { user: "", content: "", is_dm: false };
 
   i++;
+
+  if (getUserID(tempname) == undefined || getUserID(tempname) == id_user)
+    return { user: "", content: "", is_dm: false };
 
   let tempcontent = message.slice(i);
 
@@ -279,25 +282,33 @@ function swapBlocked(socket: WebSocket, id_user: any, blockedid: any) {
 
 function getInfoDm(socket: WebSocket, id_user: number, other_user: string)
 {
+  let me = false;
+  let exist = true;
+  if (other_user == getDisplayName(id_user))
+    me = true;
+
+  if (getUserID(other_user) == undefined)
+    exist = false;
+
   if (getDisplayName(id_user) != other_user)
   {
-    console.log("-------");
-    console.log(other_user + "'s id is " + getUserID(other_user));
-    console.log("-------");
-
     const blocked_list: string[] = getBlocked(id_user);
 
     if (blocked_list.includes(other_user))
       socket.send(JSON.stringify({
         event: "getInfoDm",
         blocked: true,
-        id: getUserID(other_user)
+        id: getUserID(other_user),
+        is_me: me,
+        is_exist: exist
       }));
   }
   socket.send(JSON.stringify({
     event: "getInfoDm",
     blocked: false,
-    id: getUserID(other_user)
+    id: getUserID(other_user),
+    is_me: me,
+    is_exist: exist
   }));
 }
 
