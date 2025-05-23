@@ -28,14 +28,18 @@ export type Event =
   | { event: "set_friend", name: string, success?: boolean}
   | { event: "del_account", success?: boolean}
   | { event: "get_games_history", score1?: number[], score2?: number[], name1?: string, name2?: string[], date?: string[]}
-  | { event: "get_info_profile", name?: string, profileUsername?: string, mainProfile?: boolean, displayName?: string, avatar?: string, email?: string, friends?: string[], status?: boolean, hideProfile?: boolean}
+  | { event: "get_info_profile", name?: string, profileUsername?: string, mainProfile?: boolean, displayName?: string, avatar?: { type: "Buffer", data: number[] } | null, email?: string, friends?: string[], status?: boolean, hideProfile?: boolean}
   | { event: "remove_friend", name?: string, success?: boolean}
   | { event: "get_status", friends?: string[], status?: boolean[]}
   | { event: "set_hide_profile", hide?: boolean}
-
+  | { event: "2fa", enable?: boolean, secret?: string, username?: string }
+  | { event: "2fa_check", code?: string, success?: boolean }
 
 export function sendAndWait<T extends Event>(data: T, timeout: number = 5_000) {
-  ws?.send(JSON.stringify(data));
+  if (ws == undefined)
+    throw new Error("WebSocket not connected");
+
+  ws.send(JSON.stringify(data));
 
   return new Promise<Event & T>((resolve, reject) => {
     const listener = (event: MessageEvent) => {

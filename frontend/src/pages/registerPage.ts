@@ -1,11 +1,10 @@
-import { sendAndWait } from "../Event.ts";
 import { connectWs, ws } from "../main.ts";
 import { loginPage } from "./loginPage.ts";
 import { loadPage, type Page } from "./Page.ts";
 import { privacyPage } from "./privacyPage.ts";
 import { profilePage } from "./profilePage.ts";
 
-export const registerPage: Page = {
+export const registerPage: Page<Page> = {
   url: "/register",
   title: "Register",
   navbar: false,
@@ -15,26 +14,26 @@ export const registerPage: Page = {
       <div class="h-full flex flex-col items-center justify-center">
         <div class="bg-gray-700 flex flex-col items-center justify-center p-5 rounded-4xl">
           <h2 class="text-2xl font-bold">Register</h2>
-          <form id="register" class="flex flex-col mt-5 mb-5 space-y-2">
+          <form id="register" enctype="multipart/form-data" class="flex flex-col mt-5 mb-5 space-y-2">
             <label>
               <p>Username:</p>
-              <input id="username" type="text" required class="p-1 bg-gray-600 rounded-lg w-full" />
+              <input name="username" type="text" required class="p-1 bg-gray-600 rounded-lg w-full" />
             </label>
             <label>
               <p>Display name:</p>
-              <input id="displayName" type="text" required class="p-1 bg-gray-600 rounded-lg w-full" />
+              <input name="displayName" type="text" required class="p-1 bg-gray-600 rounded-lg w-full" />
             </label>
             <label>
               <p>Password:</p>
-              <input id="password" type="password" required class="p-1 bg-gray-600 rounded-lg w-full" />
+              <input name="password" type="password" required class="p-1 bg-gray-600 rounded-lg w-full" />
             </label>
             <label>
               <p>Email:</p>
-              <input id="email" type="email" required class="p-1 bg-gray-600 rounded-lg w-full" />
+              <input name="email" type="email" required class="p-1 bg-gray-600 rounded-lg w-full" />
             </label>
             <label>
               <p>Avatar:</p>
-              <input id="avatar" type="file" accept="image/*" class="border rounded-lg cursor-pointer text-gray-400 bg-gray-700 border-gray-600" />
+              <input name="avatar" type="file" accept="image/*" class="border rounded-lg cursor-pointer text-gray-400 bg-gray-700 border-gray-600" />
             </label>
             <label class="flex items-center gap-2 text-sm mt-4">
               <input id="checkPrivacy" type="checkbox" required class="accent-gray-700">
@@ -57,18 +56,13 @@ export const registerPage: Page = {
     `;
   },
 
-  onMount(requestedPage: Page) {
+  onMount(requestedPage) {
     if (ws != undefined) {
-      loadPage(profilePage);
+      loadPage(requestedPage ?? profilePage);
       return;
     }
 
-    const username = document.querySelector<HTMLInputElement>("#username")!;
-    const password = document.querySelector<HTMLInputElement>("#password")!;
-    const email = document.querySelector<HTMLInputElement>("#email")!;
-    const displayName = document.querySelector<HTMLInputElement>("#displayName")!;
-    const avatar = document.querySelector<HTMLInputElement>("#avatar")!;
-    const registerButton = document.querySelector<HTMLFormElement>("#register")!;
+    const registerForm = document.querySelector<HTMLFormElement>("#register")!;
     const loginLink = document.querySelector<HTMLAnchorElement>("#login")!;
     const checkPrivacy = document.querySelector<HTMLInputElement>("#checkPrivacy");
     const privacyLink = document.querySelector("#linkPrivacy");
@@ -85,7 +79,7 @@ if (privacyLink) {
       loadPage(loginPage, requestedPage);
     };
 
-    registerButton.onsubmit = async (event) => {
+    registerForm.onsubmit = async (event) => {
       event.preventDefault();
 
       if (!checkPrivacy?.checked)
@@ -93,40 +87,24 @@ if (privacyLink) {
         alert("You must agree to the Privacy Policy.");
         return;
       }
-
-      if (avatar.files && avatar.files.length != 0 && !avatar.files[0].type.startsWith("image/")) {
-        alert("Please select a valid image.");
-        return;
-      }
-
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        await connectWs();
-      }
-
-      const message = await sendAndWait({
-        event: "register",
-        username: username.value,
-        displayName: displayName.value,
-        password: password.value,
-        email: email.value,
-      });
-
-      if (message.success === false)
-        return;
-
-      const formData = new FormData();
-      if (avatar.files && avatar.files?.length > 0)
-        formData.append("avatar", avatar.files[0]);
-      formData.append("username", username.value);
-      await fetch("http://localhost:3000/upload/avatar", {
+      
+      const formData = new FormData(registerForm);
+      const response = await fetch("http://" + document.location.host + "/api/register", {
         method: "POST",
         body: formData
       });
 
-      loadPage(requestedPage ?? profilePage);
+
+      if (response.status == 200) {
+        sessionStorage.setItem("token", await response.text());
+        await connectWs();
+        loadPage(requestedPage ?? profilePage);
+      } else if (response.status == 409)
+        alert("Username already exists");
+      else
+        console.error(response.body);
     };
   },
-
 
   onUnmount() {
   }
