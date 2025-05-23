@@ -62,6 +62,9 @@ for (let page of pages) {
   nav.appendChild(button);
 }
 
-if (sessionStorage.getItem("token") != null)
-  await connectWs();
+if (sessionStorage.getItem("token") != null) {
+  try {
+    await connectWs();
+  } catch (e) {}
+}
 loadPage(findPage(window.location.pathname));
