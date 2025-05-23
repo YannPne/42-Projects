@@ -1,8 +1,8 @@
 import { type Page } from "./Page.ts";
 
 
-export const privacyPolicyPage: Page = {
-  url: "/privacyPolicy",
+export const privacyPage: Page = {
+  url: "/privacy",
   title: "privacyPolicy",
   navbar: false,
 

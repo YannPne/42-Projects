@@ -2,7 +2,7 @@ import { sendAndWait } from "../Event.ts";
 import { connectWs, ws } from "../main.ts";
 import { loginPage } from "./loginPage.ts";
 import { loadPage, type Page } from "./Page.ts";
-import { privacyPolicyPage } from "./privacyPolicyPage.ts";
+import { privacyPage } from "./privacyPage.ts";
 import { profilePage } from "./profilePage.ts";
 
 export const registerPage: Page = {
@@ -36,6 +36,13 @@ export const registerPage: Page = {
               <p>Avatar:</p>
               <input id="avatar" type="file" accept="image/*" class="border rounded-lg cursor-pointer text-gray-400 bg-gray-700 border-gray-600" />
             </label>
+            <label class="flex items-center gap-2 text-sm mt-4">
+              <input id="checkPrivacy" type="checkbox" required class="accent-gray-700">
+              <span>
+                I have read and agree to the
+                <a id="linkPrivacy" href="/privacy/" target="_blank" class="underline hover:text-white">Privacy Policy</a>.
+              </span>
+            </label>
             <div class="flex justify-center">
               <button class="rounded-2xl bg-gray-900 hover:bg-gray-950 p-2 mt-5 cursor-pointer">Register</button>
             </div>
@@ -45,13 +52,6 @@ export const registerPage: Page = {
             <span>Already register? </span>
             <a id="login" href="/login" class="underline">Login</a>
           </div>
-          <label class="flex items-center gap-2 text-sm mt-4">
-              <input id="checkPrivacy" type="checkbox" required name="privacy-consent" class="accent-gray-700">
-              <span>
-                I have read and agree to the
-                <a id="linkPrivacy" href="/privacy/" target="_blank" class="underline hover:text-white">Privacy Policy</a>.
-              </span>
-            </label>
         </div>
       </div>
     `;
@@ -76,7 +76,7 @@ export const registerPage: Page = {
 if (privacyLink) {
   privacyLink.addEventListener("click", async event => {
     event.preventDefault();
-    loadPage(privacyPolicyPage);
+    loadPage(privacyPage);
   });
 }
 

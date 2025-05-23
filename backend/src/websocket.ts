@@ -18,9 +18,6 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
   socket.addEventListener("message", async (event) => {
     const message = JSON.parse(event.data);
     switch (message.event) {
-      case "set_profile":
-        userProfileId = message.name ? getUserID(message.name) : user!.id;
-        break;
       case "get_games":
         getGames(socket);
         break;
@@ -40,10 +37,12 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         removeFriend(socket, user!.id, message.name);
         break;
       case "get_info_profile" :
-        getInfoProfile(socket, userProfileId || user?.id);
+        let userToGet = getUserID(message.profileUsername);
+        userToGet = userToGet ? userToGet : user?.id;
+        getInfoProfile(socket, userToGet, userToGet == user?.id);
         break;
       case "get_games_history":
-        getGamesHistory(socket, userProfileId || user?.id);
+        getGamesHistory(socket, getUserID(message.name) || user?.id);
         break;
       case "add_local_player":
         addLocalPlayer(user!, message);
@@ -198,7 +197,7 @@ function getFriends(socket: WebSocket, id_user: Number)
   return rows.map(row => row.displayName);
 }
 
-function getInfoProfile(socket: WebSocket, id_user: number) 
+function getInfoProfile(socket: WebSocket, id_user: number, mainProfile: boolean) 
 {
   const row: any = sqlite.prepare("SELECT * FROM users WHERE id = ?")
     .get(id_user);
@@ -212,6 +211,7 @@ function getInfoProfile(socket: WebSocket, id_user: number)
       avatar: row.avatar,
       email: row.email,
       friends: friends,
+      mainProfile: mainProfile,
       status: !!onlineUsers.find(u => u.id == id_user),
       hideProfile: row.hideProfile,
     }));

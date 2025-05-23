@@ -5,7 +5,7 @@ import { babylonPage } from "./babylonPage.ts";
 import { loginPage } from "./loginPage.ts";
 import { registerPage } from "./registerPage.ts";
 import { profilePage } from "./profilePage.ts";
-import { privacyPolicyPage } from "./privacyPolicyPage.ts";
+import { privacyPage } from "./privacyPage.ts";
 
 
 export type Page = {
@@ -25,7 +25,7 @@ export const pages: Page[] = [
   loginPage,
   registerPage,
   profilePage,
-  privacyPolicyPage,
+  privacyPage,
 ];
 
 let currentPage: Page | undefined;

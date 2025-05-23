@@ -52,7 +52,7 @@ export const profilePage: Page = {
         </form>
       </div>
 
-      <div id="edit-profile-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+      <div id="edit-profile-modal" class="fixed inset-0 bg-black/50 items-center justify-center hidden">
         <div class="bg-gray-800 rounded-lg p-6 w-96">
           <h2 class="text-white text-xl mb-4">Edit informations</h2>
           <form id="edit-profile-form" class="flex flex-col space-y-4">
@@ -79,7 +79,7 @@ export const profilePage: Page = {
   },
 
 
-  async onMount(requestedPage: string) {
+  async onMount(profileUsername: string) {
     if (ws == undefined) {
       loadPage(loginPage, profilePage);
       return;
@@ -87,7 +87,6 @@ export const profilePage: Page = {
 
     await awaitWs();
 
-    let mainProfile: string = requestedPage;
 
     // BUTTON HIDE
     const btn_hide = document.querySelector<HTMLElement>("#btn_hide")!;
@@ -201,7 +200,6 @@ export const profilePage: Page = {
       if (username.value.trim() == "")
         return;
 
-
       sendAndWait({ event: "set_friend", name: username.value.trim()}).then(message => {
         if (message.success)
           loadPage(profilePage);
@@ -231,11 +229,8 @@ export const profilePage: Page = {
 
     
     // GET INFO PROFILE
-    sendAndWait({event: "get_info_profile"}).then( async (message: any) => {
-
-      if (mainProfile == undefined)
-        mainProfile = message.name;
-      
+    sendAndWait({event: "get_info_profile", profileUsername}).then( async (message: any) => {
+ 
       // username
       document.querySelector("#username")!.innerHTML = message.displayName + " Profile";
 
@@ -298,11 +293,11 @@ export const profilePage: Page = {
 
           const friendLink = li.querySelector<HTMLAnchorElement>("#friend-link")!;
           friendLink.innerText = friend;
-          friendLink.onclick = () => {
+          friendLink.onclick = (e) => {
+            e.preventDefault();
+            
             const friendName = friendLink.dataset.friend!;
-          
-            ws!.send(JSON.stringify({ event: "set_profile", name: friendName }));
-            loadPage(profilePage, mainProfile);
+            loadPage(profilePage, friendName);
           };  
         }
       } 
@@ -320,8 +315,7 @@ export const profilePage: Page = {
         const imageUrl = URL.createObjectURL(imageBlob);
         imageElement.src = imageUrl;
       }
-
-      hideprofile(message.name == mainProfile, message.hideProfile);
+      hideprofile(message.mainProfile, message.hideProfile);
     });
 
     // GAME HISTORY
