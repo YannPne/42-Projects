@@ -40,7 +40,7 @@ export class Game {
 
   addUser(user: User) {
     if (this.state == GameState.CREATING) {
-      const player = new Player(this, user.name, false);
+      const player = new Player(this, user.displayName, false);
       this.players.push(player);
       user.players.push(player);
     }

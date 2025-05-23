@@ -22,7 +22,7 @@ export const pongPage: Page<any> = {
           <form id="addLocalForm" class="bg-gray-900 items-center justify-center">
             <input id="addLocalName" type="text" required placeholder="Local player's name" class="p-2 placeholder-gray-400">
             <label for="addLocalCheck">Is AI?</label>
-            <input id="addLocalCheck" type="checkbox" required>
+            <input id="addLocalCheck" type="checkbox">
             <button class="p-2 bg-blue-900 hover:bg-blue-950">Add local player</button>
           </form>
         </div>

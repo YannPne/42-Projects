@@ -16,15 +16,14 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
     return;
   }
 
-  const user = new User(req.jwtUserId, row.displayName, socket);
-  const username = row.username;
+  const user = new User(req.jwtUserId, row.username, row.displayName, socket);
   let secret2fa: string | undefined = row.secret2fa ?? undefined;
 
   socket.addEventListener("close", () => {
     onlineUsers.splice(onlineUsers.indexOf(user), 1);
   });
 
-  socket.addEventListener("message", event => {
+  socket.addEventListener("message", async (event) => {
     const message = JSON.parse(event.data);
     switch (message.event) {
       case "get_games":
@@ -64,22 +63,12 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
           socket.close();
         break;
       case "2fa":
-        if (message.enable) {
-          secret2fa = generateRandomSecret();
-          socket.send(JSON.stringify({ event: "2fa", secret: secret2fa, username }));
-        } else {
-          sqlite.prepare("UPDATE users SET secret2fa = NULL WHERE id = ?")
-            .run(user.id);
-        }
-
+        const secret = setup2fa(socket, user, secret2fa, message);
+        if (secret != undefined)
+          secret2fa = secret;
         break;
       case "2fa_check":
-        if (secret2fa != undefined) {
-          socket.send(JSON.stringify({
-            event: "2fa_check",
-            success: getTotpCode(secret2fa) == message.code
-          }));
-        }
+        await check2fa(user, secret2fa, message);
         break;
     }
   });
@@ -87,7 +76,7 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
 
 function getStatus(socket: WebSocket, message: any) {
   const allStatus: boolean[] = message.friends.map((friend: string) => {
-    return !!onlineUsers.find(u => u.name === friend);
+    return !!onlineUsers.find(u => u.displayName === friend);
   });
 
   socket.send(JSON.stringify({
@@ -234,4 +223,31 @@ function move(user: User, message: any) {
     player.goUp = message.goUp;
   if (message.goDown != undefined)
     player.goDown = message.goDown;
+}
+
+function setup2fa(socket: WebSocket, user: User, secret: string | undefined, message: any) {
+  if (message.enable == undefined) {
+    const row: any = sqlite.prepare("SELECT secret2fa FROM users WHERE id = ?")
+      .get(user.id);
+    socket.send(JSON.stringify({ event: "2fa", enable: row && row.secret2fa }));
+  } else if (message.enable) {
+    secret = generateRandomSecret();
+    socket.send(JSON.stringify({ event: "2fa", secret: secret, username: user.username }));
+    return secret;
+  } else {
+    sqlite.prepare("UPDATE users SET secret2fa = NULL WHERE id = ?")
+      .run(user.id);
+  }
+}
+
+async function check2fa(user: User, secret: string | undefined, message: any) {
+  if (secret == undefined)
+    return;
+
+  const success = await getTotpCode(secret) == message.code;
+  if (success) {
+    sqlite.prepare("UPDATE users SET secret2fa = ? WHERE id = ?")
+      .run(secret, user.id);
+  }
+  user.socket.send(JSON.stringify({ event: "2fa_check", success }));
 }

@@ -33,7 +33,6 @@ export const profilePage: Page = {
             <div class="bg-gray-700 p-6 rounded-xl text-white flex flex-col items-center mt-4 space-y-3">
               <p class="text-3xl pb-2">Manage:</p>
               <button id="button2fa" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200 w-40">2FA</button>
-              <canvas id="qrcode_2fa"></canvas>
               <button class="bg-white hover:bg-gray-400 text-black font-bold py-2 px-4 rounded transition duration-200 w-40">Google</button>
               <button id="delete" class="bg-red-600 hover:bg-red-800 text-white font-bold py-2 px-4 rounded transition duration-200 w-40">Delete Account</button>
             </div>
@@ -51,6 +50,28 @@ export const profilePage: Page = {
           </div>
         </div>
       </div>
+      <div id="modal-2fa" class="fixed inset-0 bg-black/50 flex items-center justify-center">
+        <div class="bg-gray-800 p-10 rounded shadow-lg w-full max-w-md">
+          <h1 class="font-bold text-xl text-center mb-5">2FA setup - Authenticator app</h1>
+            <ol class="list-decimal list-outside space-y-2">
+              <li>
+                Use an authenticator app for TOTP codes like Google Authenticator or Authy
+              </li>
+              <li>
+                Scan this QRCode:
+                <canvas id="qrcode"></canvas>
+              </li>
+              <li>
+                <p>Input the value indicated by your authentication app:</p>
+                <input id="verify" type="text" class="bg-gray-900">
+              </li>
+            </ol>
+            <div class="flex justify-end gap-3">
+              <button id="cancel" class="cursor-pointer m-2 hover:underline">Cancel</button>
+              <button id="validate" class="cursor-pointer p-2 bg-blue-800 hover:bg-blue-900">Validate</button>
+            </div>
+        </div>
+      </div>
     `;
   },
 
@@ -61,84 +82,130 @@ export const profilePage: Page = {
       return;
     }
 
-    // DELETE ACCOUNT
-    document.querySelector<HTMLButtonElement>("#delete")!.onclick = async () => {
-      const confirmDelete = confirm("Are you sure you want to delete your account?");
+    deleteAccount();
+    addFriend();
+    removeFriend();
+    getInfo();
+    gameHistory();
+    setup2fa();
+  },
 
-      if (!confirmDelete)
-        return;
+  onUnmount() {
+  }
+};
 
-      sendAndWait({ event: "del_account" }).then(message => {
-        if (message.success) {
-          closeWs();
-          loadPage(loginPage, profilePage);
-        } else
-          alert("An error occurred.");
-      });
-    };
+function setup2fa() {
+  const button = document.querySelector<HTMLButtonElement>("#button2fa")!;
+  const modal = document.querySelector<HTMLDivElement>("#modal-2fa")!;
+  const qrcodeCanvas = modal.querySelector<HTMLCanvasElement>("#qrcode")!;
+  const verify = modal.querySelector<HTMLInputElement>("#verify")!;
+  const validate = modal.querySelector<HTMLButtonElement>("#validate")!;
+  const cancel = modal.querySelector<HTMLButtonElement>("#cancel")!;
 
-    // ADD FRIEND
-    const addFriendButton = document.querySelector<HTMLFormElement>("#add_friend")!;
-    const username = document.querySelector<HTMLInputElement>("#username_to_add")!;
+  modal.style.display = "none";
 
-    addFriendButton.onsubmit = async (event) => {
-      event.preventDefault();
+  button.onclick = async () => {
+    let message = await sendAndWait({event: "2fa"});
+    if (message.enable) {
+      if (confirm("The 2FA is currently enabled. Do you want to disable it?"))
+        await sendAndWait({event: "2fa", enable: false});
+    } else {
+      message = await sendAndWait({ event: "2fa", enable: true });
+      qrcode.toCanvas(qrcodeCanvas, `otpauth://totp/ft_transcendence:${message.username}?secret=${message.secret}&issuer=ft_transcendence`);
+      modal.style.display = "";
+      verify.value = "";
+    }
+  };
 
-      if (username.value.trim() == "")
-        return;
+  validate.onclick = async () => {
+    const message = await sendAndWait({ event: "2fa_check", code: verify.value });
+    if (message.success)
+      modal.style.display = "none";
+    else
+      alert("Invalid code");
+  };
 
+  cancel.onclick = () => {
+    modal.style.display = "none";
+  };
+}
 
-      sendAndWait({ event: "set_friend", name: username.value.trim() }).then(message => {
-        if (message.success)
-          loadPage(profilePage);
-        else
-          alert("The user does not exist.");
-      });
-    };
+function deleteAccount() {
+  document.querySelector<HTMLButtonElement>("#delete")!.onclick = () => {
+    const confirmDelete = confirm("Are you sure you want to delete your account?");
 
-    // REMOVE FRIEND
-    document.querySelector<HTMLButtonElement>("#friends-list")!.onclick = async (event) => {
-      const target = event.target as HTMLElement;
+    if (!confirmDelete)
+      return;
 
-      if (target.tagName === "BUTTON" && target.dataset.friend) {
-        const friendName = target.dataset.friend;
+    sendAndWait({ event: "del_account" }).then(message => {
+      if (message.success) {
+        closeWs();
+        loadPage(loginPage, profilePage);
+      } else
+        alert("An error occurred.");
+    });
+  };
+}
 
-        const message = await sendAndWait({ event: "remove_friend", name: friendName });
+function addFriend() {
+  const form = document.querySelector<HTMLFormElement>("#add_friend")!;
+  const username = document.querySelector<HTMLInputElement>("#username_to_add")!;
 
-        if (message.success) {
-          const li = target.closest("li");
-          li?.remove();
-        } else
-          alert("An error occurred.");
-      }
-    };
+  form.onsubmit = event => {
+    event.preventDefault();
 
+    sendAndWait({ event: "set_friend", name: username.value.trim() }).then(message => {
+      if (message.success)
+        loadPage(profilePage);
+      else
+        alert("The user does not exist.");
+    });
+  };
+}
 
-    // GET INFO PROFILE
-    sendAndWait({ event: "get_info_profile" }).then(async (message) => {
-      // USERNAME
-      document.querySelector<HTMLParagraphElement>("#username")!.innerText = message.name + " Profile";
+function removeFriend() {
+  document.querySelector<HTMLButtonElement>("#friends-list")!.onclick = async (event) => {
+    const target = event.target as HTMLElement;
 
-      // FRIEND LIST
-      const friendsList = document.querySelector<HTMLAnchorElement>("#friends-list")!;
-      const friendsCount = message.friends!.length;
+    if (target.tagName === "BUTTON" && target.dataset.friend) {
+      const friendName = target.dataset.friend;
 
-      if (friendsCount === 0) {
+      const message = await sendAndWait({ event: "remove_friend", name: friendName });
+
+      if (message.success) {
+        const li = target.closest("li");
+        li?.remove();
+      } else
+        alert("An error occurred.");
+    }
+  };
+}
+
+function getInfo() {
+  const username = document.querySelector<HTMLParagraphElement>("#username")!;
+  const friendsList = document.querySelector<HTMLAnchorElement>("#friends-list")!;
+  const imageElement = document.querySelector<HTMLImageElement>("#image")!;
+
+  sendAndWait({ event: "get_info_profile" }).then(async (message) => {
+    username.innerText = message.name + " Profile";
+    const friendsCount = message.friends!.length;
+
+    if (friendsCount === 0) {
+      const li = document.createElement("li");
+      li.textContent = "No friends yet :'(";
+      friendsList?.appendChild(li);
+    } else {
+      const status = await sendAndWait({ event: "get_status", friends: message.friends });
+
+      for (let i = 0; i < friendsCount; i++) {
+        const friend = message.friends![i];
         const li = document.createElement("li");
-        li.textContent = "No friend yet :'(";
-        friendsList?.appendChild(li);
-      } else {
-        const status = await sendAndWait({ event: "get_status", friends: message.friends });
 
-        for (let i = 0; i < friendsCount; i++) {
-          const friend = message.friends![i];
-          const li = document.createElement("li");
+        let status_display = status.status![i] ? "bg-green-500" : "bg-gray-500";
+        li.id = `friend-${i}`;
+        li.className = "flex items-center gap-2";
 
-          let status_display = status.status![i] ? "bg-green-500" : "bg-gray-500";
-          li.id = `friend-${i}`;
-          li.className = "flex items-center gap-2";
-
-          li.innerHTML = `
+        li.innerHTML = `
           <div class="w-full flex justify-between items-center">
             <div class="flex items-center gap-2">
             <span class="inline-block w-2.5 h-2.5 ${status_display} rounded-full mr-2 shadow-md"></span>
@@ -149,57 +216,44 @@ export const profilePage: Page = {
             </button>
             </div>
           `;
-          friendsList?.appendChild(li);
-        }
+        friendsList?.appendChild(li);
       }
-
-      // AVATAR
-      const imageElement = document.querySelector<HTMLImageElement>("#image")!;
-      imageElement.src = message.avatar != null
-        ? URL.createObjectURL(new Blob([new Uint8Array(message.avatar.data)]))
-        : "/avatar.webp";
-    });
-
-    // GAME HISTORY
-    sendAndWait({ event: "get_games_history" }).then((message) => {
-      const historyList = document.querySelector<HTMLUListElement>("#match-history")!;
-      const matchCount = message.games!.length;
-
-      if (matchCount === 0) {
-        const li = document.createElement("li");
-        li.textContent = "No matches played yet.";
-        historyList.appendChild(li);
-        document.querySelector<HTMLParagraphElement>("#winrate")!.innerHTML = "- %";
-        return;
-      } else {
-        historyList.innerHTML = `<li class="text-3xl pb-5">Match History:</li>`;
-        let winrate: number = 0;
-
-        for (let game of message.games!.reverse()) {
-          const li = document.createElement("li");
-
-          if (game.score1 > game.score2) {
-            winrate += 1;
-            // TODO: XSS attack
-            li.innerHTML = `${game.date} | <span class="text-green-500">WIN</span> ${game.score1} - ${game.score2} versus ${game.name2}`;
-          } else
-            li.innerHTML = `${game.date} | <span class="text-red-500">LOSS</span> ${game.score1} - ${game.score2} versus ${game.name2}`;
-
-          historyList.appendChild(li);
-        }
-
-        document.querySelector<HTMLParagraphElement>("#winrate")!.innerHTML = ~~(winrate / matchCount * 100) + "%";
-      }
-    });
-
-    document.querySelector<HTMLButtonElement>("#button2fa")!.onclick = async () => {
-      const message = await sendAndWait({event: "2fa", enable: true});
-
-      qrcode.toCanvas(document.querySelector<HTMLCanvasElement>("#qrcode_2fa"),
-        `otpauth://totp/ft_transcendence:${message.username}?secret=${message.secret}&issuer=ft_transcendence`);
     }
-  },
 
-  onUnmount() {
-  }
-};
+    imageElement.src = message.avatar != null
+      ? URL.createObjectURL(new Blob([new Uint8Array(message.avatar.data)]))
+      : "/avatar.webp";
+  });
+}
+
+function gameHistory() {
+  sendAndWait({ event: "get_games_history" }).then(message => {
+    const historyList = document.querySelector<HTMLUListElement>("#match-history")!;
+    const matchCount = message.games!.length;
+
+    if (matchCount === 0) {
+      const li = document.createElement("li");
+      li.textContent = "No matches played yet.";
+      historyList.appendChild(li);
+      document.querySelector<HTMLParagraphElement>("#winrate")!.innerHTML = "- %";
+    } else {
+      historyList.innerHTML = `<li class="text-3xl pb-5">Match History:</li>`;
+      let winrate: number = 0;
+
+      for (let game of message.games!.reverse()) {
+        const li = document.createElement("li");
+
+        if (game.score1 > game.score2) {
+          winrate += 1;
+          // TODO: XSS attack
+          li.innerHTML = `${game.date} | <span class="text-green-500">WIN</span> ${game.score1} - ${game.score2} versus ${game.name2}`;
+        } else
+          li.innerHTML = `${game.date} | <span class="text-red-500">LOSS</span> ${game.score1} - ${game.score2} versus ${game.name2}`;
+
+        historyList.appendChild(li);
+      }
+
+      document.querySelector<HTMLParagraphElement>("#winrate")!.innerHTML = ~~(winrate / matchCount * 100) + "%";
+    }
+  });
+}

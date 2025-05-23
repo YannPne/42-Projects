@@ -8,6 +8,7 @@ import * as dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import fastifyFormbody from "@fastify/formbody";
 import fs from "fs";
+import { getTotpCode } from "./2fa";
 
 dotenv.config();
 
@@ -60,15 +61,25 @@ app.register(app => {
   app.get("/api/ws", { websocket: true, preHandler: [app.authenticate] }, registerWebSocket);
 });
 
+app.post("/api/require_2fa", (request, reply) => {
+  const row: any = sqlite.prepare("SELECT secret2fa FROM users WHERE username = ?")
+    .get(request.body);
+
+  return reply.status(row && row.secret2fa ? 200 : 400).send();
+});
+
 app.post("/api/login", async (request, reply) => {
   let username: string | undefined;
   let password: string | undefined;
+  let code2fa: string | undefined;
 
   for await (let part of request.parts()) {
     if (part.fieldname == "username" && part.type == "field")
       username = part.value as string;
     else if (part.fieldname == "password" && part.type == "field")
       password = part.value as string;
+    else if (part.fieldname == "2fa" && part.type == "field")
+      code2fa = part.value as string;
     else
       return reply.status(400).send("Invalid part");
   }
@@ -76,14 +87,14 @@ app.post("/api/login", async (request, reply) => {
   if (!username || !password)
     return reply.status(400).send("Incomplete request");
 
-  const row: any = sqlite.prepare("SELECT id, password FROM users WHERE username = ?")
+  const row: any = sqlite.prepare("SELECT id, password, secret2fa FROM users WHERE username = ?")
     .get(username);
 
   if (row == undefined || !bcrypt.compareSync(password, row.password))
     return reply.status(401).send("Unauthorized");
-
-  const token = app.jwt.sign({ id: row.id });
-  return reply.status(200).send(token);
+  if (row.secret2fa != null && await getTotpCode(row.secret2fa) != code2fa)
+    return reply.status(403).send("Forbidden");
+  return reply.status(200).send(app.jwt.sign({ id: row.id }));
 });
 
 app.post("/api/register", async (request, reply) => {

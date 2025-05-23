@@ -29,7 +29,7 @@ export type Event =
   | { event: "remove_friend", name?: string, success?: boolean }
   | { event: "get_status", friends?: string[], status?: boolean[] }
   | { event: "2fa", enable?: boolean, secret?: string, username?: string }
-  | { event: "2fa_check", code: number, success?: boolean }
+  | { event: "2fa_check", code?: string, success?: boolean }
 
 export function sendAndWait<T extends Event>(data: T, timeout: number = 5_000) {
   if (ws == undefined)
