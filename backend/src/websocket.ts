@@ -123,8 +123,8 @@ function setFriend(socket: WebSocket, id_user: any, message: any) {
   const result = sqlite.prepare(`
       INSERT INTO friends (userid, friendid)
       SELECT ?, ?
-      WHERE NOT EXISTS (SELECT 1 FROM friends WHERE (userid = ? AND friendid = ?) OR (userid = ? AND friendid = ?))
-  `).run(id_user, friendid, id_user, friendid, id_user, friendid);
+      WHERE NOT EXISTS (SELECT 1 FROM friends WHERE userid = ? AND friendid = ?)
+  `).run(id_user, friendid, id_user, friendid);
 
   socket.send(JSON.stringify({
     event: "set_friend",
@@ -133,11 +133,8 @@ function setFriend(socket: WebSocket, id_user: any, message: any) {
 }
 
 function getFriends(user: User) {
-  const rows: any[] = sqlite.prepare(`SELECT u.displayName
-                                      FROM friends f
-                                               JOIN users u ON f.friendid = u.id
-                                      WHERE f.userid = ?;
-  `).all(user.id);
+  const rows: any[] = sqlite.prepare(`SELECT u.displayName FROM friends f
+      JOIN users u ON f.friendid = u.id WHERE f.userid = ?`).all(user.id);
   return rows.map(row => row.displayName);
 }
 
@@ -182,9 +179,8 @@ export function insertGameHistory(data: {
 }
 
 function getDisplayName(userId: number): string[] {
-  const row: any = sqlite.prepare(`SELECT displayName
-                                   FROM users
-                                   WHERE id = ?`).get(userId);
+  const row: any = sqlite.prepare(`SELECT displayName FROM users WHERE id = ?`)
+    .get(userId);
 
   return row.displayName;
 }
