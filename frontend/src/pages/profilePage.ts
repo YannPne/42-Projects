@@ -54,12 +54,17 @@ export const profilePage: Page = {
 
       <div id="edit-profile-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
         <div class="bg-gray-800 rounded-lg p-6 w-96">
-          <h2 class="text-white text-xl mb-4">Modifier mes infos</h2>
+          <h2 class="text-white text-xl mb-4">Edit informations</h2>
           <form id="edit-profile-form" class="flex flex-col space-y-4">
-            <input type="text" id="edit_username" name="displayName" placeholder="Username" class="p-2 rounded bg-gray-700 text-white" required />
-            <input type="text" id="edit_displayName" name="displayName" placeholder="Pseudo" class="p-2 rounded bg-gray-700 text-white" required />
-            <input type="email" id="edit_email" name="email" placeholder="Email" class="p-2 rounded bg-gray-700 text-white" required />
-            <input type="password" id="edit_password" name="password" placeholder="password" class="p-2 rounded bg-gray-700 text-white" />
+            <label>Username</label>
+            <input type="text" id="edit_username" placeholder="Username" class="p-2 rounded bg-gray-700 text-white" required />
+            <label>Display name</label>
+            <input type="text" id="edit_displayName" placeholder="Display name" class="p-2 rounded bg-gray-700 text-white" required />
+            <label>Email</label>
+            <input type="email" id="edit_email" placeholder="Email" class="p-2 rounded bg-gray-700 text-white" required />
+            <label>Password</label>
+            <input type="password" id="edit_password" placeholder="password" class="p-2 rounded bg-gray-700 text-white" />
+            <label>Avatar</label>
             <input type="file" id="edit_avatar" accept="image/*" class="border rounded-lg cursor-pointer text-gray-400 bg-gray-700 border-gray-600" />
             <div class="flex justify-end space-x-2">
               <button type="button" id="cancel-btn" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded">Annuler</button>
@@ -74,7 +79,7 @@ export const profilePage: Page = {
   },
 
 
-  async onMount(requestedPage: any) {
+  async onMount(requestedPage: string) {
     if (ws == undefined) {
       loadPage(loginPage, profilePage);
       return;
@@ -82,7 +87,7 @@ export const profilePage: Page = {
 
     await awaitWs();
 
-    let currentProfile: string = requestedPage ? requestedPage : "";
+    let mainProfile: string = requestedPage;
 
     // BUTTON HIDE
     const btn_hide = document.querySelector<HTMLElement>("#btn_hide")!;
@@ -228,8 +233,8 @@ export const profilePage: Page = {
     // GET INFO PROFILE
     sendAndWait({event: "get_info_profile"}).then( async (message: any) => {
 
-      if (currentProfile == "")
-        currentProfile = message.name;
+      if (mainProfile == undefined)
+        mainProfile = message.name;
       
       // username
       document.querySelector("#username")!.innerHTML = message.displayName + " Profile";
@@ -282,7 +287,7 @@ export const profilePage: Page = {
             <div class="w-full flex justify-between items-center">
               <div class="flex items-center gap-2">
                 <span class="inline-block w-2.5 h-2.5 ${status_display} rounded-full mr-2 shadow-md"></span>
-                <a href="#" class="friend-link hover:underline" data-friend="${friend}">${friend}</a>
+                <a href="#" id="friend-link" class="friend-link hover:underline" data-friend="${friend}">${friend}</a>
               </div>
               <button id="btn_remove" class="bg-red-700 text-white px-2 py-1 rounded hover:bg-red-800" data-friend="${friend}">
                 Remove
@@ -291,17 +296,14 @@ export const profilePage: Page = {
           `;
           friendsList?.appendChild(li);friendsList?.appendChild(li);
 
-          const friendLink = li.querySelector<HTMLAnchorElement>(".friend-link");
-          friendLink?.addEventListener("click", async (e) => {
-            e.preventDefault();
+          const friendLink = li.querySelector<HTMLAnchorElement>("#friend-link")!;
+          friendLink.innerText = friend;
+          friendLink.onclick = () => {
             const friendName = friendLink.dataset.friend!;
           
-            await ws!.send(JSON.stringify({ event: "set_profile", name: friendName }));
-
-            loadPage(profilePage, currentProfile);
-
-          });
-          
+            ws!.send(JSON.stringify({ event: "set_profile", name: friendName }));
+            loadPage(profilePage, mainProfile);
+          };  
         }
       } 
 
@@ -319,7 +321,7 @@ export const profilePage: Page = {
         imageElement.src = imageUrl;
       }
 
-      hideprofile(message.name == currentProfile, message.hideProfile);
+      hideprofile(message.name == mainProfile, message.hideProfile);
     });
 
     // GAME HISTORY
@@ -382,24 +384,23 @@ export const profilePage: Page = {
         btnRemove && btnRemove.classList.remove("hidden");
       }
 
-      if (!hideData && !hideProfile)
-      {
-        Array.from(div_history.children).forEach(child => {
+      if (!hideData && !hideProfile) {
+        for (const child of div_history.children) {
           (child as HTMLElement).style.visibility = "hidden";
-        });
-        Array.from(div_friend.children).forEach(child => {
+        }
+        for (const child of div_friend.children) {
           (child as HTMLElement).style.visibility = "hidden";
-        });
+        }
         email.style.visibility = "hidden";
-      }
+      }      
       else
       {
-        Array.from(div_history.children).forEach(child => {
+        for (const child of div_history.children) {
           (child as HTMLElement).style.visibility = "visible";
-        });
-        Array.from(div_friend.children).forEach(child => {
+        }
+        for (const child of div_friend.children) {
           (child as HTMLElement).style.visibility = "visible";
-        });
+        }
         email.style.visibility = "visible";
       }
     }

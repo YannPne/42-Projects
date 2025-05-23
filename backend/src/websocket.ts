@@ -34,7 +34,7 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         setFriend(socket, user?.id, message);
         break;
       case "set_hide_profile":
-        set_hide_profile(user!.id, message.hide);
+        setHideProfile(user!.id, message.hide);
         break;
       case "remove_friend":
         removeFriend(socket, user!.id, message.name);
@@ -76,7 +76,7 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
   });
 }
 
-function set_hide_profile(id_user: number, hide: boolean)
+function setHideProfile(id_user: number, hide: boolean)
 {
   sqlite.prepare(`UPDATE users SET hideProfile = ? WHERE id = ?`).run(hide ? 1 : 0, id_user);
 }
@@ -137,7 +137,7 @@ function deleteAccount(id_user: number): boolean {
                   WHERE name1 = ? OR name2 = ?;
 `).run(name, '{Deleted User}', name, '{Deleted User}', name, name);
 
-  return result.changes > 0 ? true : false;
+  return result.changes > 0;
 }
 
 function getUserID(name: string)

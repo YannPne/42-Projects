@@ -1,4 +1,5 @@
 import { findPage, loadPage, pages } from "./pages/Page.ts";
+import { privacyPolicyPage } from "./pages/privacyPolicyPage.ts";
 
 export let ws: WebSocket | undefined;
 
@@ -43,7 +44,7 @@ const privacyLink = document.querySelector("#footer-privacy");
 if (privacyLink) {
   privacyLink.addEventListener("click", async event => {
     event.preventDefault();
-    loadPage(findPage("/privacy"));
+    loadPage(privacyPolicyPage);
   });
 }
 

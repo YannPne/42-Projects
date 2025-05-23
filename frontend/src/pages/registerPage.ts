@@ -2,7 +2,7 @@ import { sendAndWait } from "../Event.ts";
 import { connectWs, ws } from "../main.ts";
 import { loginPage } from "./loginPage.ts";
 import { loadPage, type Page } from "./Page.ts";
-import { privacyPage } from "./privacyPage.ts";
+import { privacyPolicyPage } from "./privacyPolicyPage.ts";
 import { profilePage } from "./profilePage.ts";
 
 export const registerPage: Page = {
@@ -76,7 +76,7 @@ export const registerPage: Page = {
 if (privacyLink) {
   privacyLink.addEventListener("click", async event => {
     event.preventDefault();
-    loadPage(privacyPage);
+    loadPage(privacyPolicyPage);
   });
 }
 
