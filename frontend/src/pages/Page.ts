@@ -7,12 +7,12 @@ import { registerPage } from "./registerPage.ts";
 import { profilePage } from "./profilePage.ts";
 
 
-export type Page = {
+export type Page<T = undefined> = {
   url: string;
   title: string;
   navbar: boolean | string;
   getPage(): string;
-  onMount(data?: any): void;
+  onMount(data?: T): void;
   onUnmount(): void;
 };
 
@@ -26,17 +26,15 @@ export const pages: Page[] = [
   profilePage
 ];
 
-let currentPage: Page | undefined;
+let currentPage: Page<any> | undefined;
 
-export function loadPage(page: Page, data?: any) {
+export function loadPage<T>(page: Page<T>, data?: T) {
   currentPage?.onUnmount();
   document.querySelector<HTMLDivElement>("#app")!.innerHTML = page.getPage();
-
+  currentPage = page;
   history.pushState({}, "", page.url);
   document.title = "ft_transcendence | " + page.title;
-
   page.onMount(data);
-  currentPage = page;
 }
 
 export function findPage(url: string) {
