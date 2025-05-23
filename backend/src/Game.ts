@@ -2,13 +2,16 @@ import Ball from "./Ball";
 import Player from "./Player";
 import User from "./User";
 import {insertGameHistory, onlineUsers} from "./websocket";
-import { addTournamentMatches } from "./Contract_function";
+import { addTournamentMatches, getTotalTournaments, getTournamentMatches } from "./Contract_function";
 
 export let games: Game[] = [];
-
 export enum GameState {
   CREATING, IN_GAME, SHOW_WINNER
 }
+
+// recupere le nombre de tournois contenue dans la blockchain au launch
+// a utilise pour retrive le tournois (id actuel + idtournois = pos actuel dans la blockchain)
+export let idtournois: any = getTotalTournaments();
 
 export class Game {
   readonly winScore: number = 2;
@@ -143,6 +146,10 @@ export class Game {
       entry.socket!.send(JSON.stringify({event: "get_games", games}));
 
     // saveTournament(); -- TODO
+
+    // blockchain
+    await saveTournament.call(this);
+    await getTournament();
   }
 
   toJSON() {
@@ -155,26 +162,32 @@ export class Game {
 
 async function saveTournament(this: Game)
 {
-  const tournamentId = 1;
-  const matchIds = [0];
-  const matchScores = [[5, 3]];
+  const matchIds: number[] = [];
+  const matchScores: number[][] = [];
+
+  for (let i = 0; i < this.tournament.length; i++) {
+    const match = this.tournament[i];
+
+    matchIds.push(i);
+    matchScores.push([match.score1, match.score2]);
+  }
 
   try {
-    await addTournamentMatches(tournamentId, matchIds, matchScores);
+    await addTournamentMatches(matchIds, matchScores);
     console.log("Transaction blockchain envoyée avec succès !");
   } catch (err) {
     console.error("Erreur lors de l'envoi du match au smart contract :", err);
   }
 }
 
-// async function saveTournament(this: Game)
-// {
-// 	const matchIds: number[] = this.tournament.map((_, i) => i);
-// 	const matchScores: number[][] = this.tournament.map(match => [match.score1, match.score2]);
-	
-// 	try {
-// 		await addTournamentMatches(this.tournamentId, matchIds, matchScores);
-// 	} catch (err) {
-// 		console.error("Erreur lors de l'envoi des matchs au smart contract :", err);
-// 	}
-// }
+async function getTournament()
+{
+  const tournamentId = 0;
+
+  try {
+    await getTournamentMatches(tournamentId);
+    console.log("Transaction get blockchain envoyée avec succès !");
+  } catch (err) {
+    console.error("Erreur lors de la recuperation du match au smart contract :", err);
+  }
+}
