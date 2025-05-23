@@ -9,6 +9,10 @@ export enum GameState {
   CREATING, IN_GAME, SHOW_WINNER
 }
 
+// recupere le nombre de tournois contenue dans la blockchain au launch
+// a utilise pour retrive le tournois (id actuel + idtournois = pos actuel dans la blockchain)
+export let idtournois: any = getTotalTournaments();
+
 export class Game {
   readonly winScore: number = 2;
   readonly width: number = 1200;
@@ -142,6 +146,8 @@ export class Game {
       entry.socket!.send(JSON.stringify({event: "get_games", games}));
 
     // saveTournament(); -- TODO
+
+    // blockchain
     await saveTournament.call(this);
     await getTournament();
   }
