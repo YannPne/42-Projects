@@ -12,8 +12,8 @@ export enum GameState {
 }
 
 // get the max-number of tournement already in the blockchain at launch
-// use it for retrieve the good tournement (actual id + idtournois = actual pos in the blockchain)
-export let idtournois: any = getTotalTournaments();
+// use it for retrieve the good tournement (actual id + idtournament = actual pos in the blockchain)
+export const idtournament = getTotalTournaments();
 
 export class Game {
   readonly winScore: number = 2;
@@ -171,7 +171,8 @@ export class Game {
   }
 
   /*blockchain function*/
-  async saveTournament(): Promise<void> {
+  async saveTournament() 
+  {
     const matchIds: number[] = [];
     const matchScores: number[][] = [];
 
@@ -189,8 +190,8 @@ export class Game {
     }
   }
 
-  async getTournament(): Promise<void> {
-    const tournamentId = idtournois; // + id actual in your database
+  async getTournament() {
+    const tournamentId = await idtournament; // + id actual in your database
 
     try {
       await getTournamentMatches(tournamentId);
