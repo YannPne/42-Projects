@@ -51,7 +51,7 @@ export const profilePage: Page = {
         </div>
       </div>
       <div id="modal-2fa" class="fixed inset-0 bg-black/50 flex items-center justify-center">
-        <div class="bg-gray-800 p-10 rounded shadow-lg w-full max-w-md">
+        <div class="bg-gray-800 p-10 rounded-4xl shadow-lg w-full max-w-md">
           <h1 class="font-bold text-xl text-center mb-5">2FA setup - Authenticator app</h1>
             <ol class="list-decimal list-outside space-y-2">
               <li>
@@ -60,15 +60,17 @@ export const profilePage: Page = {
               <li>
                 Scan this QRCode:
                 <canvas id="qrcode"></canvas>
+                <p>Or enter this secret in your app:</p>
+                <div id="secret" class="overflow-auto bg-gray-900 p-1"></div>
               </li>
               <li>
                 <p>Input the value indicated by your authentication app:</p>
-                <input id="verify" type="text" class="bg-gray-900">
+                <input id="verify" type="text" class="bg-gray-700 p-1 rounded">
               </li>
             </ol>
             <div class="flex justify-end gap-3">
               <button id="cancel" class="cursor-pointer m-2 hover:underline">Cancel</button>
-              <button id="validate" class="cursor-pointer p-2 bg-blue-800 hover:bg-blue-900">Validate</button>
+              <button id="validate" class="cursor-pointer p-2 bg-blue-800 hover:bg-blue-900 rounded-2xl">Validate</button>
             </div>
         </div>
       </div>
@@ -98,6 +100,7 @@ function setup2fa() {
   const button = document.querySelector<HTMLButtonElement>("#button2fa")!;
   const modal = document.querySelector<HTMLDivElement>("#modal-2fa")!;
   const qrcodeCanvas = modal.querySelector<HTMLCanvasElement>("#qrcode")!;
+  const secret = modal.querySelector<HTMLSpanElement>("#secret")!;
   const verify = modal.querySelector<HTMLInputElement>("#verify")!;
   const validate = modal.querySelector<HTMLButtonElement>("#validate")!;
   const cancel = modal.querySelector<HTMLButtonElement>("#cancel")!;
@@ -112,6 +115,7 @@ function setup2fa() {
     } else {
       message = await sendAndWait({ event: "2fa", enable: true });
       qrcode.toCanvas(qrcodeCanvas, `otpauth://totp/ft_transcendence:${message.username}?secret=${message.secret}&issuer=ft_transcendence`);
+      secret.innerText = message.secret;
       modal.style.display = "";
       verify.value = "";
     }
