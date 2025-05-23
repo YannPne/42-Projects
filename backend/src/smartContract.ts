@@ -5,7 +5,7 @@ import { promises } from "dns";
 
 dotenv.config();
 
-// console.log("PRIVATE_KEY:", process.env.PRIVATE_KEY);
+console.log("PRIVATE_KEY:", process.env.PRIVATE_KEY);
 const PRIVATE_KEY = process.env.PRIVATE_KEY!;
 const RPC_URL = process.env.RPC_URL!;
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS!;
@@ -25,11 +25,11 @@ export  async function addTournamentMatches(
     try {
       const tx = await contract.addTournamentMatches(matchIds, matchScores);
       await tx.wait();
-      console.log("Matchs ajoutés avec succès !");
+      console.log("Matchs added with success !");
     } 
     catch (err)
     {
-      console.error("Erreur lors de l'envoi du match au smart contract :", err);
+      console.error("Error when the match is send to the smart contract :", err);
     }
   });
 
@@ -44,7 +44,7 @@ export async function getTournamentMatches(tournamentId: number) {
 
 export async function getMatchScores(tournamentId: number, matchId: number) {
   const scores = await contract.getMatchScores(tournamentId, matchId);
-  console.log(`Scores du match ${matchId}:`, scores.map((s: any) => s.toString()));
+  console.log(`Scores of the match ${matchId}:`, scores.map((s: any) => s.toString()));
 }
 
 export async function getTotalTournaments(): Promise<number> {
