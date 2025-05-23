@@ -9,7 +9,11 @@ export function connectWs() {
 
     ws = new WebSocket("ws://" + document.location.host + "/api/ws?token=" + sessionStorage.getItem("token"));
     ws.onopen = () => console.log("WebSocket connection opened");
-    ws.onclose = () => console.log("WebSocket connection closed");
+    ws.onclose = () => {
+      console.log("WebSocket connection closed");
+      ws = undefined;
+      sessionStorage.removeItem("token");
+    };
     ws.onerror = () => {
       sessionStorage.removeItem("token");
       ws = undefined;
@@ -43,6 +47,7 @@ export function closeWs() {
   if (ws && ws.readyState == ws.OPEN)
     ws.close();
   ws = undefined;
+  sessionStorage.removeItem("token");
 }
 
 const nav = document.querySelector<HTMLElement>("nav")!;

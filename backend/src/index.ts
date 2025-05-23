@@ -9,6 +9,7 @@ import bcrypt from "bcrypt";
 import fastifyFormbody from "@fastify/formbody";
 import fs from "fs";
 import { getTotpCode } from "./2fa";
+import * as repl from "node:repl";
 
 dotenv.config();
 
@@ -52,6 +53,9 @@ app.decorate("authenticate", async (req: FastifyRequest, reply: FastifyReply) =>
     const queryToken = (req.query as any).token;
     const decoded = queryToken != undefined ? app.jwt.verify<any>(queryToken) : await req.jwtVerify();
     req.jwtUserId = decoded.id;
+
+    if (sqlite.prepare("SELECT id FROM users WHERE id = ?").run(decoded.id) == undefined)
+      return reply.status(401).send("Unauthorized");
   } catch (err) {
     return reply.send(err);
   }
