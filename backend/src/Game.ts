@@ -1,15 +1,19 @@
 import Ball from "./Ball";
+import { addTournamentMatches, getTotalTournaments, getTournamentMatches } from "./smartContract";
 import Player from "./Player";
 import User from "./User";
 import { insertGameHistory, onlineUsers } from "./websocket";
 
 export let games: Game[] = [];
-
 export enum GameState {
   CREATING,
   IN_GAME,
   SHOW_WINNER,
 }
+
+// get the max-number of tournement already in the blockchain at launch
+// use it for retrieve the good tournement (actual id + idtournament = actual pos in the blockchain)
+export const idtournament = getTotalTournaments();
 
 export class Game {
   readonly winScore: number = 2;
@@ -154,7 +158,9 @@ export class Game {
     for (let user of onlineUsers)
       user.socket.send(JSON.stringify({ event: "get_games", games }));
 
-    // saveTournament(); -- TODO
+    /*blockchain*/
+    await this.saveTournament();
+    await this.getTournament();
   }
 
   toJSON() {
@@ -162,5 +168,36 @@ export class Game {
       uid: this.uid,
       name: this.name
     };
+  }
+
+  /*blockchain function*/
+  async saveTournament() 
+  {
+    const matchIds: number[] = [];
+    const matchScores: number[][] = [];
+
+    for (let i = 0; i < this.tournament.length; i++) {
+      const match = this.tournament[i];
+      matchIds.push(i);
+      matchScores.push([match.score1, match.score2]);
+    }
+
+    try {
+      await addTournamentMatches(matchIds, matchScores);
+      console.log("Blockchain transaction send with success !");
+    } catch (err) {
+      console.error("Error when the match is send to the smart contract :", err);
+    }
+  }
+
+  async getTournament() {
+    const tournamentId = await idtournament; // + id actual in your database
+
+    try {
+      await getTournamentMatches(tournamentId);
+      console.log("Blockchain get transaction send with success !");
+    } catch (err) {
+      console.error("Error when the match is retrieve from the smart contract :", err);
+    }
   }
 }
