@@ -2,7 +2,7 @@ import { loadPage, type Page } from "./Page.ts";
 import { ws } from "../main.ts";
 import type { Ball, Event, Player } from "../Event.ts";
 import { chooseGamePage } from "./chooseGamePage.ts";
-import { ArcRotateCamera, Color3, Color4, Engine, HemisphericLight,GlowLayer, MeshBuilder, Scene, SpotLight, StandardMaterial, Texture, Vector3} from "@babylonjs/core";
+import { ArcRotateCamera, Color3, Color4, Engine, HemisphericLight, GlowLayer, MeshBuilder, Scene, SpotLight, StandardMaterial, Texture, Vector3, Mesh } from "@babylonjs/core";
 import * as GUI from "@babylonjs/gui";
 
 // TODO: Leave game
@@ -19,7 +19,7 @@ export const pongPage: Page<any> = {
   getPage(): string {
     return `
       <div class="flex flex-col items-center justify-center h-full w-full p-5">
-        <div class="pb-5 w-full flex justify-around">
+        <div class="pb-5 w-full flex justify-around" id="up-bar">
           <button id="start" class="p-2 rounded-xl bg-blue-900 hover:bg-blue-950 cursor-pointer">Start game</button>
           <form id="addLocalForm" class="bg-gray-900 items-center justify-center">
             <input id="addLocalName" type="text" required placeholder="Local player's name" class="p-2 placeholder-gray-400">
@@ -31,7 +31,7 @@ export const pongPage: Page<any> = {
         <canvas id="game2d" width="1200" height="600" class="w-[90%] aspect-[2/1] bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
         <canvas id="game3d" width="1200" height="600" class="w-[90%] aspect-[2/1] not-focus-visible"></canvas>
         <div class="flex items-center space-x-4 mt-4">
-          <span id="toggleText" class="text-lg font-medium text-white select-none cursor-pointer">Mode 2D</span>
+          <span id="toggleText" class="text-lg font-medium text-white select-none cursor-pointer">Mode 3D</span>
           <button id="is3d" type="button"
             class="relative w-16 h-9 bg-gray-700 rounded-full transition-colors duration-300 ease-in-out focus:outline-none">
             <span
@@ -65,8 +65,9 @@ export const pongPage: Page<any> = {
 
     const toggleText = document.querySelector<HTMLSpanElement>("#toggleText")!;
     const toggleCircle = document.querySelector<HTMLSpanElement>("#toggleCircle")!;
+    const myDiv = document.querySelector<HTMLDivElement>("#up-bar");
 
-    let is3dActive = false; // état initial, tu peux aussi initialiser selon ta logique
+    let is3dActive = true; // état initial, tu peux aussi initialiser selon ta logique
 
     function updateToggleUI() {
       toggleText.textContent = is3dActive ? "Mode 3D" : "Mode 2D";
@@ -78,7 +79,7 @@ export const pongPage: Page<any> = {
 // Initialisation
     updateToggleUI();
 
-    canvas3d.style.display = "none";
+    canvas2d.style.display = "none";
     is3d.addEventListener("click", () => {
       is3dActive = !is3dActive;
       if (is3dActive) {
@@ -92,12 +93,15 @@ export const pongPage: Page<any> = {
     });
 
     start.onclick = () => {
+
+      if (myDiv) {
+        myDiv.style.display = "none";
+      }
       ws!.send(JSON.stringify({ event: "play" }));
     };
 
     addLocalForm.onsubmit = event => {
       event.preventDefault();
-
       if (addLocalName.value.trim() != "") {
         ws!.send(JSON.stringify({ event: "add_local_player", name: addLocalName.value, isAi: addLocalCheck.checked }));
         addLocalName.value = "";
@@ -189,6 +193,31 @@ function move(event: KeyboardEvent, up: boolean) {
   ws?.send(JSON.stringify(send));
 }
 
+function createTextBlock(color: string, fontSize: number, text: string): GUI.TextBlock {
+  const textBlock = new GUI.TextBlock();
+  textBlock.text = text;
+  textBlock.color = color;
+  textBlock.fontSize = fontSize;
+  return textBlock;
+}
+
+function createBox(name: string, options: any, pos: any, scene: any, material?: any): Mesh {
+  const box = MeshBuilder.CreateBox(name, options, scene);
+  box.position.set(pos.x, pos.y, pos.z);
+  if (material)
+    box.material = material;
+  return box;
+}
+
+function createPlane(name: string, options: any, pos: any, rotation: any, scene: any, material?: any ): Mesh {
+  const plane = MeshBuilder.CreatePlane(name, options, scene);
+  plane.position.set(pos.x, pos.y, pos.z);
+  if (material)
+    plane.material = material;
+  plane.rotation.set(rotation.x, rotation.y , rotation.z);
+  return plane;
+}
+
 function setup3d(canvas: HTMLCanvasElement) {
   const engine = new Engine(canvas, true);
   const scene = new Scene(engine);
@@ -197,6 +226,7 @@ function setup3d(canvas: HTMLCanvasElement) {
   // CAMERA //
   const camera = new ArcRotateCamera("Camera", Math.PI / 2, Math.PI / 4, -2000, new Vector3(600, 0, 275), scene);
   camera.attachControl(canvas, true);
+  camera.inputs.attached.keyboard.detachControl();
 
   // TARGET //
   const targetPoint = new Vector3(600, -300, 25);
@@ -254,175 +284,65 @@ function setup3d(canvas: HTMLCanvasElement) {
   ball.position.set(600, -300, 200);
   //const table = new TransformNode("table", scene);
 
-  const box1 = MeshBuilder.CreateBox("box1", { width: 1280, height: 680, depth: 100 }, scene);
-  box1.position.set(600, -300, 75);
-  box1.material = materialBlackMat;
+  // ## CREATE TABLE ##
+  createBox("MidBox1", { width: 1280, height: 680, depth: 100 }, { x: 600, y: -300, z: 75 }, scene, materialBlackMat);
+  createBox("MidBox2", { width: 1240, height: 640, depth: 100 }, { x: 600, y: -300, z: 375 }, scene, materialBlackMat);
+  createBox("MidBox3", { width: 1200, height: 600, depth: 200 }, { x: 600, y: -300, z: 225 }, scene, materialBlackMat);
 
+  createBox("UpBox1", { width: 1280, height: 20, depth: 50 }, { x: 600, y: 30, z: 0 }, scene, materialBlackMat);
+  createBox("UpBox2", { width: 1280, height: 50, depth: 20 }, { x: 600, y: 15, z: -25 }, scene, materialBlackMat);
 
-  
+  createBox("DownBox1", { width: 1280, height: 20, depth: 50 }, { x: 600, y: -630, z: 0 }, scene, materialBlackMat);
+  createBox("DownBox2", { width: 1280, height: 50, depth: 20 }, { x: 600, y: -615, z: -25 }, scene, materialBlackMat);
 
-  const box2 = MeshBuilder.CreateBox("box2", { width: 1240, height: 640, depth: 100 }, scene);
-  box2.position.set(600, -300, 375);
-  box2.material = materialBlackMat;
+  createBox("LeftBox1", { width: 20, height: 680, depth: 50  }, { x: -30, y: -300, z: 0 }, scene, materialBlackMat);
+  createBox("LeftBox2", { width: 50, height: 680, depth: 20  }, { x: -15, y: -300, z: -25 }, scene, materialBlackMat);
 
-  const box3 = MeshBuilder.CreateBox("box3", { width: 1200, height: 600, depth: 200 }, scene);
-  box3.position.set(600, -300, 225);
-  box3.material = materialBlackMat;
+  createBox("RightBox1", { width: 20, height: 680, depth: 50  }, { x: 1230, y: -300, z: 0 }, scene, materialBlackMat);
+  createBox("RightBox2", { width: 50, height: 680, depth: 20  }, { x: 1215, y: -300, z: -25 }, scene, materialBlackMat);
 
-  // band up
-  const box4 = MeshBuilder.CreateBox("box4", { width: 1280, height: 20, depth: 50 }, scene);
-  box4.position.set(600, 30, 0);
-  box4.material = materialBlackMat;
+  createBox("LightBox1", { width: 1240, height: 1, depth: 50 }, { x: 600, y: 19, z: 0 }, scene, ledMaterial);
+  createBox("LightBox2", { width: 1240, height: 1, depth: 50 }, { x: 600, y: -619, z: 0 }, scene, ledMaterial);
+  createBox("LightBox3", { width: 20, height: 640, depth: 50 }, { x: -19, y: -300, z: 0 }, scene, ledMaterial);
+  createBox("LightBox3", { width: 20, height: 640, depth: 50 }, { x: 1219, y: -300, z: 0 }, scene, ledMaterial);
 
-  const box6 = MeshBuilder.CreateBox("box5", { width: 1280, height: 50, depth: 20 }, scene);
-  box6.position.set(600, 15, -25);
-  box6.material = materialBlackMat;
+  createBox("LegBox1", { width: 60, height: 60, depth: 60 }, { x: 30, y: -30, z: 455 }, scene, materialBlackMat);
+  createBox("LegBox2", { width: 60, height: 60, depth: 60 }, { x: 30, y: -570, z: 455 }, scene, materialBlackMat);
+  createBox("LegBox3", { width: 60, height: 60, depth: 60 }, { x: 1170, y: -30, z: 455 }, scene, materialBlackMat);
+  createBox("LegBox4", { width: 60, height: 60, depth: 60 }, { x: 1170, y: -570, z: 455 }, scene, materialBlackMat);
 
-  const boxLight1 = MeshBuilder.CreateBox("boxLight1", { width: 1240, height: 1, depth: 50 }, scene);
-  boxLight1.position.set(600, 19, 0);
-  boxLight1.material = ledMaterial;
+  createPlane("Plane1", { width: 1200, height: 600 }, { x: 600, y: -300, z: 24 }, { x: 0, y: 0, z: 0 }, scene, materialBlueMat);
+  createPlane("Plane2", { width: 500, height: 170 }, { x: 600, y: -600.5, z: 225 }, { x: -Math.PI / 2, y: 0, z: 0 }, scene, material42);
+  createPlane("Plane3", { width: 500, height: 170 }, { x: 600, y: 0.5, z: 225 }, { x: Math.PI / 2, y: 0, z: Math.PI }, scene, material42);
+  createPlane("Plane4", { width: 1240, height: 640 }, { x: 600, y: -300, z: 126 }, { x: Math.PI, y: 0, z: 0 }, scene, ledMaterial);
 
-  // band down
-  const box5 = MeshBuilder.CreateBox("box5", { width: 1280, height: 20, depth: 50 }, scene);
-  box5.position.set(600, -630, 0);
-  box5.material = materialBlackMat;
+  // ## CREATE PLAYERS ##
+  const player1 = createBox("Player1", { width: 20, height: 200, depth: 40 }, { x: 600, y: -300, z: 200 }, scene);
+  const player2 = createBox("Player2", { width: 20, height: 200, depth: 40 }, { x: 600, y: -300, z: 200 }, scene);
 
-  const box7 = MeshBuilder.CreateBox("box5", { width: 1280, height: 50, depth: 20 }, scene);
-  box7.position.set(600, -615, -25);
-  box7.material = materialBlackMat;
+  // ## GUI ##
+  const planeScoreP1 = createPlane("PlaneScoreP1", { width: 600, height: 600 }, { x: 300, y: -300, z: 23 }, { x: 0, y: 0, z: 0 }, scene);
+  const planeScoreP2 = createPlane("PlaneScoreP2", { width: 600, height: 600 }, { x: 900, y: -300, z: 23 }, { x: 0, y: 0, z: 0 }, scene);
+  const planeNameP1 = createPlane("PlaneNameP1", { width: 600, height: 600 }, { x: 300, y: -641, z: 62.5 }, { x: -Math.PI / 2, y: 0, z: 0 }, scene);
+  const planeNameP2 = createPlane("PlaneNameP2", { width: 600, height: 600 }, { x: 900, y: -641, z: 62.5 }, { x: -Math.PI / 2, y: 0, z: 0 }, scene);
+  const planeEndGame = createPlane("planeEndGame", { width: 1200, height: 1200 }, { x: 600, y: -300, z: 23 }, { x: 0, y: 0, z: 0 }, scene);
 
-  const boxLight2 = MeshBuilder.CreateBox("boxLight2", { width: 1240, height: 1, depth: 50 }, scene);
-  boxLight2.position.set(600, -619, 0);
-  boxLight2.material = ledMaterial;
+  const textScoreP1 = createTextBlock("gray", 400, "");
+  const textScoreP2 = createTextBlock("gray", 400, "");
+  const textNameP1 = createTextBlock("white", 150, "");
+  const textNameP2 = createTextBlock("white", 150, "");
+  const textEndGame = createTextBlock("white", 200, "");
 
-  //left
-  const box9 = MeshBuilder.CreateBox("box5", { width: 20, height: 680, depth: 50 }, scene);
-  box9.position.set(-30, -300, 0);
-  box9.material = materialBlackMat;
-
-  const box10 = MeshBuilder.CreateBox("box5", { width: 20, height: 640, depth: 50 }, scene);
-  box10.position.set(-19, -300, 0);
-  box10.material = ledMaterial;
-
-  const box11 = MeshBuilder.CreateBox("box5", { width: 50, height: 680, depth: 20 }, scene);
-  box11.position.set(-15, -300, -25);
-  box11.material = materialBlackMat;
-
-  //right
-  const box12 = MeshBuilder.CreateBox("box5", { width: 20, height: 680, depth: 50 }, scene);
-  box12.position.set(1230, -300, 0);
-  box12.material = materialBlackMat;
-
-  const box13 = MeshBuilder.CreateBox("box5", { width: 20, height: 640, depth: 50 }, scene);
-  box13.position.set(1219, -300, 0);
-  box13.material = ledMaterial;
-
-  // function ee(name, options: any, pos, scene: any) {
-  //   const box13 = MeshBuilder.CreateBox("box5", options, scene);
-  //   box13.position.set(1219, -300, 0);
-  //   box13.material = ledMaterial;
-  // }
-  // ee("box5", {..., x: 1219, y, z}, , ,, scene)
-
-  const box14 = MeshBuilder.CreateBox("box5", { width: 50, height: 680, depth: 20 }, scene);
-  box14.position.set(1215, -300, -25);
-  box14.material = materialBlackMat;
-
-  const plane1 = MeshBuilder.CreatePlane("plane", { width: 500, height: 170 }, scene);
-  plane1.position.set(600, -600.5, 225);
-
-  plane1.material = material42;
-  plane1.rotation.set(-Math.PI / 2, 0 , 0);
-
-  const plane2 = MeshBuilder.CreatePlane("plane", { width: 500, height: 170 }, scene);
-  plane2.position.set(600, 0.5, 225);
-  plane2.material = material42;
-  plane2.rotation.set(Math.PI / 2, 0 , Math.PI);
-
-  const plane3 = MeshBuilder.CreatePlane("plane", { width: 1240, height: 640 }, scene);
-  plane3.position.set(600, -300, 126);
-  plane3.material = ledMaterial;
-  plane3.rotation.set(Math.PI, 0, 0);
-
-  const plane4 = MeshBuilder.CreatePlane("plane", { width: 1200, height: 600 }, scene);
-  plane4.position.set(600, -300, 24);
-  plane4.material = materialBlueMat;
-
-  //pied
-  const box16 = MeshBuilder.CreateBox("box1", { width: 60, height: 60, depth: 60 }, scene);
-  box16.position.set(30, -30, 455);
-  box16.material = materialBlackMat;
-
-  const box17 = MeshBuilder.CreateBox("box1", { width: 60, height: 60, depth: 60 }, scene);
-  box17.position.set(30, -570, 455);
-  box17.material = materialBlackMat;
-
-  const box18 = MeshBuilder.CreateBox("box1", { width: 60, height: 60, depth: 60 }, scene);
-  box18.position.set(1170, -30, 455);
-  box18.material = materialBlackMat;
-
-  const box19 = MeshBuilder.CreateBox("box1", { width: 60, height: 60, depth: 60 }, scene);
-  box19.position.set(1170, -570, 455);
-  box19.material = materialBlackMat;
-
-  const player1 = MeshBuilder.CreateBox("player1", { width: 20, height: 200, depth: 40 }, scene);
-  player1.position.set(600, -300, 200);
-  const player2 = MeshBuilder.CreateBox("player2", { width: 20, height: 200, depth: 40 }, scene);
-  player2.position.set(600, -300, 200);
-
-  const planeScoreP1 = MeshBuilder.CreatePlane("label", { width: 600, height: 600 }, scene);
-  planeScoreP1.position.set(300, -300, 23);
   const guiScoreP1 = GUI.AdvancedDynamicTexture.CreateForMesh(planeScoreP1);
-
-  const planeScoreP2 = MeshBuilder.CreatePlane("label", { width: 600, height: 600 }, scene);
-  planeScoreP2.position.set(900, -300, 23);
   const guiScoreP2 = GUI.AdvancedDynamicTexture.CreateForMesh(planeScoreP2);
-
-  const textScoreP1 = new GUI.TextBlock();
-  textScoreP1.text = "";
-  textScoreP1.color = "gray";
-  textScoreP1.fontSize = 400;
-
-  const textScoreP2 = new GUI.TextBlock();
-  textScoreP2.text = "";
-  textScoreP2.color = "gray";
-  textScoreP2.fontSize = 400;
+  const guiNameP1 = GUI.AdvancedDynamicTexture.CreateForMesh(planeNameP1);
+  const guiNameP2 = GUI.AdvancedDynamicTexture.CreateForMesh(planeNameP2);
+  const guiEndGame = GUI.AdvancedDynamicTexture.CreateForMesh(planeEndGame);
 
   guiScoreP1.addControl(textScoreP1);
   guiScoreP2.addControl(textScoreP2);
-
-  const planeNameP1 = MeshBuilder.CreatePlane("label", { width: 600, height: 600 }, scene);
-  planeNameP1.position.set(300, -641, 62.5);
-  planeNameP1.rotation.set(-Math.PI / 2,  0,  0);
-  const guiNameP1 = GUI.AdvancedDynamicTexture.CreateForMesh(planeNameP1);
-
-  const planeNameP2 = MeshBuilder.CreatePlane("label", { width: 600, height: 600 }, scene);
-  planeNameP2.position.set(900, -641, 62.5);
-  planeNameP2.rotation.set(-Math.PI / 2,  0,  0);
-  const guiNameP2 = GUI.AdvancedDynamicTexture.CreateForMesh(planeNameP2);
-
-  const textNameP1 = new GUI.TextBlock();
-  textNameP1.text = "";
-  textNameP1.color = "white";
-  textNameP1.fontSize = 150;
-
-  const textNameP2 = new GUI.TextBlock();
-  textNameP2.text = "";
-  textNameP2.color = "white";
-  textNameP2.fontSize = 150;
-
   guiNameP1.addControl(textNameP1);
   guiNameP2.addControl(textNameP2);
-
-  const planeEndGame = MeshBuilder.CreatePlane("label", { width: 1200, height: 1200 }, scene);
-  planeEndGame.position.set(600, -300, 23);
-  const guiEndGame = GUI.AdvancedDynamicTexture.CreateForMesh(planeEndGame);
-
-  const textEndGame = new GUI.TextBlock();
-  textEndGame.text = "";
-  textEndGame.color = "white";
-  textEndGame.fontSize = 200;
-
   guiEndGame.addControl(textEndGame);
 
   engine.runRenderLoop(() => {
