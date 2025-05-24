@@ -1,7 +1,7 @@
 import Ball from "./Ball";
 import Player from "./Player";
 import User from "./User";
-import { insertGameHistory, onlineUsers } from "./websocket";
+import {insertGameHistory, onlineUsers} from "./websocket";
 
 export let games: Game[] = [];
 
@@ -9,6 +9,7 @@ export enum GameState {
   CREATING,
   IN_GAME,
   SHOW_WINNER,
+  ABORTED,
 }
 
 export class Game {
@@ -50,9 +51,15 @@ export class Game {
   }
 
   removeUser(user: User) {
-    if (this.state == GameState.CREATING) {
-      const index = this.players.findIndex(player => player.name == user.displayName);
-      if (index !== -1) this.players.splice(index, 1);
+    this.players = this.players.filter(p => !user.players.includes(p));
+    this.users.splice(this.users.indexOf(user), 1);
+
+    user.game = undefined;
+    user.players = [];
+
+    if (this.players.filter(p => !p.isAi).length == 0) {
+      this.state = GameState.ABORTED;
+      games.splice(games.indexOf(this), 1);
     }
   }
 

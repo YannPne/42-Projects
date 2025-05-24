@@ -4,7 +4,7 @@ import { loadPage, type Page } from "./Page.ts";
 import { privacyPage } from "./privacyPage.ts";
 import { profilePage } from "./profilePage.ts";
 
-export const registerPage: Page<Page> = {
+export const registerPage: Page<Page<any>> = {
   url: "/register",
   title: "Register",
   navbar: false,
@@ -57,7 +57,7 @@ export const registerPage: Page<Page> = {
   },
 
   onMount(requestedPage) {
-  
+
     if (ws != undefined) {
       loadPage(requestedPage ?? profilePage);
       return;
@@ -88,7 +88,7 @@ export const registerPage: Page<Page> = {
         alert("You must agree to the Privacy Policy.");
         return;
       }
-      
+
       const formData = new FormData(registerForm);
       const response = await fetch("http://" + document.location.host + "/api/register", {
         method: "POST",

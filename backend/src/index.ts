@@ -69,7 +69,7 @@ app.post("/api/require_2fa", (request, reply) => {
   const row: any = sqlite.prepare("SELECT secret2fa FROM users WHERE username = ?")
     .get(request.body);
 
-  return reply.status(row && row.secret2fa ? 200 : 400).send();
+  return reply.send(row != undefined && row.secret2fa != null);
 });
 
 app.post("/api/login", async (request, reply) => {

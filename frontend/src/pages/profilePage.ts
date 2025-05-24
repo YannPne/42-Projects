@@ -3,11 +3,10 @@ import { closeWs, ws } from "../main.ts";
 import { loginPage } from "./loginPage.ts";
 import { sendAndWait } from "../Event.ts";
 import qrcode from "qrcode";
-import type { RandomNumberBlock } from "@babylonjs/core";
 
 let visible: boolean = true;
 
-export const profilePage: Page<Page> = {
+export const profilePage: Page<string> = {
   url: "/profile",
   title: "Profile",
   navbar: true,
@@ -108,9 +107,7 @@ export const profilePage: Page<Page> = {
       </div>`;
   },
 
-  
-
-  async onMount(profileUsername: any = "") {
+  async onMount(profileUsername) {
     if (ws == undefined) {
       loadPage(loginPage, profilePage);
       return;
@@ -121,7 +118,7 @@ export const profilePage: Page<Page> = {
     editAndHide();
     addFriend();
     removeFriend();
-    getInfo(profileUsername);
+    getInfo(profileUsername ?? "");
     gameHistory();
     setup2fa();
   },
@@ -130,29 +127,24 @@ export const profilePage: Page<Page> = {
   }
 };
 
-function disconnect()
-{
+function disconnect() {
   const btnDisconnect = document.querySelector<HTMLButtonElement>("#btnDisconnect")!;
 
   btnDisconnect.onclick = () => {
-    ws!.send(JSON.stringify({event: "disconnect"}));
     closeWs();
     loadPage(loginPage, profilePage);
   };
 }
 
-function editAndHide()
-{
+function editAndHide() {
   const btn_hide = document.querySelector<HTMLElement>("#btn_hide")!;
   const div_history = document.querySelector<HTMLDivElement>("#div_history")!;
   const div_friend = document.querySelector<HTMLDivElement>("#div_friend")!;
   const email = document.querySelector<HTMLParagraphElement>("#email")!;
-  const toggleElements = [div_history, div_friend, email];
+  const toggleElements = [ div_history, div_friend, email ];
 
-  
 
-  function setBtnEye(visible: boolean)
-  {
+  function setBtnEye(visible: boolean) {
     btn_hide.classList.toggle("fa-eye", visible);
     btn_hide.classList.toggle("fa-eye-slash", !visible);
 
@@ -164,30 +156,30 @@ function editAndHide()
 
   btn_hide.addEventListener("click", () => {
     visible = !visible;
-    ws!.send(JSON.stringify({event: "set_hide_profile", hide: visible}));
+    ws!.send(JSON.stringify({ event: "set_hide_profile", hide: visible }));
     setBtnEye(visible);
   });
 
   // EDIT PROFILE
-  const editBtn = document.querySelector('#edit-profile-btn')!;
-  const modal = document.querySelector('#edit-profile-modal')!;
-  const cancelBtn = document.querySelector('#cancel-btn')!;
-  const form = document.querySelector<HTMLFormElement>('#edit-profile-form');
+  const editBtn = document.querySelector("#edit-profile-btn")!;
+  const modal = document.querySelector("#edit-profile-modal")!;
+  const cancelBtn = document.querySelector("#cancel-btn")!;
+  const form = document.querySelector<HTMLFormElement>("#edit-profile-form");
 
-  editBtn.addEventListener('click', async () => {
-    modal.classList.remove('hidden');
-    const data = await sendAndWait({event: "get_info_profile"});
-    document.querySelector<HTMLInputElement>('#edit_username')!.value = data.name!;
-    document.querySelector<HTMLInputElement>('#edit_displayName')!.value = data.displayName!;
-    document.querySelector<HTMLInputElement>('#edit_email')!.value = data.email!;
+  editBtn.addEventListener("click", async () => {
+    modal.classList.remove("hidden");
+    const data = await sendAndWait({ event: "get_info_profile" });
+    document.querySelector<HTMLInputElement>("#edit_username")!.value = data.name!;
+    document.querySelector<HTMLInputElement>("#edit_displayName")!.value = data.displayName!;
+    document.querySelector<HTMLInputElement>("#edit_email")!.value = data.email!;
   });
 
-  cancelBtn.addEventListener('click', () => {
-  modal.classList.add('hidden');
-  loadPage(profilePage);
+  cancelBtn.addEventListener("click", () => {
+    modal.classList.add("hidden");
+    loadPage(profilePage);
   });
 
-  form!.addEventListener('submit', async (e) => {
+  form!.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const userName = document.querySelector<HTMLInputElement>("#edit_username")!;
@@ -200,8 +192,7 @@ function editAndHide()
     if (avatar.files && avatar.files.length != 0 && !avatar.files[0].type.startsWith("image/")) {
       alert("Please select a valid image.");
       return;
-    }
-    else if (avatar.files && avatar.files.length != 0 && avatar.files[0].type.startsWith("image/"))
+    } else if (avatar.files && avatar.files.length != 0 && avatar.files[0].type.startsWith("image/"))
       avatarBuffer = Array.from(new Uint8Array(await avatar.files[0].arrayBuffer()));
 
 
@@ -217,7 +208,7 @@ function editAndHide()
     if (!message.success)
       alert("Username or display name already exist");
 
-    modal.classList.add('hidden');
+    modal.classList.add("hidden");
     loadPage(profilePage);
   });
 }
@@ -234,14 +225,14 @@ function setup2fa() {
   modal.style.display = "none";
 
   button.onclick = async () => {
-    let message = await sendAndWait({event: "2fa"});
+    let message = await sendAndWait({ event: "2fa" });
     if (message.enable) {
       if (confirm("The 2FA is currently enabled. Do you want to disable it?"))
-        await sendAndWait({event: "2fa", enable: false});
+        await sendAndWait({ event: "2fa", enable: false });
     } else {
       message = await sendAndWait({ event: "2fa", enable: true });
       qrcode.toCanvas(qrcodeCanvas, `otpauth://totp/ft_transcendence:${message.username}?secret=${message.secret}&issuer=ft_transcendence`);
-      secret.innerText = message.secret;
+      secret.innerText = message.secret!;
       modal.style.display = "";
       verify.value = "";
     }
@@ -311,13 +302,12 @@ function removeFriend() {
   };
 }
 
-function setBtnEye(visible: boolean)
-{
+function setBtnEye(visible: boolean) {
   const btn_hide = document.querySelector<HTMLElement>("#btn_hide")!;
   const div_history = document.querySelector<HTMLDivElement>("#div_history")!;
   const div_friend = document.querySelector<HTMLDivElement>("#div_friend")!;
   const email = document.querySelector<HTMLParagraphElement>("#email")!;
-  const toggleElements = [div_history, div_friend, email];
+  const toggleElements = [ div_history, div_friend, email ];
 
 
   btn_hide.classList.toggle("fa-eye", visible);
@@ -329,16 +319,14 @@ function setBtnEye(visible: boolean)
   });
 }
 
-function hideprofile(hideProfile: boolean, hideData: boolean)
-{
+function hideProfile(hideProfile: boolean, hideData: boolean) {
   const btn_hide = document.querySelector<HTMLElement>("#btn_hide")!;
   const div_history = document.querySelector<HTMLDivElement>("#div_history")!;
   const div_friend = document.querySelector<HTMLDivElement>("#div_friend")!;
   const email = document.querySelector<HTMLParagraphElement>("#email")!;
-  const toggleElements = [div_history, div_friend, email];
-  
-  if (!hideProfile)
-  {
+  const toggleElements = [ div_history, div_friend, email ];
+
+  if (!hideProfile) {
     btn_hide.style.visibility = "hidden";
     document.querySelector("#manage")!.classList.add("hidden");
     document.querySelector("#add_friend")!.classList.add("hidden");
@@ -347,9 +335,7 @@ function hideprofile(hideProfile: boolean, hideData: boolean)
     toggleElements.forEach(el => {
       el.classList.toggle("text-white", true);
     });
-  }
-  else
-  {
+  } else {
     btn_hide.style.visibility = "visible";
     document.querySelector("#manage")!.classList.remove("hidden");
     document.querySelector("#add_friend")!.classList.remove("hidden");
@@ -365,9 +351,7 @@ function hideprofile(hideProfile: boolean, hideData: boolean)
       (child as HTMLElement).style.visibility = "hidden";
     }
     email.style.visibility = "hidden";
-  }      
-  else
-  {
+  } else {
     for (const child of div_history.children) {
       (child as HTMLElement).style.visibility = "visible";
     }
@@ -383,28 +367,25 @@ function getInfo(profileUsername: string) {
   const friendsList = document.querySelector<HTMLAnchorElement>("#friends-list")!;
   const imageElement = document.querySelector<HTMLImageElement>("#image")!;
 
-  sendAndWait({event: "get_info_profile", profileUsername}).then( async (message: any) => {
+  sendAndWait({ event: "get_info_profile", profileUsername }).then(async (message) => {
     username.innerText = message.name + " Profile";
     const friendsCount = message.friends!.length;
 
-    const statusElement = document.querySelector<HTMLParagraphElement>('#status')!;
+    const statusElement = document.querySelector<HTMLParagraphElement>("#status")!;
 
     // hide profile
-    visible = message.hideProfile;
+    visible = message.hideProfile!;
     setBtnEye(visible);
-    
+
     // status
-    if (message.status)
-    {
-        statusElement.textContent = "online";
-        statusElement.classList.remove("text-gray-500");
-        statusElement.classList.add("text-green-500");
-    }
-    else
-    {
+    if (message.status) {
+      statusElement.textContent = "online";
+      statusElement.classList.remove("text-gray-500");
+      statusElement.classList.add("text-green-500");
+    } else {
       statusElement.textContent = "offline";
       statusElement.classList.remove("text-green-500");
-          statusElement.classList.add("text-gray-500");
+      statusElement.classList.add("text-gray-500");
     }
 
 
@@ -443,20 +424,20 @@ function getInfo(profileUsername: string) {
 
           const friendName = friendLink.dataset.friend!;
           loadPage(profilePage, friendName);
-        };  
+        };
       }
     }
 
     imageElement.src = message.avatar != null
-      ? URL.createObjectURL(new Blob([new Uint8Array(message.avatar.data)]))
-      : "/avatar.webp";
+        ? URL.createObjectURL(new Blob([ new Uint8Array(message.avatar.data) ]))
+        : "/avatar.webp";
 
-    hideprofile(message.mainProfile, message.hideProfile);
+    hideProfile(message.mainProfile!, message.hideProfile!);
   });
 }
 
 function gameHistory() {
-  sendAndWait({ event: "get_games_history"}).then(message => {
+  sendAndWait({ event: "get_games_history" }).then(message => {
     const historyList = document.querySelector<HTMLUListElement>("#match-history")!;
     const matchCount = message.games!.length;
 
