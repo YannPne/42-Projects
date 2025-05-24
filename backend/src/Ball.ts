@@ -66,7 +66,7 @@ export default class Ball {
 
   impactPlayer(player: Player) {
     this.speedX *= -1;
-    this.speedY = ((this.y + this.size / 2) - player.centerY) / this.angle;
+    this.speedY = ((this.y + this.size / 3) - player.centerY) / this.angle;
     if (this.speedX > 0 && this.speedX < 40)
       this.speedX += 0.6;
     else if (this.speedX > -40)

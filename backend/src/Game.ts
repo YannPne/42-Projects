@@ -49,6 +49,13 @@ export class Game {
     user.game = this;
   }
 
+  removeUser(user: User) {
+    if (this.state == GameState.CREATING) {
+      const index = this.players.findIndex(player => player.name == user.displayName);
+      if (index !== -1) this.players.splice(index, 1);
+    }
+  }
+
   /**
    * @param name The name of the local player
    * @param user Let undefined if it is an AI player

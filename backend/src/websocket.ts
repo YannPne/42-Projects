@@ -36,6 +36,9 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
       case "join_game":
         joinGame(user, message);
         break;
+      case "leave_game":
+        leaveGame(user);
+        break;
       case "set_friend":
         setFriend(socket, user.id, message);
         break;
@@ -235,6 +238,15 @@ function joinGame(user: User, message: any) {
   }
   if (!(game.players.find(u => u.name == user.displayName)))
     game.addUser(user);
+}
+
+function leaveGame(user: User) {
+  let game = games.find((g) => g.players.some(p => p.name == user.displayName));
+  if (!game)
+    return ;
+  game.removeUser(user);
+  if (game?.players.length == 0)
+      game = undefined;
 }
 
 export function insertGameHistory(data: {

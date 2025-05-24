@@ -102,6 +102,8 @@ export const pongPage: Page<any> = {
     keydownListener = undefined;
     keyupListener = undefined;
     wsListener = undefined;
+
+    ws!.send(JSON.stringify({event: "leave_game"}));
   }
 };
 
