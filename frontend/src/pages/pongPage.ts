@@ -2,7 +2,7 @@ import { loadPage, type Page } from "./Page.ts";
 import { ws } from "../main.ts";
 import type { Ball, Event, Player } from "../Event.ts";
 import { chooseGamePage } from "./chooseGamePage.ts";
-import { ArcRotateCamera, Color3, Color4, Engine, HemisphericLight, MeshBuilder, Scene, SpotLight, StandardMaterial, Texture, Vector3} from "@babylonjs/core";
+import { ArcRotateCamera, Color3, Color4, Engine, HemisphericLight,GlowLayer, MeshBuilder, Scene, SpotLight, StandardMaterial, Texture, Vector3} from "@babylonjs/core";
 import * as GUI from "@babylonjs/gui";
 
 // TODO: Leave game
@@ -30,7 +30,15 @@ export const pongPage: Page<any> = {
         </div>
         <canvas id="game2d" width="1200" height="600" class="w-[90%] aspect-[2/1] bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
         <canvas id="game3d" width="1200" height="600" class="w-[90%] aspect-[2/1] not-focus-visible"></canvas>
-        <input id="is3d" type="checkbox">
+        <div class="flex items-center space-x-4 mt-4">
+          <span id="toggleText" class="text-lg font-medium text-white select-none cursor-pointer">Mode 2D</span>
+          <button id="is3d" type="button"
+            class="relative w-16 h-9 bg-gray-700 rounded-full transition-colors duration-300 ease-in-out focus:outline-none">
+            <span
+            id="toggleCircle"
+            class="absolute left-1 top-1 w-7 h-7 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out"></span>
+          </button>
+        </div>
       </div>
     `;
   },
@@ -55,6 +63,34 @@ export const pongPage: Page<any> = {
     let context3d = setup3d(canvas3d);
     const is3d = document. querySelector<HTMLInputElement>("#is3d")!;
 
+    const toggleText = document.querySelector<HTMLSpanElement>("#toggleText")!;
+    const toggleCircle = document.querySelector<HTMLSpanElement>("#toggleCircle")!;
+
+    let is3dActive = false; // état initial, tu peux aussi initialiser selon ta logique
+
+    function updateToggleUI() {
+      toggleText.textContent = is3dActive ? "Mode 3D" : "Mode 2D";
+      toggleCircle.style.transform = is3dActive ? "translateX(28px)" : "translateX(0)";
+      is3d.classList.toggle("bg-blue-600", is3dActive);
+      is3d.classList.toggle("bg-gray-700", !is3dActive);
+    }
+
+// Initialisation
+    updateToggleUI();
+
+    canvas3d.style.display = "none";
+    is3d.addEventListener("click", () => {
+      is3dActive = !is3dActive;
+      if (is3dActive) {
+        canvas2d.style.display = "none";
+        canvas3d.style.display = "inline";
+      } else {
+        canvas3d.style.display = "none";
+        canvas2d.style.display = "inline";
+      }
+      updateToggleUI();
+    });
+
     start.onclick = () => {
       ws!.send(JSON.stringify({ event: "play" }));
     };
@@ -78,23 +114,23 @@ export const pongPage: Page<any> = {
       move(event, true);
     });
 
-    canvas3d.style.display = "none";
-    is3d.onclick = () => {
-      if (is3d.checked) {
-        canvas2d.style.display = "none";
-        canvas3d.style.display = "inline";
-      } else {
-        canvas2d.style.display = "inline";
-        canvas3d.style.display = "none";
-      }
-    }
+    // canvas3d.style.display = "none";
+    // is3d.onclick = () => {
+    //   if (is3d.checked) {
+    //     canvas2d.style.display = "none";
+    //     canvas3d.style.display = "inline";
+    //   } else {
+    //     canvas2d.style.display = "inline";
+    //     canvas3d.style.display = "none";
+    //   }
+    // }
 
     ws?.addEventListener("message", wsListener = (event) => {
       const message: Event = JSON.parse(event.data);
 
       switch (message.event) {
         case "update":
-          if (is3d.checked) {
+          if (is3dActive) {
             context3d.ball.position.set(message.ball.x + 25, -message.ball.y - 25, 0);
             context3d.player2.position.set(message.players[1].x + 10, -message.players[1].y - 100, 5);
             context3d.player1.position.set(message.players[0].x + 10, -message.players[0].y - 100, 5);
@@ -112,6 +148,12 @@ export const pongPage: Page<any> = {
         case "win":
           context3d.textNameP1.text = "";
           context3d.textNameP2.text = "";
+          context3d.textScoreP1.text = "";
+          context3d.textScoreP2.text = "";
+          context3d.textEndGame.text = message.player + " win!";
+          context3d.ball.position.set(600, -300, 200);
+          context3d.player1.position.set(600, -300, 200);
+          context3d.player2.position.set(600, -300, 200);
 
           drawEndGame(canvas2d, context2d, message.player);
           break;
@@ -204,7 +246,7 @@ function setup3d(canvas: HTMLCanvasElement) {
   const ledMaterial = new StandardMaterial("ledMaterial", scene);
   ledMaterial.emissiveColor = new Color3(1, 1, 1);
 
-  //const glowLayer = new GlowLayer("glow", scene);
+  new GlowLayer("glow", scene);
   //glowLayer.intensity = 0.2;
   //glowLayer.addIncludedOnlyMesh(ledPlane);
 
@@ -215,6 +257,9 @@ function setup3d(canvas: HTMLCanvasElement) {
   const box1 = MeshBuilder.CreateBox("box1", { width: 1280, height: 680, depth: 100 }, scene);
   box1.position.set(600, -300, 75);
   box1.material = materialBlackMat;
+
+
+  
 
   const box2 = MeshBuilder.CreateBox("box2", { width: 1240, height: 640, depth: 100 }, scene);
   box2.position.set(600, -300, 375);
@@ -272,6 +317,13 @@ function setup3d(canvas: HTMLCanvasElement) {
   box13.position.set(1219, -300, 0);
   box13.material = ledMaterial;
 
+  // function ee(name, options: any, pos, scene: any) {
+  //   const box13 = MeshBuilder.CreateBox("box5", options, scene);
+  //   box13.position.set(1219, -300, 0);
+  //   box13.material = ledMaterial;
+  // }
+  // ee("box5", {..., x: 1219, y, z}, , ,, scene)
+
   const box14 = MeshBuilder.CreateBox("box5", { width: 50, height: 680, depth: 20 }, scene);
   box14.position.set(1215, -300, -25);
   box14.material = materialBlackMat;
@@ -318,23 +370,23 @@ function setup3d(canvas: HTMLCanvasElement) {
   const player2 = MeshBuilder.CreateBox("player2", { width: 20, height: 200, depth: 40 }, scene);
   player2.position.set(600, -300, 200);
 
-  const planeScoreP1 = MeshBuilder.CreatePlane("label", { width: 600, height: 300 }, scene);
+  const planeScoreP1 = MeshBuilder.CreatePlane("label", { width: 600, height: 600 }, scene);
   planeScoreP1.position.set(300, -300, 23);
   const guiScoreP1 = GUI.AdvancedDynamicTexture.CreateForMesh(planeScoreP1);
 
-  const planeScoreP2 = MeshBuilder.CreatePlane("label", { width: 600, height: 300 }, scene);
+  const planeScoreP2 = MeshBuilder.CreatePlane("label", { width: 600, height: 600 }, scene);
   planeScoreP2.position.set(900, -300, 23);
   const guiScoreP2 = GUI.AdvancedDynamicTexture.CreateForMesh(planeScoreP2);
 
   const textScoreP1 = new GUI.TextBlock();
   textScoreP1.text = "";
-  textScoreP1.color = "white";
-  textScoreP1.fontSize = 600;
+  textScoreP1.color = "gray";
+  textScoreP1.fontSize = 400;
 
   const textScoreP2 = new GUI.TextBlock();
   textScoreP2.text = "";
-  textScoreP2.color = "white";
-  textScoreP2.fontSize = 600;
+  textScoreP2.color = "gray";
+  textScoreP2.fontSize = 400;
 
   guiScoreP1.addControl(textScoreP1);
   guiScoreP2.addControl(textScoreP2);
@@ -362,11 +414,22 @@ function setup3d(canvas: HTMLCanvasElement) {
   guiNameP1.addControl(textNameP1);
   guiNameP2.addControl(textNameP2);
 
+  const planeEndGame = MeshBuilder.CreatePlane("label", { width: 1200, height: 1200 }, scene);
+  planeEndGame.position.set(600, -300, 23);
+  const guiEndGame = GUI.AdvancedDynamicTexture.CreateForMesh(planeEndGame);
+
+  const textEndGame = new GUI.TextBlock();
+  textEndGame.text = "";
+  textEndGame.color = "white";
+  textEndGame.fontSize = 200;
+
+  guiEndGame.addControl(textEndGame);
+
   engine.runRenderLoop(() => {
     scene.render();
   });
 
-  return {ball, player1, player2, textNameP1, textNameP2, textScoreP1, textScoreP2};
+  return {ball, player1, player2, textNameP1, textNameP2, textScoreP1, textScoreP2, textEndGame};
 }
 
 function drawMap(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
