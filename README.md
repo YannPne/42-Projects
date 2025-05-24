@@ -81,7 +81,7 @@ To run the project locally without Docker, follow these steps:
    cd backend
    npm run dev
    ```
-   > [!TIP]
+   > **Tip:**\
    > If the backend crash after launching it with docker, remove the `nodes_modules` directory and rerun `npm ci`.
    
    Start the frontend:
