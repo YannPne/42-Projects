@@ -5,3 +5,5 @@ tsconfig.tsbuildinfo
 .env
 backend/database.sqlite
 backend/log_db.sql
+frontend/fullchain.crt
+frontend/privkey.key

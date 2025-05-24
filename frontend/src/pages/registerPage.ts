@@ -90,7 +90,7 @@ export const registerPage: Page<Page<any>> = {
       }
 
       const formData = new FormData(registerForm);
-      const response = await fetch("http://" + document.location.host + "/api/register", {
+      const response = await fetch("https://" + document.location.host + "/api/register", {
         method: "POST",
         body: formData
       });

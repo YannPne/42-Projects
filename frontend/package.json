@@ -8,11 +8,11 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@babylonjs/core": "^8.8.5",
+    "@babylonjs/core": "^8.9.0",
     "@tailwindcss/vite": "^4.1.7",
     "@types/qrcode": "^1.5.5",
     "qrcode": "^1.5.4",
-    "tailwindcss": "^4.1.5"
+    "tailwindcss": "^4.1.7"
   },
   "devDependencies": {
     "@types/node": "^22.15.21",

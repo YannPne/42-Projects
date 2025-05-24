@@ -33,7 +33,7 @@ contract TournamentScores {
         require(matchIds_.length == matchScores.length, "Match IDs and scores length mismatch");
         uint256 tournamentId = totalTournaments;
         totalTournaments++;
-        
+
         for (uint256 i = 0; i < matchIds_.length; i++) {
             tournaments[tournamentId][matchIds_[i]].scores = matchScores[i];
             matchIds[tournamentId].push(matchIds_[i]);
@@ -55,8 +55,7 @@ contract TournamentScores {
         return tournaments[tournamentId][matchId].scores;
     }
 
-    function getTotalTournaments() external view returns (uint256)
-    {
+    function getTotalTournaments() external view returns (uint256) {
         return totalTournaments;
     }
 }
