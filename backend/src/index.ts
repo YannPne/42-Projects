@@ -9,7 +9,6 @@ import bcrypt from "bcrypt";
 import fastifyFormbody from "@fastify/formbody";
 import fs from "fs";
 import { getTotpCode } from "./2fa";
-import * as repl from "node:repl";
 
 dotenv.config();
 
@@ -23,7 +22,7 @@ sqlite.exec(`CREATE TABLE IF NOT EXISTS users (
     password TEXT NOT NULL,
     avatar BLOB DEFAULT NULL,
     secret2fa TEXT DEFAULT NULL,
-    hideProfile BOOLEAN
+    hideProfile BOOLEAN DEFAULT 1
 )`);
 sqlite.exec(`CREATE TABLE IF NOT EXISTS games (
     id     INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -101,40 +100,6 @@ app.post("/api/login", async (request, reply) => {
     return reply.status(403).send("Forbidden");
   return reply.status(200).send(app.jwt.sign({ id: row.id }));
 });
-
-app.post("/api/update-avatar", async (request, reply) => {
-  let username: string | undefined;
-  let avatar: Buffer | null = null;
-
-  for await (const part of request.parts()) {
-    if (part.fieldname === "username" && part.type === "field") {
-      username = part.value;
-    } else if (part.fieldname === "avatar" && part.type === "file") {
-      if (part.filename) {
-        const chunks: Buffer[] = [];
-        for await (const chunk of part.file) chunks.push(chunk);
-        avatar = Buffer.concat(chunks);
-      }
-    } else {
-      return reply.status(400).send("Invalid part");
-    }
-  }
-
-  if (!username || !avatar) {
-    return reply.status(400).send("Missing username or avatar");
-  }
-
-  const result = sqlite
-    .prepare(`UPDATE users SET avatar = ? WHERE username = ?`)
-    .run(avatar, username);
-
-  if (result.changes === 0) {
-    return reply.status(404).send("User not found");
-  }
-
-  return reply.status(200).send("Avatar updated");
-});
-
 
 app.post("/api/register", async (request, reply) => {
   let username: string | undefined;

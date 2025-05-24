@@ -71,8 +71,6 @@ for (let page of pages) {
   button.href = page.url;
   button.onclick = async event => {
     event.preventDefault();
-    if (ws != undefined && page.title == "Profile")
-      await ws!.send(JSON.stringify({ event: "set_profile", name: null }));
     loadPage(page);
   };
 

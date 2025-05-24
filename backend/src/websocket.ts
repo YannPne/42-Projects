@@ -3,6 +3,7 @@ import User from "./User";
 import { Game, games, GameState } from "./Game";
 import { sqlite } from ".";
 import { generateRandomSecret, getTotpCode } from "./2fa";
+import bcrypt from 'bcrypt';
 
 
 export let onlineUsers: User[] = [];
@@ -90,25 +91,28 @@ function setHideProfile(id_user: number, hide: boolean)
 function updateInfo(socket: WebSocket, user: User, msg: any)
 {
   let result;
+  if (msg.avatar && Array.isArray(msg.avatar))
+    msg.avatar = Buffer.from(msg.avatar);
+
   if (!msg.password)
   {
     result = sqlite.prepare(`UPDATE users
-      SET username = ?, displayName = ?, email = ?
+      SET username = ?, displayName = ?, email = ?, avatar = ?
       WHERE id = ?
       AND NOT EXISTS (
       SELECT 1 FROM users
       WHERE (username = ? OR displayName = ?) AND id != ?
-    )`).run(msg.username, msg.displayName, msg.email, user.id, msg.username, msg.displayName, user.id);
+    )`).run(msg.username, msg.displayName, msg.email, msg.avatar, user.id, msg.username, msg.displayName, user.id);
   }
   else
   {
     result = sqlite.prepare(`UPDATE users
-      SET username = ?, displayName = ?, email = ?, password = ?
+      SET username = ?, displayName = ?, email = ?, avatar = ?, password = ?
       WHERE id = ?
       AND NOT EXISTS (
       SELECT 1 FROM users
       WHERE (username = ? OR displayName = ?) AND id != ?
-      )`).run(msg.username, msg.displayName, msg.email, bcrypt.hashSync(msg.password, 10), user.id, msg.username, msg.displayName, user.id);
+      )`).run(msg.username, msg.displayName, msg.email, msg.avatar, bcrypt.hashSync(msg.password, 10), user.id, msg.username, msg.displayName, user.id);
   }
   
     

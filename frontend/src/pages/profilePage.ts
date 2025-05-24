@@ -3,10 +3,11 @@ import { closeWs, ws } from "../main.ts";
 import { loginPage } from "./loginPage.ts";
 import { sendAndWait } from "../Event.ts";
 import qrcode from "qrcode";
+import type { RandomNumberBlock } from "@babylonjs/core";
 
 let visible: boolean = true;
 
-export const profilePage: Page = {
+export const profilePage: Page<Page> = {
   url: "/profile",
   title: "Profile",
   navbar: true,
@@ -54,9 +55,9 @@ export const profilePage: Page = {
         </form>
       </div>
 
-      <div id="edit-profile-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden">
+      <div id="edit-profile-modal" class="fixed inset-0 bg-black/50 items-center justify-center hidden">
         <div class="bg-gray-800 rounded-lg p-6 w-96">
-          <h2 class="text-white text-xl mb-4">Edit informations</h2>
+          <h2 class="text-white text-xl mb-4">Edit information</h2>
           <form id="edit-profile-form" class="flex flex-col space-y-4">
             <label>Username</label>
             <input type="text" id="edit_username" placeholder="Username" class="p-2 rounded bg-gray-700 text-white" required />
@@ -105,7 +106,7 @@ export const profilePage: Page = {
 
   
 
-  async onMount(profileUsername: any) {
+  async onMount(profileUsername: any = "") {
     if (ws == undefined) {
       loadPage(loginPage, profilePage);
       return;
@@ -155,7 +156,6 @@ function editAndHide()
   const editBtn = document.querySelector('#edit-profile-btn')!;
   const modal = document.querySelector('#edit-profile-modal')!;
   const cancelBtn = document.querySelector('#cancel-btn')!;
-  const statusElement = document.querySelector<HTMLParagraphElement>('#status')!;
   const form = document.querySelector<HTMLFormElement>('#edit-profile-form');
 
   editBtn.addEventListener('click', async () => {
@@ -179,11 +179,15 @@ function editAndHide()
     const email = document.querySelector<HTMLInputElement>("#edit_email")!;
     const avatar = document.querySelector<HTMLInputElement>("#edit_avatar")!;
     const password = document.querySelector<HTMLInputElement>("#edit_password")!;
+    let avatarBuffer: number[] | null = null;
 
     if (avatar.files && avatar.files.length != 0 && !avatar.files[0].type.startsWith("image/")) {
       alert("Please select a valid image.");
       return;
     }
+    else if (avatar.files && avatar.files.length != 0 && avatar.files[0].type.startsWith("image/"))
+      avatarBuffer = Array.from(new Uint8Array(await avatar.files[0].arrayBuffer()));
+
 
     const message = await sendAndWait({
       event: "update_info",
@@ -191,22 +195,14 @@ function editAndHide()
       displayName: displayName.value,
       password: password.value,
       email: email.value,
+      avatar: avatarBuffer
     });
 
     if (!message.success)
       alert("Username or display name already exist");
 
-    const formData = new FormData();
-    if (avatar.files && avatar.files?.length > 0)
-      formData.append("avatar", avatar.files[0]);
-    formData.append("username", userName.value);
-    await fetch("http://localhost:3000/api/update-avatar", {
-      method: "POST",
-      body: formData
-  });
-
-  modal.classList.add('hidden');
-  loadPage(profilePage);
+    modal.classList.add('hidden');
+    loadPage(profilePage);
   });
 }
 
@@ -378,7 +374,7 @@ function getInfo(profileUsername: string) {
     const statusElement = document.querySelector<HTMLParagraphElement>('#status')!;
 
     // hide profile
-    visible = message.hideProfile != null ? message.hideProfile : true;
+    visible = message.hideProfile;
     setBtnEye(visible);
     
     // status
@@ -415,7 +411,7 @@ function getInfo(profileUsername: string) {
           <div class="w-full flex justify-between items-center">
             <div class="flex items-center gap-2">
             <span class="inline-block w-2.5 h-2.5 ${status_display} rounded-full mr-2 shadow-md"></span>
-            <a href="#" id="friend-link" class="friend-link hover:underline" data-friend="${friend}">${friend}</a>
+            <button id="btnFriend" class="friend-link hover:underline" data-friend="${friend}">${friend}</button>
             </div>
             <button id="btn_remove" class="bg-red-700 text-white px-2 py-1 rounded hover:bg-red-800" data-friend="${friend}">
               Remove
@@ -424,7 +420,7 @@ function getInfo(profileUsername: string) {
           `;
         friendsList?.appendChild(li);
 
-        const friendLink = li.querySelector<HTMLAnchorElement>("#friend-link")!;
+        const friendLink = li.querySelector<HTMLButtonElement>("#btnFriend")!;
         friendLink.innerText = friend;
         friendLink.onclick = (e) => {
           e.preventDefault();
@@ -444,7 +440,7 @@ function getInfo(profileUsername: string) {
 }
 
 function gameHistory() {
-  sendAndWait({ event: "get_games_history" }).then(message => {
+  sendAndWait({ event: "get_games_history"}).then(message => {
     const historyList = document.querySelector<HTMLUListElement>("#match-history")!;
     const matchCount = message.games!.length;
 

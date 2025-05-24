@@ -39,7 +39,7 @@ export const registerPage: Page<Page> = {
               <input id="checkPrivacy" type="checkbox" required class="accent-gray-700">
               <span>
                 I have read and agree to the
-                <a id="linkPrivacy" href="/privacy/" target="_blank" class="underline hover:text-white">Privacy Policy</a>.
+                <a id="linkPrivacy" href="/privacy" target="_blank" class="underline hover:text-white">Privacy Policy</a>.
               </span>
             </label>
             <div class="flex justify-center">
@@ -57,6 +57,7 @@ export const registerPage: Page<Page> = {
   },
 
   onMount(requestedPage) {
+  
     if (ws != undefined) {
       loadPage(requestedPage ?? profilePage);
       return;
@@ -67,12 +68,12 @@ export const registerPage: Page<Page> = {
     const checkPrivacy = document.querySelector<HTMLInputElement>("#checkPrivacy");
     const privacyLink = document.querySelector("#linkPrivacy");
 
-if (privacyLink) {
-  privacyLink.addEventListener("click", async event => {
-    event.preventDefault();
-    loadPage(privacyPage);
-  });
-}
+    if (privacyLink) {
+      privacyLink.addEventListener("click", async event => {
+        event.preventDefault();
+        loadPage(privacyPage);
+      });
+    }
 
     loginLink.onclick = (event) => {
       event.preventDefault();
