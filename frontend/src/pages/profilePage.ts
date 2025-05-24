@@ -15,6 +15,10 @@ export const profilePage: Page<Page> = {
   getPage(): string {
     return /*html*/`
     <div class="h-full flex flex-col justify-start items-center">
+      <button id="btnDisconnect"
+      class="absolute top-15 right-4 bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-lg shadow">
+      Disconnect
+      </button>
       <img id="image" alt="avatar" class="w-32 h-32 border-4 border-gray-700 bg-gray-700" />
       <p id="username" class="text-5xl pb-1 font-bold"></p>
       <p id="email" class="text-2xl font-bold pb-4"></p>
@@ -112,6 +116,7 @@ export const profilePage: Page<Page> = {
       return;
     }
 
+    disconnect();
     deleteAccount();
     editAndHide();
     addFriend();
@@ -124,6 +129,17 @@ export const profilePage: Page<Page> = {
   onUnmount() {
   }
 };
+
+function disconnect()
+{
+  const btnDisconnect = document.querySelector<HTMLButtonElement>("#btnDisconnect")!;
+
+  btnDisconnect.onclick = () => {
+    ws!.send(JSON.stringify({event: "disconnect"}));
+    closeWs();
+    loadPage(loginPage, profilePage);
+  };
+}
 
 function editAndHide()
 {

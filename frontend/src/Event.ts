@@ -19,6 +19,7 @@ export type Event =
   | { event: "get_games", games?: { uid: string, name: string }[] }
   | { event: "join_game", uid: string, name?: string }
   | { event: "play" }
+  | { event: "disconnect"}
   | { event: "move", id: number, goUp?: boolean, goDown?: boolean }
   | { event: "update", ball: Ball, players: Player[] }
   | { event: "win", player: string }

@@ -48,7 +48,8 @@ export const pongPage: Page<any> = {
     const canvas = document.querySelector<HTMLCanvasElement>("#game")!;
     const context = canvas.getContext("2d")!;
 
-    start.onclick = () => {
+    start.onclick = async () => {
+      await countdownOnCanvas(context);
       ws!.send(JSON.stringify({ event: "play" }));
     };
 
@@ -76,11 +77,13 @@ export const pongPage: Page<any> = {
 
       switch (message.event) {
         case "update":
+          // if var global qui check si les names ont changés
           drawMap(canvas, context);
           for (let player of message.players)
             drawPlayer(context, player);
           drawBall(context, message.ball);
           drawScore(canvas, context, message.players[0], message.players[1]);
+          nextMatch(context, message.players);
           break;
         case "win":
           drawEndGame(canvas, context, message.player);
@@ -101,6 +104,22 @@ export const pongPage: Page<any> = {
     wsListener = undefined;
   }
 };
+
+let lastName1: string;
+let lastName2: string;
+
+async function nextMatch(context: CanvasRenderingContext2D, players: Player[])
+{
+  if (lastName1 == undefined)
+  {
+    lastName1 = players[0].name;
+    lastName2 = players[1].name;
+  }
+  if (lastName1 != players[0].name || lastName2 != players[1].name)
+    await countdownOnCanvas(context);
+  lastName1 = players[0].name
+  lastName2 = players[1].name
+}
 
 function move(event: KeyboardEvent, up: boolean) {
   let send: Partial<Event> = { event: "move" };
@@ -131,6 +150,37 @@ function drawMap(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
   context.shadowBlur = 20;
   context.shadowColor = "pink";
 }
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function countdownOnCanvas(ctx: CanvasRenderingContext2D) {
+  const width = ctx.canvas.width;
+  const height = ctx.canvas.height;
+
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "white";
+  ctx.font = "bold 150px Arial";
+
+  for (let i = 3; i > 0; i--) {
+    ctx.clearRect(0, 0, width, height);
+    ctx.globalAlpha = 1;
+    ctx.fillText(i.toString(), width / 2, height / 2);
+
+    for (let alpha = 1; alpha >= 0; alpha -= 0.05) {
+      ctx.clearRect(0, 0, width, height);
+      ctx.globalAlpha = alpha;
+      ctx.fillText(i.toString(), width / 2, height / 2);
+      await sleep(50);
+    }
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.clearRect(0, 0, width, height);
+}
+
 
 function drawPlayer(context: CanvasRenderingContext2D, player: Player) {
   context.fillStyle = "white";
@@ -168,10 +218,13 @@ function drawScore(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D,
   context.globalAlpha = 1;
 }
 
-function drawEndGame(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, player: string) {
+async function drawEndGame(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, player: string) {
   context.font = "80px Arial";
   context.fillStyle = "white";
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.fillText(player + " win", canvas.width / 2, canvas.height / 4);
+
+  await sleep(2000);
+  loadPage(chooseGamePage);
 }

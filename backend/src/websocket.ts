@@ -65,6 +65,9 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
       case "update_info":
         updateInfo(socket, user!, message);
         break;
+      case "disconnect":
+        socket.close();
+        break;
       case "del_account":
         const success = deleteAccount(user.id);
         socket.send(JSON.stringify({ event: "del_account", success }));
@@ -230,7 +233,8 @@ function joinGame(user: User, message: any) {
     for (let user of onlineUsers)
       user.socket.send(JSON.stringify({ event: "get_games", games }));
   }
-  game.addUser(user);
+  if (!(game.players.find(u => u.name == user.displayName)))
+    game.addUser(user);
 }
 
 export function insertGameHistory(data: {
