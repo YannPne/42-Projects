@@ -74,7 +74,7 @@ export class Game {
     let player: Player;
 
     if (this.ball.left < 0) player = this.players[1];
-    else if (this.ball.left > this.width) player = this.players[0];
+    else if (this.ball.right > this.width) player = this.players[0];
     else return false;
 
     player.score++;

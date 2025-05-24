@@ -72,8 +72,13 @@ export default class Player {
       }
     }
 
-    this.goUp = this.centerY > this.aiTargetY + 30;
-    this.goDown = this.centerY < this.aiTargetY - 30;
+    if (this.aiTargetY < 0)
+      this.aiTargetY = (-this.aiTargetY) * 1.25;
+    else if (this.aiTargetY > 600)
+      this.aiTargetY = 600 - ((this.aiTargetY - 600) * 1.25);
+
+    this.goUp = this.centerY > this.aiTargetY + (this.height / 4);
+    this.goDown = this.centerY < this.aiTargetY - (this.height / 4);
   }
 
   toJSON() {
