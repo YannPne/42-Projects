@@ -2,13 +2,14 @@ import Ball from "./Ball";
 import { addTournamentMatches, getTotalTournaments, getTournamentMatches } from "./smartContract";
 import Player from "./Player";
 import User from "./User";
-import { insertGameHistory, onlineUsers } from "./websocket";
+import {insertGameHistory, onlineUsers} from "./websocket";
 
 export let games: Game[] = [];
 export enum GameState {
   CREATING,
   IN_GAME,
   SHOW_WINNER,
+  ABORTED,
 }
 
 // get the max-number of tournement already in the blockchain at launch
@@ -53,6 +54,19 @@ export class Game {
     user.game = this;
   }
 
+  removeUser(user: User) {
+    this.players = this.players.filter(p => !user.players.includes(p));
+    this.users.splice(this.users.indexOf(user), 1);
+
+    user.game = undefined;
+    user.players = [];
+
+    if (this.players.filter(p => !p.isAi).length == 0) {
+      this.state = GameState.ABORTED;
+      games.splice(games.indexOf(this), 1);
+    }
+  }
+
   /**
    * @param name The name of the local player
    * @param user Let undefined if it is an AI player
@@ -78,7 +92,7 @@ export class Game {
     let player: Player;
 
     if (this.ball.left < 0) player = this.players[1];
-    else if (this.ball.left > this.width) player = this.players[0];
+    else if (this.ball.right > this.width) player = this.players[0];
     else return false;
 
     player.score++;

@@ -3,7 +3,7 @@ import { loadPage, type Page } from "./Page.ts";
 import { registerPage } from "./registerPage.ts";
 import { profilePage } from "./profilePage.ts";
 
-export const loginPage: Page<Page> = {
+export const loginPage: Page<Page<any>> = {
   url: "/login",
   title: "Login",
   navbar: false,
@@ -59,7 +59,7 @@ export const loginPage: Page<Page> = {
         body: formData.get("username") as string
       });
 
-      if (require2fa.status == 200) {
+      if (await require2fa.json()) {
         const code2fa = prompt("Please enter your 2FA code");
         if (code2fa == null)
           return;

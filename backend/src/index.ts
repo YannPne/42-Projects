@@ -9,7 +9,6 @@ import bcrypt from "bcrypt";
 import fastifyFormbody from "@fastify/formbody";
 import fs from "fs";
 import { getTotpCode } from "./2fa";
-import * as repl from "node:repl";
 
 dotenv.config();
 
@@ -22,7 +21,8 @@ sqlite.exec(`CREATE TABLE IF NOT EXISTS users (
     email TEXT NOT NULL,
     password TEXT NOT NULL,
     avatar BLOB DEFAULT NULL,
-    secret2fa TEXT DEFAULT NULL
+    secret2fa TEXT DEFAULT NULL,
+    hideProfile BOOLEAN DEFAULT 1
 )`);
 sqlite.exec(`CREATE TABLE IF NOT EXISTS games (
     id     INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -69,7 +69,7 @@ app.post("/api/require_2fa", (request, reply) => {
   const row: any = sqlite.prepare("SELECT secret2fa FROM users WHERE username = ?")
     .get(request.body);
 
-  return reply.status(row && row.secret2fa ? 200 : 400).send();
+  return reply.send(row != undefined && row.secret2fa != null);
 });
 
 app.post("/api/login", async (request, reply) => {

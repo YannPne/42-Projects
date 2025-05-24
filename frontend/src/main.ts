@@ -1,4 +1,5 @@
 import { findPage, loadPage, pages } from "./pages/Page.ts";
+import { privacyPage } from "./pages/privacyPage.ts";
 
 export let ws: WebSocket | undefined;
 
@@ -50,6 +51,15 @@ export function closeWs() {
   sessionStorage.removeItem("token");
 }
 
+const privacyLink = document.querySelector("#footer-privacy");
+
+if (privacyLink) {
+  privacyLink.addEventListener("click", async event => {
+    event.preventDefault();
+    loadPage(privacyPage);
+  });
+}
+
 const nav = document.querySelector<HTMLElement>("nav")!;
 
 for (let page of pages) {
@@ -59,7 +69,7 @@ for (let page of pages) {
   button.className = "flex-1 text-center p-3 bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950 transition-all hover:via-gray-950";
   button.innerHTML = typeof page.navbar == "string" ? page.navbar : page.title;
   button.href = page.url;
-  button.onclick = event => {
+  button.onclick = async event => {
     event.preventDefault();
     loadPage(page);
   };

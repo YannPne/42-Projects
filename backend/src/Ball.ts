@@ -2,7 +2,7 @@ import { Game } from "./Game";
 import Player from "./Player";
 
 export default class Ball {
-  readonly angle: number = 60;
+  readonly angle: number = 50;
   readonly size: number = 50;
 
   readonly game: Game;
@@ -66,7 +66,7 @@ export default class Ball {
 
   impactPlayer(player: Player) {
     this.speedX *= -1;
-    this.speedY = (this.y - player.centerY) / this.angle;
+    this.speedY = ((this.y + this.size / 3) - player.centerY) / this.angle;
     if (this.speedX > 0 && this.speedX < 40)
       this.speedX += 0.6;
     else if (this.speedX > -40)
