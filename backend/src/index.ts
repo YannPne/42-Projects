@@ -8,31 +8,34 @@ import * as dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import fastifyFormbody from "@fastify/formbody";
 import fs from "fs";
+import { getTotpCode } from "./2fa";
 
 dotenv.config();
 
 export const sqlite = initSqlite("./database.sqlite", { verbose: (msg) => fs.appendFileSync("./log_db.sql", msg + ";\n") });
 
 sqlite.exec(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT,
-    displayName TEXT,
-    email TEXT,
-    password TEXT,
-    avatar BLOB
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    username TEXT NOT NULL,
+    displayName TEXT NOT NULL,
+    email TEXT NOT NULL,
+    password TEXT NOT NULL,
+    avatar BLOB DEFAULT NULL,
+    secret2fa TEXT DEFAULT NULL,
+    hideProfile BOOLEAN DEFAULT 1
 )`);
 sqlite.exec(`CREATE TABLE IF NOT EXISTS games (
-    id     INTEGER PRIMARY KEY AUTOINCREMENT,
-    name1  TEXT,
-    name2  TEXT,
-    score1 INTEGER,
-    score2 INTEGER,
-    date DATE
+    id     INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    name1  TEXT NOT NULL,
+    name2  TEXT NOT NULL,
+    score1 INT NOT NULL,
+    score2 INT NOT NULL,
+    date DATE NOT NULL
 )`);
 sqlite.exec(`CREATE TABLE IF NOT EXISTS friends (
-    id       INTEGER PRIMARY KEY AUTOINCREMENT,
-    userid   INTEGER,
-    friendid INTEGER,
+    id       INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    userid   INTEGER NOT NULL,
+    friendid INTEGER NOT NULL,
     UNIQUE (userid, friendid),
     FOREIGN KEY (userid) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (friendid) REFERENCES users (id) ON DELETE CASCADE
@@ -50,24 +53,37 @@ app.decorate("authenticate", async (req: FastifyRequest, reply: FastifyReply) =>
     const queryToken = (req.query as any).token;
     const decoded = queryToken != undefined ? app.jwt.verify<any>(queryToken) : await req.jwtVerify();
     req.jwtUserId = decoded.id;
+
+    if (sqlite.prepare("SELECT id FROM users WHERE id = ?").run(decoded.id) == undefined)
+      return reply.status(401).send("Unauthorized");
   } catch (err) {
     return reply.send(err);
   }
 });
 
 app.register(app => {
-  app.get("/api/ws", { websocket: true, preHandler: [app.authenticate] }, registerWebSocket);
+  app.get("/api/ws", { websocket: true, preHandler: [ app.authenticate ] }, registerWebSocket);
+});
+
+app.post("/api/require_2fa", (request, reply) => {
+  const row: any = sqlite.prepare("SELECT secret2fa FROM users WHERE username = ?")
+      .get(request.body);
+
+  return reply.send(row != undefined && row.secret2fa != null);
 });
 
 app.post("/api/login", async (request, reply) => {
   let username: string | undefined;
   let password: string | undefined;
+  let code2fa: string | undefined;
 
   for await (let part of request.parts()) {
     if (part.fieldname == "username" && part.type == "field")
       username = part.value as string;
     else if (part.fieldname == "password" && part.type == "field")
       password = part.value as string;
+    else if (part.fieldname == "2fa" && part.type == "field")
+      code2fa = part.value as string;
     else
       return reply.status(400).send("Invalid part");
   }
@@ -75,14 +91,14 @@ app.post("/api/login", async (request, reply) => {
   if (!username || !password)
     return reply.status(400).send("Incomplete request");
 
-  const row: any = sqlite.prepare("SELECT id, password FROM users WHERE username = ?")
-    .get(username);
+  const row: any = sqlite.prepare("SELECT id, password, secret2fa FROM users WHERE username = ?")
+      .get(username);
 
   if (row == undefined || !bcrypt.compareSync(password, row.password))
     return reply.status(401).send("Unauthorized");
-
-  const token = app.jwt.sign({ id: row.id });
-  return reply.status(200).send(token);
+  if (row.secret2fa != null && await getTotpCode(row.secret2fa) != code2fa)
+    return reply.status(403).send("Forbidden");
+  return reply.status(200).send(app.jwt.sign({ id: row.id }));
 });
 
 app.post("/api/register", async (request, reply) => {
@@ -116,12 +132,9 @@ app.post("/api/register", async (request, reply) => {
     return reply.status(400).send("Incomplete request");
 
   const result = sqlite.prepare(`INSERT INTO users (username, displayName, email, password, avatar)
-                                 SELECT ?,
-                                        ?,
-                                        ?,
-                                        ?,
-                                        ? WHERE NOT EXISTS(SELECT 1 FROM users WHERE username = ?)`)
-    .run(username, displayName, email, bcrypt.hashSync(password, 10), avatar, username);
+        SELECT ?, ?, ?, ?, ?
+        WHERE NOT EXISTS(SELECT 1 FROM users WHERE username = ?)`)
+      .run(username, displayName, email, bcrypt.hashSync(password, 10), avatar, username);
 
   if (result.changes == 0)
     return reply.status(409).send("Username already exist");

@@ -4,6 +4,7 @@ import { pongPage } from "./pongPage.ts";
 import { loginPage } from "./loginPage.ts";
 import { registerPage } from "./registerPage.ts";
 import { profilePage } from "./profilePage.ts";
+import { privacyPage } from "./privacyPage.ts";
 
 
 export type Page<T = undefined> = {
@@ -21,7 +22,8 @@ export const pages: Page[] = [
   pongPage,
   loginPage,
   registerPage,
-  profilePage
+  profilePage,
+  privacyPage,
 ];
 
 let currentPage: Page<any> | undefined;

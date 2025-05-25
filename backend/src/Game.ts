@@ -1,15 +1,20 @@
 import Ball from "./Ball";
+import { addTournamentMatches, getTotalTournaments, getTournamentMatches } from "./smartContract";
 import Player from "./Player";
 import User from "./User";
-import { insertGameHistory, onlineUsers } from "./websocket";
+import {insertGameHistory, onlineUsers} from "./websocket";
 
 export let games: Game[] = [];
-
 export enum GameState {
   CREATING,
   IN_GAME,
   SHOW_WINNER,
+  ABORTED,
 }
+
+// get the max-number of tournement already in the blockchain at launch
+// use it for retrieve the good tournement (actual id + idtournament = actual pos in the blockchain)
+export const idtournament = getTotalTournaments();
 
 export class Game {
   readonly winScore: number = 5;
@@ -40,13 +45,26 @@ export class Game {
 
   addUser(user: User) {
     if (this.state == GameState.CREATING) {
-      const player = new Player(this, user.name, false);
+      const player = new Player(this, user.displayName, false);
       this.players.push(player);
       user.players.push(player);
     }
 
     this.users.push(user);
     user.game = this;
+  }
+
+  removeUser(user: User) {
+    this.players = this.players.filter(p => !user.players.includes(p));
+    this.users.splice(this.users.indexOf(user), 1);
+
+    user.game = undefined;
+    user.players = [];
+
+    if (this.players.filter(p => !p.isAi).length == 0) {
+      this.state = GameState.ABORTED;
+      games.splice(games.indexOf(this), 1);
+    }
   }
 
   /**
@@ -74,7 +92,7 @@ export class Game {
     let player: Player;
 
     if (this.ball.left < 0) player = this.players[1];
-    else if (this.ball.left > this.width) player = this.players[0];
+    else if (this.ball.right > this.width) player = this.players[0];
     else return false;
 
     player.score++;
@@ -163,7 +181,9 @@ export class Game {
     for (let user of onlineUsers)
       user.socket.send(JSON.stringify({ event: "get_games", games }));
 
-    // saveTournament(); -- TODO
+    /*blockchain*/
+    await this.saveTournament();
+    await this.getTournament();
   }
 
   toJSON() {
@@ -171,5 +191,36 @@ export class Game {
       uid: this.uid,
       name: this.name
     };
+  }
+
+  /*blockchain function*/
+  async saveTournament() 
+  {
+    const matchIds: number[] = [];
+    const matchScores: number[][] = [];
+
+    for (let i = 0; i < this.tournament.length; i++) {
+      const match = this.tournament[i];
+      matchIds.push(i);
+      matchScores.push([match.score1, match.score2]);
+    }
+
+    try {
+      await addTournamentMatches(matchIds, matchScores);
+      console.log("Blockchain transaction send with success !");
+    } catch (err) {
+      console.error("Error when the match is send to the smart contract :", err);
+    }
+  }
+
+  async getTournament() {
+    const tournamentId = await idtournament; // + id actual in your database
+
+    try {
+      await getTournamentMatches(tournamentId);
+      console.log("Blockchain get transaction send with success !");
+    } catch (err) {
+      console.error("Error when the match is retrieve from the smart contract :", err);
+    }
   }
 }

@@ -1,0 +1,4 @@
+frontend/dist/
+frontend/node_modules/
+frontend/fullchain.crt
+frontend/privkey.key

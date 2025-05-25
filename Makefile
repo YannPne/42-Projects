@@ -1,16 +1,17 @@
 DC := docker compose
 
 up:
-	$(DC) up -d
+	$(DC) up -d --build
 
 down:
 	$(DC) down
-
-down-v:
-	$(DC) down -v
 
 update:
 	(cd backend && npm install --package-lock-only && npm update --package-lock-only)
 	(cd frontend && npm install --package-lock-only && npm update --package-lock-only)
 
-.PHONY: up down down-v update
+local:
+	(cd backend && rm -rf node_modules && npm ci)
+	(cd frontend && rm -rf node_modules && npm ci)
+
+.PHONY: up down update local

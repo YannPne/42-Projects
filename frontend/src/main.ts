@@ -1,4 +1,5 @@
 import { findPage, loadPage, pages } from "./pages/Page.ts";
+import { privacyPage } from "./pages/privacyPage.ts";
 
 export let ws: WebSocket | undefined;
 
@@ -7,9 +8,13 @@ export function connectWs() {
     if (ws)
       ws.close();
 
-    ws = new WebSocket("ws://" + document.location.host + "/api/ws?token=" + sessionStorage.getItem("token"));
+    ws = new WebSocket("wss://" + document.location.host + "/api/ws?token=" + sessionStorage.getItem("token"));
     ws.onopen = () => console.log("WebSocket connection opened");
-    ws.onclose = () => console.log("WebSocket connection closed");
+    ws.onclose = () => {
+      console.log("WebSocket connection closed");
+      ws = undefined;
+      sessionStorage.removeItem("token");
+    };
     ws.onerror = () => {
       sessionStorage.removeItem("token");
       ws = undefined;
@@ -43,6 +48,16 @@ export function closeWs() {
   if (ws && ws.readyState == ws.OPEN)
     ws.close();
   ws = undefined;
+  sessionStorage.removeItem("token");
+}
+
+const privacyLink = document.querySelector("#footer-privacy");
+
+if (privacyLink) {
+  privacyLink.addEventListener("click", async event => {
+    event.preventDefault();
+    loadPage(privacyPage);
+  });
 }
 
 const nav = document.querySelector<HTMLElement>("nav")!;
@@ -54,7 +69,7 @@ for (let page of pages) {
   button.className = "flex-1 text-center p-3 bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950 transition-all hover:via-gray-950";
   button.innerHTML = typeof page.navbar == "string" ? page.navbar : page.title;
   button.href = page.url;
-  button.onclick = event => {
+  button.onclick = async event => {
     event.preventDefault();
     loadPage(page);
   };
@@ -62,6 +77,14 @@ for (let page of pages) {
   nav.appendChild(button);
 }
 
-if (sessionStorage.getItem("token") != null)
-  await connectWs();
-loadPage(findPage(window.location.pathname));
+start();
+
+async function start() {
+  if (sessionStorage.getItem("token") != null) {
+    try {
+      await connectWs();
+    } catch (e) {
+    }
+  }
+  loadPage(findPage(window.location.pathname));
+}

@@ -24,7 +24,7 @@ export const pongPage: Page<any> = {
           <form id="addLocalForm" class="bg-gray-900 items-center justify-center">
             <input id="addLocalName" type="text" required placeholder="Local player's name" class="p-2 placeholder-gray-400">
             <label for="addLocalCheck">Is AI?</label>
-            <input id="addLocalCheck" type="checkbox" required>
+            <input id="addLocalCheck" type="checkbox">
             <button class="p-2 bg-blue-900 hover:bg-blue-950">Add local player</button>
           </form>
         </div>
@@ -67,7 +67,7 @@ export const pongPage: Page<any> = {
 
     const toggleText = document.querySelector<HTMLSpanElement>("#toggleText")!;
     const toggleCircle = document.querySelector<HTMLSpanElement>("#toggleCircle")!;
-    const myDiv = document.querySelector<HTMLDivElement>("#up-bar");
+    const myDiv = document.querySelector<HTMLDivElement>("#up-bar")!;
 
     let is3dActive = true;
 
@@ -93,11 +93,9 @@ export const pongPage: Page<any> = {
       updateToggleUI();
     });
 
-    start.onclick = () => {
-
-      if (myDiv) {
-        myDiv.style.display = "none";
-      }
+    start.onclick = async () => {
+      myDiv.style.display = "none";
+      await countdownOnCanvas(context2d);
       ws!.send(JSON.stringify({ event: "play" }));
     };
 
@@ -132,6 +130,7 @@ export const pongPage: Page<any> = {
               drawPlayer(context2d, player);
             drawBall(context2d, message.ball);
             drawScore(canvas2d, context2d, message.players[0], message.players[1]);
+            nextMatch(context2d, message.players);
           }
           break;
         case "win":
@@ -157,8 +156,26 @@ export const pongPage: Page<any> = {
     keydownListener = undefined;
     keyupListener = undefined;
     wsListener = undefined;
+
+    ws!.send(JSON.stringify({event: "leave_game"}));
   }
 };
+
+let lastName1: string;
+let lastName2: string;
+
+async function nextMatch(context: CanvasRenderingContext2D, players: Player[])
+{
+  if (lastName1 == undefined)
+  {
+    lastName1 = players[0].name;
+    lastName2 = players[1].name;
+  }
+  if (lastName1 != players[0].name || lastName2 != players[1].name)
+    await countdownOnCanvas(context);
+  lastName1 = players[0].name
+  lastName2 = players[1].name
+}
 
 function move(event: KeyboardEvent, up: boolean) {
   let send: Partial<Event> = { event: "move" };
@@ -347,9 +364,7 @@ function drawMap(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
   context.shadowColor = "pink";
 }
 
-
 // ## 3D ##
-
 function updateGame3D(context: GameElements, ball: Ball, player1: Player, player2: Player){
   context.ball.position.set(ball.x + 25, -ball.y - 25, 0);
   context.player2.position.set(player2.x + 10, -player2.y - 100, 5);
@@ -379,6 +394,36 @@ function drawEndGame3D(context: GameElements, palyer: string) {
 }
 
 // ## 2D ##
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function countdownOnCanvas(ctx: CanvasRenderingContext2D) {
+  const width = ctx.canvas.width;
+  const height = ctx.canvas.height;
+
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "white";
+  ctx.font = "bold 150px Arial";
+
+  for (let i = 3; i > 0; i--) {
+    ctx.clearRect(0, 0, width, height);
+    ctx.globalAlpha = 1;
+    ctx.fillText(i.toString(), width / 2, height / 2);
+
+    for (let alpha = 1; alpha >= 0; alpha -= 0.05) {
+      ctx.clearRect(0, 0, width, height);
+      ctx.globalAlpha = alpha;
+      ctx.fillText(i.toString(), width / 2, height / 2);
+      await sleep(50);
+    }
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.clearRect(0, 0, width, height);
+}
+
 function drawPlayer(context: CanvasRenderingContext2D, player: Player) {
   context.fillStyle = "white";
   context.fillRect(player.x, player.y, player.width, player.height);
@@ -415,12 +460,15 @@ function drawScore(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D,
   context.globalAlpha = 1;
 }
 
-function drawEndGame(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, player: string) {
+async function drawEndGame(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, player: string) {
   context.font = "80px Arial";
   context.fillStyle = "white";
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.fillText(player + " win", canvas.width / 2, canvas.height / 4);
+
+  await sleep(2000);
+  loadPage(chooseGamePage);
 }
 
 // ## Tournament footer Banner ##

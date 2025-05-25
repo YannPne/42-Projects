@@ -3,7 +3,7 @@ import { loadPage, type Page } from "./Page.ts";
 import { registerPage } from "./registerPage.ts";
 import { profilePage } from "./profilePage.ts";
 
-export const loginPage: Page<Page> = {
+export const loginPage: Page<Page<any>> = {
   url: "/login",
   title: "Login",
   navbar: false,
@@ -32,7 +32,7 @@ export const loginPage: Page<Page> = {
           </div>
         </div>
       </div>
-	`;
+	  `;
   },
 
   onMount(requestedPage) {
@@ -54,13 +54,28 @@ export const loginPage: Page<Page> = {
 
       const formData = new FormData(loginForm);
 
-      const loginResponse = await fetch("http://" + document.location.host + "/api/login", {
+      const require2fa = await fetch("https://" + document.location.host + "/api/require_2fa", {
+        method: "POST",
+        body: formData.get("username") as string
+      });
+
+      if (await require2fa.json()) {
+        const code2fa = prompt("Please enter your 2FA code");
+        if (code2fa == null)
+          return;
+        formData.append("2fa", code2fa);
+      }
+
+      const loginResponse = await fetch("https://" + document.location.host + "/api/login", {
         method: "POST",
         body: formData
       });
 
       if (loginResponse.status == 401) {
         alert("Wrong username / password");
+        return;
+      } else if (loginResponse.status == 403) {
+        alert("Invalid 2FA code");
         return;
       } else if (loginResponse.status != 200) {
         console.error(loginResponse.body);
