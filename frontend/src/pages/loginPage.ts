@@ -54,7 +54,7 @@ export const loginPage: Page<Page<any>> = {
 
       const formData = new FormData(loginForm);
 
-      const require2fa = await fetch("http://" + document.location.host + "/api/require_2fa", {
+      const require2fa = await fetch("https://" + document.location.host + "/api/require_2fa", {
         method: "POST",
         body: formData.get("username") as string
       });
@@ -66,7 +66,7 @@ export const loginPage: Page<Page<any>> = {
         formData.append("2fa", code2fa);
       }
 
-      const loginResponse = await fetch("http://" + document.location.host + "/api/login", {
+      const loginResponse = await fetch("https://" + document.location.host + "/api/login", {
         method: "POST",
         body: formData
       });
