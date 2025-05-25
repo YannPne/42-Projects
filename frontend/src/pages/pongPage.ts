@@ -67,7 +67,7 @@ export const pongPage: Page<any> = {
     const toggleCircle = document.querySelector<HTMLSpanElement>("#toggleCircle")!;
     const myDiv = document.querySelector<HTMLDivElement>("#up-bar");
 
-    let is3dActive = true; // état initial, tu peux aussi initialiser selon ta logique
+    let is3dActive = true;
 
     function updateToggleUI() {
       toggleText.textContent = is3dActive ? "Mode 3D" : "Mode 2D";
@@ -75,8 +75,7 @@ export const pongPage: Page<any> = {
       is3d.classList.toggle("bg-blue-600", is3dActive);
       is3d.classList.toggle("bg-gray-700", !is3dActive);
     }
-
-// Initialisation
+    
     updateToggleUI();
 
     canvas2d.style.display = "none";
@@ -118,46 +117,23 @@ export const pongPage: Page<any> = {
       move(event, true);
     });
 
-    // canvas3d.style.display = "none";
-    // is3d.onclick = () => {
-    //   if (is3d.checked) {
-    //     canvas2d.style.display = "none";
-    //     canvas3d.style.display = "inline";
-    //   } else {
-    //     canvas2d.style.display = "inline";
-    //     canvas3d.style.display = "none";
-    //   }
-    // }
-
     ws?.addEventListener("message", wsListener = (event) => {
       const message: Event = JSON.parse(event.data);
 
       switch (message.event) {
         case "update":
-          if (is3dActive) {
-            context3d.ball.position.set(message.ball.x + 25, -message.ball.y - 25, 0);
-            context3d.player2.position.set(message.players[1].x + 10, -message.players[1].y - 100, 5);
-            context3d.player1.position.set(message.players[0].x + 10, -message.players[0].y - 100, 5);
-            //drawScore(canvas3d, context2d, message.players[0], message.players[1]);
-            drawScore3D( context3d, message.players[0], message.players[1]);
-          } else {
+          if (is3dActive)
+            updateGame3D(context3d, message.ball, message.players[0], message.players[1]);
+          else {
             drawMap(canvas2d, context2d);
             for (let player of message.players)
               drawPlayer(context2d, player);
             drawBall(context2d, message.ball);
             drawScore(canvas2d, context2d, message.players[0], message.players[1]);
           }
-
           break;
         case "win":
-          context3d.textNameP1.text = "";
-          context3d.textNameP2.text = "";
-          context3d.textScoreP1.text = "";
-          context3d.textScoreP2.text = "";
-          context3d.textEndGame.text = message.player + " win!";
-          context3d.ball.position.set(600, -300, 200);
-          context3d.player1.position.set(600, -300, 200);
-          context3d.player2.position.set(600, -300, 200);
+          drawEndGame3D(context3d, message.player);
           drawEndGame(canvas2d, context2d, message.player);
           break;
       }
@@ -364,6 +340,38 @@ function drawMap(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
   context.shadowColor = "pink";
 }
 
+
+// ## 3D ##
+
+function updateGame3D(context: GameElements, ball: Ball, player1: Player, player2: Player){
+  context.ball.position.set(ball.x + 25, -ball.y - 25, 0);
+  context.player2.position.set(player2.x + 10, -player2.y - 100, 5);
+  context.player1.position.set(player1.x + 10, -player1.y - 100, 5);
+  drawScore3D( context, player1, player2);
+}
+function drawScore3D(context: GameElements, player1: Player, player2: Player) {
+  if (context.textScoreP1.text != String(player1.score))
+    context.textScoreP1.text = String(player1.score)
+  if (context.textScoreP2.text != String(player2.score))
+    context.textScoreP2.text = String(player2.score);
+  if (context.textNameP1.text != player1.name)
+    context.textNameP1.text = player1.name;
+  if (context.textNameP2.text != player2.name)
+    context.textNameP2.text = player2.name;
+}
+
+function drawEndGame3D(context: GameElements, palyer: string) {
+  context.textNameP1.text = "";
+  context.textNameP2.text = "";
+  context.textScoreP1.text = "";
+  context.textScoreP2.text = "";
+  context.textEndGame.text = palyer + " win!";
+  context.ball.position.set(600, -300, 200);
+  context.player1.position.set(600, -300, 200);
+  context.player2.position.set(600, -300, 200);
+}
+
+// ## 2D ##
 function drawPlayer(context: CanvasRenderingContext2D, player: Player) {
   context.fillStyle = "white";
   context.fillRect(player.x, player.y, player.width, player.height);
@@ -378,18 +386,6 @@ function drawBall(context: CanvasRenderingContext2D, ball: Ball) {
   context.fillStyle = "white";
   context.fill();
   context.closePath();
-}
-
-
-function  drawScore3D(context: GameElements, player1: Player, player2: Player) {
-  if (context.textScoreP1.text != String(player1.score))
-    context.textScoreP1.text = String(player1.score)
-  if (context.textScoreP2.text != String(player2.score))
-    context.textScoreP2.text = String(player2.score);
-  if (context.textNameP1.text != player1.name)
-    context.textNameP1.text = player1.name;
-  if (context.textNameP2.text != player2.name)
-    context.textNameP2.text = player2.name;
 }
 
 function drawScore(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, player1: Player, player2: Player) {
