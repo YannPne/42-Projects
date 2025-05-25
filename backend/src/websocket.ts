@@ -2,7 +2,6 @@ import { FastifyRequest } from "fastify";
 import User from "./User";
 import { Game, games, GameState } from "./Game";
 import { sqlite } from ".";
-import { stringify } from "querystring";
 import { generateRandomSecret, getTotpCode } from "./2fa";
 import bcrypt from "bcrypt";
 
@@ -18,10 +17,8 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
   }
 
   const user = new User(req.jwtUserId, row.username, row.displayName, socket);
+  onlineUsers.push(user);
   let secret2fa: string | undefined = row.secret2fa ?? undefined;
-
-  if (user)
-    onlineUsers.push(user);
 
   socket.addEventListener("close", () => {
     onlineUsers.splice(onlineUsers.indexOf(user), 1);
@@ -47,27 +44,25 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         setFriend(socket, user.id, message);
         break;
       case "set_hide_profile":
-        setHideProfile(user!.id, message.hide);
+        setHideProfile(user.id, message.hide);
         break;
       case "remove_friend":
         removeFriend(socket, user.id, message.name);
         break;
       case "broadcast_message":
-          broadcastMessage(message, user!.id);
-          break;
+        broadcastMessage(message, user.id);
+        break;
       case "swap_blocked":
-          swapBlocked(socket, user?.id, message.id);
-          break;
-      case "getInfoDm":
-          getInfoDm(socket, user!.id, message.other_user);
-          break;
-      case "get_info_profile" :
-        let userToGet: number = getUserID(message.profileUsername);
-        userToGet = userToGet ? userToGet : user?.id;
-        getInfoProfile(user, userToGet);
+        swapBlocked(socket, user.id, message.id);
+        break;
+      case "get_dm_info":
+        getInfoDm(socket, user.id, message.otherUser);
+        break;
+      case "get_info_profile":
+        getInfoProfile(user, getUserID(message.profileUsername) ?? user.id);
         break;
       case "get_games_history":
-        getGamesHistory(socket, getUserID(message.name) || user?.id);
+        getGamesHistory(socket, getUserID(message.name) || user.id);
         break;
       case "add_local_player":
         addLocalPlayer(user, message);
@@ -102,14 +97,14 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
   });
 }
 
-function setHideProfile(id_user: number, hide: boolean) {
+function setHideProfile(userId: number, hide: boolean) {
   sqlite.prepare("UPDATE users SET hideProfile = ? WHERE id = ?")
-      .run(hide ? 1 : 0, id_user);
+      .run(hide ? 1 : 0, userId);
 }
 
 function updateInfo(socket: WebSocket, user: User, msg: any) {
   let result;
-  if (msg.avatar && Array.isArray(msg.avatar))
+  if (msg.avatar)
     msg.avatar = Buffer.from(msg.avatar);
 
   if (!msg.password) {
@@ -147,10 +142,10 @@ function getStatus(socket: WebSocket, message: any) {
   }));
 }
 
-function deleteAccount(id_user: number): boolean {
-  const name: string = getDisplayName(id_user);
+function deleteAccount(userId: number): boolean {
+  const name: string = getDisplayName(userId);
 
-  const result = sqlite.prepare("DELETE FROM users WHERE id = ?").run(id_user);
+  const result = sqlite.prepare("DELETE FROM users WHERE id = ?").run(userId);
   sqlite.prepare(`UPDATE games
     SET name1 = CASE WHEN name1 = ? THEN ? ELSE name1 END,
         name2 = CASE WHEN name2 = ? THEN ? ELSE name2 END
@@ -160,18 +155,17 @@ function deleteAccount(id_user: number): boolean {
   return result.changes > 0;
 }
 
-function getUserID(name: string) {
+function getUserID(name: string): number | undefined {
   const result: any = sqlite.prepare("SELECT id FROM users WHERE displayName = ?")
       .get(name);
-  return result && result.id;
+  return result?.id;
 }
 
-
-function removeFriend(socket: WebSocket, id_user: number, friend: string) {
-  const friendid = getUserID(friend);
+function removeFriend(socket: WebSocket, userId: number, friend: string) {
+  const friendId = getUserID(friend);
 
   const result = sqlite.prepare("DELETE FROM friends WHERE userid = ? AND friendid = ?")
-      .run(id_user, friendid);
+      .run(userId, friendId);
 
   socket.send(JSON.stringify({
     event: "remove_friend",
@@ -179,10 +173,10 @@ function removeFriend(socket: WebSocket, id_user: number, friend: string) {
   }));
 }
 
-function setFriend(socket: WebSocket, id_user: any, message: any) {
-  const friendid = getUserID(message.name);
+function setFriend(socket: WebSocket, userId: any, message: any) {
+  const friendId = getUserID(message.name);
 
-  if (!friendid || id_user == friendid) {
+  if (!friendId || userId == friendId) {
     socket.send(JSON.stringify({
       event: "set_friend",
       success: false
@@ -194,7 +188,7 @@ function setFriend(socket: WebSocket, id_user: any, message: any) {
       INSERT INTO friends (userid, friendid)
       SELECT ?, ?
       WHERE NOT EXISTS (SELECT 1 FROM friends WHERE userid = ? AND friendid = ?)
-  `).run(id_user, friendid, id_user, friendid);
+  `).run(userId, friendId, userId, friendId);
 
   socket.send(JSON.stringify({
     event: "set_friend",
@@ -210,117 +204,85 @@ function getFriends(userToGet: number) {
   return rows.map(row => row.displayName);
 }
 
-function invitePlayer(user: User, message: any)
-{
+function invitePlayer(user: User, message: any) {
   const invite = onlineUsers.find(u => u.displayName == message.userToInvite);
 
-  invite!.socket.send(JSON.stringify({ event: "invite_player", gameID: message.gameID, sender: user.displayName, gameName: message.gameName}));
+  invite!.socket.send(JSON.stringify({
+    event: "invite_player",
+    gameId: message.gameId,
+    sender: user.displayName,
+    gameName: message.gameName
+  }));
 }
 
-function broadcastMessage(message: any, id_user: number)
-{
-  let blocked_list: string[];
-  let dm: any;
-  
-  if (id_user)
-    dm = parseMessage(message.content, id_user);
-  
+function broadcastMessage(message: any, userId: number) {
+  const dm = userId != 0 ? parseMessage(message.content, userId) : undefined;
 
-  for (let entry of onlineUsers)
-  {
-    if (id_user)
-    {
-      blocked_list = getBlocked(entry.id);
-      if (dm.is_dm == true)
-      {
-          if (entry.displayName == dm.user && !blocked_list.includes(getDisplayName(id_user)) && (id_user != entry.id))
-            entry.socket!.send(JSON.stringify({
-              event: "broadcast_message",
-              sender: getDisplayName(id_user),
-              senderid: id_user,
-              content: dm.content,
-              is_blocked: false,
-              is_dm: true
-            }));
-          if (entry.displayName == dm.user && (id_user != entry.id))
-            entry.socket!.send(JSON.stringify({
-              event: "broadcast_message",
-              sender: getDisplayName(id_user),
-              senderid: id_user,
-              content: dm.content,
-              is_blocked: true,
-              is_dm: true
-          }));
-      }
-      else if (dm.is_dm == false)
-      {
-        if (!blocked_list.includes(getDisplayName(id_user)) && (id_user !== entry.id))
-        {
-          entry.socket!.send(JSON.stringify({
-            event: "broadcast_message",
-            sender: getDisplayName(id_user),
-            senderid: id_user,
-            content: message.content,
-            is_blocked: false,
-            is_dm: false
+  const event: any = {
+    event: "broadcast_message",
+    sender: userId == 0 ? "" : getDisplayName(userId),
+    senderId: userId
+  };
+
+  for (let entry of onlineUsers) {
+    if (userId == entry.id)
+      continue;
+
+    if (userId != 0) {
+      event.isDm = dm != undefined;
+      event.isBlocked = getBlocked(entry.id).includes(userId);
+      if (dm) {
+        if (entry.displayName != dm.user)
+          continue;
+        entry.socket.send(JSON.stringify({
+          ...event,
+          content: dm.content
         }));
-        }
-
-        if (blocked_list.includes(getDisplayName(id_user)) && (id_user !== entry.id))
-          entry.socket!.send(JSON.stringify({
-            event: "broadcast_message",
-            sender: getDisplayName(id_user),
-            senderid: id_user,
-            content: "blocked message",
-            is_blocked: true,
-            is_dm: false
+      } else {
+        entry.socket.send(JSON.stringify({
+          ...event,
+          content: event.isBlocked ? "Blocked message" : message.content,
         }));
       }
-    }
-    else if (id_user == 0)
-      entry.socket!.send(JSON.stringify({
-        event: "broadcast_message",
-        sender: "",
-        senderid: 0,
+    } else {
+      entry.socket.send(JSON.stringify({
+        ...event,
         content: message,
-        is_blocked: false,
-        is_dm: false
-    }));
+        isBlocked: false,
+        isDm: false
+      }));
+    }
   }
 }
 
-function parseMessage(message: string, id_user: number)
-{
-  if (!message.startsWith('#'))
-    return { user: "", content: "", is_dm: false };
+function parseMessage(message: string, userId: number) {
+  if (!message.startsWith("#"))
+    return undefined;
 
   let i = 1;
-  let tempname = "";
+  let tempName = "";
 
-  while (i < message.length && message[i] !== ' ')
-  {
-    tempname += message[i];
+  while (i < message.length && message[i] !== " ") {
+    tempName += message[i];
     i++;
   }
 
   if (i >= message.length)
-    return { user: "", content: "", is_dm: false };
+    return undefined;
 
   i++;
 
-  if (getUserID(tempname) == undefined || getUserID(tempname) == id_user)
-    return { user: "", content: "", is_dm: false };
+  if (getUserID(tempName) == undefined || getUserID(tempName) == userId)
+    return undefined;
 
-  let tempcontent = message.slice(i);
-
-  return { user: tempname, content: tempcontent , is_dm: true };
+  return { user: tempName, content: message.slice(i) };
 }
 
 //block
-function swapBlocked(socket: WebSocket, id_user: any, blockedid: any) {
-  const blocked_list: any[] = getBlocked(id_user);
+function swapBlocked(socket: WebSocket, userId: number, blockedId: number) {
+  const blockedList = getBlocked(userId);
 
-  if (!blockedid || id_user == blockedid) {
+  if (!blockedId || userId == blockedId) {
     socket.send(JSON.stringify({
       event: "swap_blocked",
       success: false
@@ -328,7 +290,7 @@ function swapBlocked(socket: WebSocket, id_user: any, blockedid: any) {
     return;
   }
 
-  const isBlocked = blocked_list.includes(getDisplayName(blockedid));
+  const isBlocked = blockedList.includes(blockedId);
 
   let result;
 
@@ -338,12 +300,10 @@ function swapBlocked(socket: WebSocket, id_user: any, blockedid: any) {
       VALUES (?, ?)
       ON CONFLICT(userid, blockedid) 
       DO NOTHING
-    `).run(id_user, blockedid);
-  } 
-  else 
-  {
+    `).run(userId, blockedId);
+  } else {
     result = sqlite.prepare("DELETE FROM blocked WHERE userid = ? AND blockedid = ?")
-      .run(id_user, blockedid);
+        .run(userId, blockedId);
   }
 
   socket.send(JSON.stringify({
@@ -352,49 +312,24 @@ function swapBlocked(socket: WebSocket, id_user: any, blockedid: any) {
   }));
 }
 
-function getInfoDm(socket: WebSocket, id_user: number, other_user: string)
-{
-  let me = false;
-  let exist = true;
-  if (other_user == getDisplayName(id_user))
-    me = true;
-
-  if (getUserID(other_user) == undefined)
-    exist = false;
-
-  if (getDisplayName(id_user) != other_user)
-  {
-    const blocked_list: string[] = getBlocked(id_user);
-
-    if (blocked_list.includes(other_user))
-      socket.send(JSON.stringify({
-        event: "getInfoDm",
-        blocked: true,
-        id: getUserID(other_user),
-        is_me: me,
-        is_exist: exist
-      }));
-  }
+function getInfoDm(socket: WebSocket, userId: number, otherUser: string) {
+  const otherId = getUserID(otherUser);
   socket.send(JSON.stringify({
-    event: "getInfoDm",
-    blocked: false,
-    id: getUserID(other_user),
-    is_me: me,
-    is_exist: exist
+    event: "get_dm_info",
+    isBlocked: otherId && userId != otherId && getBlocked(userId).includes(otherId),
+    id: otherId,
+    isMe: otherUser == getDisplayName(userId),
+    exists: otherId != undefined
   }));
 }
 
-function getBlocked(id_user: Number) 
-{
-  const rows: any[] = sqlite.prepare(`SELECT u.displayName
-                                      FROM blocked b
-                                      JOIN users u ON b.blockedid = u.id
-                                      WHERE b.userid = ?;
-                                      `).all(id_user);
-  return rows.map(row => row.displayName);
-
+function getBlocked(userId: number) {
+  return sqlite.prepare(`SELECT u.id
+    FROM blocked b
+    JOIN users u ON b.blockedid = u.id
+    WHERE b.userid = ?;
+  `).all(userId).map((row: any) => row.id as number);
 }
-
 
 function getInfoProfile(user: User, userToGet: number) {
   const row: any = sqlite.prepare("SELECT * FROM users WHERE id = ?")
@@ -422,7 +357,7 @@ function getGames(socket: WebSocket) {
 function joinGame(user: User, message: any) {
   let game = games.find((g) => g.uid == message.uid);
   if (game == undefined) {
-    broadcastMessage("The tournament " + message.name + " has been created! Come join it!", 0)
+    broadcastMessage("The tournament " + message.name + " has been created! Come join it!", 0);
     games.push(game = new Game(message.name, message.uid));
     for (let user of onlineUsers)
       user.socket.send(JSON.stringify({ event: "get_games", games }));
@@ -432,12 +367,7 @@ function joinGame(user: User, message: any) {
 }
 
 function leaveGame(user: User) {
-  if (!user || !user.game)
-    return ;
-  const game = user.game;
-  if (!game)
-    return;
-  game.removeUser(user);
+  user.game?.removeUser(user);
 }
 
 export function insertGameHistory(data: {

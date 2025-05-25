@@ -93,7 +93,7 @@ export const pongPage: Page<any> = {
   },
 
   onUnmount() {
-    ws!.send(JSON.stringify({event: "leave_game"}));
+    ws?.send(JSON.stringify({event: "leave_game"}));
     if (keydownListener != undefined)
       document.removeEventListener("keydown", keydownListener);
     if (keyupListener != undefined)
