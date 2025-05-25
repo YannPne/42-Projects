@@ -2,7 +2,7 @@ import { loadPage, type Page } from "./Page.ts";
 import { ws } from "../main.ts";
 import type { Ball, Event, Player } from "../Event.ts";
 import { chooseGamePage } from "./chooseGamePage.ts";
-import { ArcRotateCamera, Color3, Color4, Engine, HemisphericLight, GlowLayer, MeshBuilder, Scene, SpotLight, StandardMaterial, Texture, Vector3, Mesh } from "@babylonjs/core";
+import { ArcRotateCamera, Color3, Color4, Engine, HemisphericLight, GlowLayer, MeshBuilder, Scene, StandardMaterial, Texture, Vector3, Mesh } from "@babylonjs/core";
 import * as GUI from "@babylonjs/gui";
 
 // TODO: Leave game
@@ -158,7 +158,6 @@ export const pongPage: Page<any> = {
           context3d.ball.position.set(600, -300, 200);
           context3d.player1.position.set(600, -300, 200);
           context3d.player2.position.set(600, -300, 200);
-
           drawEndGame(canvas2d, context2d, message.player);
           break;
       }
@@ -201,7 +200,7 @@ function createTextBlock(color: string, fontSize: number, text: string): GUI.Tex
   return textBlock;
 }
 
-function createBox(name: string, options: any, pos: any, scene: any, material?: any): Mesh {
+function createBox(name: string, options: any, pos: Vector3, scene: Scene, material?: StandardMaterial): Mesh {
   const box = MeshBuilder.CreateBox(name, options, scene);
   box.position.set(pos.x, pos.y, pos.z);
   if (material)
@@ -209,7 +208,7 @@ function createBox(name: string, options: any, pos: any, scene: any, material?: 
   return box;
 }
 
-function createPlane(name: string, options: any, pos: any, rotation: any, scene: any, material?: any ): Mesh {
+function createPlane(name: string, options: any, pos: Vector3, rotation: Vector3, scene: Scene, material?: StandardMaterial): Mesh {
   const plane = MeshBuilder.CreatePlane(name, options, scene);
   plane.position.set(pos.x, pos.y, pos.z);
   if (material)
@@ -218,125 +217,123 @@ function createPlane(name: string, options: any, pos: any, rotation: any, scene:
   return plane;
 }
 
-function setup3d(canvas: HTMLCanvasElement) {
-  const engine = new Engine(canvas, true);
-  const scene = new Scene(engine);
-  scene.clearColor = new Color4(0, 0, 0, 0);
+function createTextureMaterial(name: string, path: string, scene: Scene, alpha: boolean): StandardMaterial {
+  const material = new StandardMaterial(name, scene);
+  material.diffuseTexture = new Texture(path, scene);
+  material.diffuseTexture.hasAlpha = alpha;
+  return material;
+}
 
-  // CAMERA //
-  const camera = new ArcRotateCamera("Camera", Math.PI / 2, Math.PI / 4, -2000, new Vector3(600, 0, 275), scene);
+function createMaterial(name: string, spec: Color3, diff: Color3, emiss: Color3, scene: Scene): StandardMaterial {
+  const material = new StandardMaterial(name, scene);
+  material.specularColor = spec;
+  material.diffuseColor = diff;
+  material.emissiveColor = emiss;
+  return material;
+}
+
+function createLight(name: string, direction: Vector3, diff: Color3, spec: Color3, ground: Color3, scene: Scene) {
+  const light = new HemisphericLight(name, direction, scene);
+  light.diffuse = diff;
+  light.specular = spec;
+  light.groundColor = ground;
+}
+
+function createSphere(name: string, options: any, pos: Vector3, scene: Scene): Mesh {
+  const sphere = MeshBuilder.CreateSphere(name, options, scene);
+  sphere.position = pos;
+  return sphere;
+}
+
+function createCamera(name: string, alpha: number, beta: number, radius: number, target: Vector3, canvas: HTMLCanvasElement, scene: Scene) {
+  const camera = new ArcRotateCamera(name, alpha, beta, radius, target, scene);
   camera.attachControl(canvas, true);
   camera.inputs.attached.keyboard.detachControl();
+}
 
-  // TARGET //
-  const targetPoint = new Vector3(600, -300, 25);
+function createScene(engine: Engine, clearColor: Color4): Scene {
+  const scene = new Scene(engine);
+  scene.clearColor = clearColor;
+  return scene;
+}
 
-  // LIGHT //
-  const lightPosition1 = new Vector3(600, 5000, 0);
-  const lightPosition2 = new Vector3(600, -5600, 100);
-  const lightPosition3 = new Vector3(-5000, -300, 0);
-  const lightPosition4 = new Vector3(5600, -300, 0);
+type GameElements = {
+  ball: Mesh;
+  player1: Mesh;
+  player2: Mesh;
+  textNameP1: GUI.TextBlock;
+  textNameP2: GUI.TextBlock;
+  textScoreP1: GUI.TextBlock;
+  textScoreP2: GUI.TextBlock;
+  textEndGame: GUI.TextBlock;
+};
 
-  const lightDirection1 = targetPoint.subtract(lightPosition1).normalize();
-  const lightDirection2 = targetPoint.subtract(lightPosition2).normalize();
-  const lightDirection3 = targetPoint.subtract(lightPosition3).normalize();
-  const lightDirection4 = targetPoint.subtract(lightPosition4).normalize();
+function setup3d(canvas: HTMLCanvasElement): GameElements {
 
-  const light = new HemisphericLight("HemiLight", new Vector3(0, 0, -1), scene);
-  light.diffuse = new Color3(1, 1, 1);
-  light.specular = new Color3(1, 1, 1);
-  light.groundColor = new Color3(0.2, 0.2, 0.5);
+  // ## ENGINE && SCENE ##
+  const engine = new Engine(canvas, true);
+  const scene = createScene(engine, new Color4(0, 0, 0, 0));
 
-  const spotLight1 = new SpotLight("spotLight1", lightPosition1, lightDirection1, Math.PI / 4, 2, scene );
-  const spotLight2 = new SpotLight("spotLight2", lightPosition2, lightDirection2, Math.PI / 4, 2, scene );
-  const spotLight3 = new SpotLight("spotLight3", lightPosition3, lightDirection3, Math.PI / 4, 2, scene );
-  const spotLight4 = new SpotLight("spotLight4", lightPosition4, lightDirection4, Math.PI / 4, 2, scene );
+  // ## CAMERA && LIGHT ##
+  createCamera("Camera", Math.PI / 2, Math.PI / 4, -2000, new Vector3(600, 0, 275), canvas, scene);
+  createLight("light", new Vector3(0, 0, -1), new Color3(1, 1, 1), new Color3(1, 1, 1), new Color3(0.2, 0.2, 0.5), scene);
 
-  spotLight1.intensity = 1;
-  spotLight2.intensity = 1;
-  spotLight3.intensity = 1;
-  spotLight4.intensity = 1;
-
-  // MATERIAL //
-  const material42 = new StandardMaterial("material42", scene);
-  material42.diffuseTexture = new Texture("/42-Perpignan-white500x170.png", scene);
-  material42.diffuseTexture.hasAlpha = true;
-
-  const materialBlackMat = new StandardMaterial("materialBlackMat", scene);
-  materialBlackMat.specularColor = new Color3(0.2, 0.2, 0.2);
-  materialBlackMat.diffuseColor  = new Color3(0.1, 0.1, 0.1);
-  materialBlackMat.emissiveColor = new Color3(0, 0, 0);
-
-  const materialBlueMat = new StandardMaterial("materialRedMat", scene);
-  materialBlueMat.specularColor = new Color3(0.13 / 255, 0.03 / 255, 261.69 / 255);
-  materialBlueMat.diffuseColor  = new Color3(0.1, 0.1, 0.1);
-  materialBlueMat.emissiveColor = new Color3(0, 0, 0);
-  // console.log(materialRedMat, Color3);
-
-  const ledMaterial = new StandardMaterial("ledMaterial", scene);
-  ledMaterial.emissiveColor = new Color3(1, 1, 1);
+  // ## MATERIAL ##
+  const material42    = createTextureMaterial("material42", "/42-Perpignan-white500x170.png", scene, true);
+  const materialBlack = createMaterial("materialBlack", new Color3(       0.2,        0.2,          0.2), new Color3(0.1, 0.1, 0.1), new Color3(0, 0, 0), scene);
+  const materialBlue  = createMaterial("materialBlack", new Color3(0.13 / 255, 0.03 / 255, 261.69 / 255), new Color3(0.1, 0.1, 0.1), new Color3(0, 0, 0), scene);
+  const materialWhite = createMaterial("materialWhite", new Color3(         0,          0,            0), new Color3(0  ,   0,   0), new Color3(1, 1, 1), scene);
 
   new GlowLayer("glow", scene);
-  //glowLayer.intensity = 0.2;
-  //glowLayer.addIncludedOnlyMesh(ledPlane);
-
-  const ball = MeshBuilder.CreateSphere("ball", { diameter: 50 }, scene);
-  ball.position.set(600, -300, 200);
-  //const table = new TransformNode("table", scene);
-
+  
   // ## CREATE TABLE ##
-  createBox("MidBox1", { width: 1280, height: 680, depth: 100 }, { x: 600, y: -300, z: 75 }, scene, materialBlackMat);
-  createBox("MidBox2", { width: 1240, height: 640, depth: 100 }, { x: 600, y: -300, z: 375 }, scene, materialBlackMat);
-  createBox("MidBox3", { width: 1200, height: 600, depth: 200 }, { x: 600, y: -300, z: 225 }, scene, materialBlackMat);
+  createBox("MidBox1"   , { width: 1280 , height: 680 , depth: 100 }, new Vector3( 600, -300,  75), scene, materialBlack);
+  createBox("MidBox2"   , { width: 1240 , height: 640 , depth: 100 }, new Vector3( 600, -300, 375), scene, materialBlack);
+  createBox("MidBox3"   , { width: 1200 , height: 600 , depth: 200 }, new Vector3( 600, -300, 225), scene, materialBlack);
+  createBox("UpBox1"    , { width: 1280 , height: 20  , depth: 50  }, new Vector3( 600,   30,   0), scene, materialBlack);
+  createBox("UpBox2"    , { width: 1280 , height: 50  , depth: 20  }, new Vector3( 600,   15, -25), scene, materialBlack);
+  createBox("DownBox1"  , { width: 1280 , height: 20  , depth: 50  }, new Vector3( 600, -630,   0), scene, materialBlack);
+  createBox("DownBox2"  , { width: 1280 , height: 50  , depth: 20  }, new Vector3( 600, -615, -25), scene, materialBlack);
+  createBox("LeftBox1"  , { width: 20   , height: 680 , depth: 50  }, new Vector3( -30, -300,   0), scene, materialBlack);
+  createBox("LeftBox2"  , { width: 50   , height: 680 , depth: 20  }, new Vector3( -15, -300, -25), scene, materialBlack);
+  createBox("RightBox1" , { width: 20   , height: 680 , depth: 50  }, new Vector3(1230, -300,   0), scene, materialBlack);
+  createBox("RightBox2" , { width: 50   , height: 680 , depth: 20  }, new Vector3(1215, -300, -25), scene, materialBlack);
+  createBox("LightBox1" , { width: 1240 , height: 1   , depth: 50  }, new Vector3( 600,   19,   0), scene, materialWhite);
+  createBox("LightBox2" , { width: 1240 , height: 1   , depth: 50  }, new Vector3( 600, -619,   0), scene, materialWhite);
+  createBox("LightBox3" , { width: 20   , height: 640 , depth: 50  }, new Vector3( -19, -300,   0), scene, materialWhite);
+  createBox("LightBox3" , { width: 20   , height: 640 , depth: 50  }, new Vector3(1219, -300,   0), scene, materialWhite);
+  createBox("LegBox1"   , { width: 60   , height: 60  , depth: 60  }, new Vector3(  30,  -30, 455), scene, materialBlack);
+  createBox("LegBox2"   , { width: 60   , height: 60  , depth: 60  }, new Vector3(  30, -570, 455), scene, materialBlack);
+  createBox("LegBox3"   , { width: 60   , height: 60  , depth: 60  }, new Vector3(1170,  -30, 455), scene, materialBlack);
+  createBox("LegBox4"   , { width: 60   , height: 60  , depth: 60  }, new Vector3(1170, -570, 455), scene, materialBlack);
 
-  createBox("UpBox1", { width: 1280, height: 20, depth: 50 }, { x: 600, y: 30, z: 0 }, scene, materialBlackMat);
-  createBox("UpBox2", { width: 1280, height: 50, depth: 20 }, { x: 600, y: 15, z: -25 }, scene, materialBlackMat);
+  createPlane("Plane1"  , { width: 1200 , height: 600 }, new Vector3(600, -300  , 24  ), new Vector3(           0, 0,       0), scene, materialBlue);
+  createPlane("Plane2"  , { width: 500  , height: 170 }, new Vector3(600, -600.5, 225 ), new Vector3(-Math.PI / 2, 0,       0), scene, material42);
+  createPlane("Plane3"  , { width: 500  , height: 170 }, new Vector3(600, 0.5   , 225 ), new Vector3(Math.PI / 2 , 0, Math.PI), scene, material42);
+  createPlane("Plane4"  , { width: 1240 , height: 640 }, new Vector3(600, -300  , 126 ), new Vector3(Math.PI     , 0,       0), scene, materialWhite);
 
-  createBox("DownBox1", { width: 1280, height: 20, depth: 50 }, { x: 600, y: -630, z: 0 }, scene, materialBlackMat);
-  createBox("DownBox2", { width: 1280, height: 50, depth: 20 }, { x: 600, y: -615, z: -25 }, scene, materialBlackMat);
-
-  createBox("LeftBox1", { width: 20, height: 680, depth: 50  }, { x: -30, y: -300, z: 0 }, scene, materialBlackMat);
-  createBox("LeftBox2", { width: 50, height: 680, depth: 20  }, { x: -15, y: -300, z: -25 }, scene, materialBlackMat);
-
-  createBox("RightBox1", { width: 20, height: 680, depth: 50  }, { x: 1230, y: -300, z: 0 }, scene, materialBlackMat);
-  createBox("RightBox2", { width: 50, height: 680, depth: 20  }, { x: 1215, y: -300, z: -25 }, scene, materialBlackMat);
-
-  createBox("LightBox1", { width: 1240, height: 1, depth: 50 }, { x: 600, y: 19, z: 0 }, scene, ledMaterial);
-  createBox("LightBox2", { width: 1240, height: 1, depth: 50 }, { x: 600, y: -619, z: 0 }, scene, ledMaterial);
-  createBox("LightBox3", { width: 20, height: 640, depth: 50 }, { x: -19, y: -300, z: 0 }, scene, ledMaterial);
-  createBox("LightBox3", { width: 20, height: 640, depth: 50 }, { x: 1219, y: -300, z: 0 }, scene, ledMaterial);
-
-  createBox("LegBox1", { width: 60, height: 60, depth: 60 }, { x: 30, y: -30, z: 455 }, scene, materialBlackMat);
-  createBox("LegBox2", { width: 60, height: 60, depth: 60 }, { x: 30, y: -570, z: 455 }, scene, materialBlackMat);
-  createBox("LegBox3", { width: 60, height: 60, depth: 60 }, { x: 1170, y: -30, z: 455 }, scene, materialBlackMat);
-  createBox("LegBox4", { width: 60, height: 60, depth: 60 }, { x: 1170, y: -570, z: 455 }, scene, materialBlackMat);
-
-  createPlane("Plane1", { width: 1200, height: 600 }, { x: 600, y: -300, z: 24 }, { x: 0, y: 0, z: 0 }, scene, materialBlueMat);
-  createPlane("Plane2", { width: 500, height: 170 }, { x: 600, y: -600.5, z: 225 }, { x: -Math.PI / 2, y: 0, z: 0 }, scene, material42);
-  createPlane("Plane3", { width: 500, height: 170 }, { x: 600, y: 0.5, z: 225 }, { x: Math.PI / 2, y: 0, z: Math.PI }, scene, material42);
-  createPlane("Plane4", { width: 1240, height: 640 }, { x: 600, y: -300, z: 126 }, { x: Math.PI, y: 0, z: 0 }, scene, ledMaterial);
-
-  // ## CREATE PLAYERS ##
-  const player1 = createBox("Player1", { width: 20, height: 200, depth: 40 }, { x: 600, y: -300, z: 200 }, scene);
-  const player2 = createBox("Player2", { width: 20, height: 200, depth: 40 }, { x: 600, y: -300, z: 200 }, scene);
+  // ## CREATE PLAYERS && BALL ##
+  const player1 = createBox("Player1", { width: 20, height: 200, depth: 40 }, new Vector3(600, -300, 200), scene);
+  const player2 = createBox("Player2", { width: 20, height: 200, depth: 40 }, new Vector3(600, -300, 200), scene);
+  const ball = createSphere("ball", { diameter: 50 }, new Vector3(600, -300, 200), scene);
 
   // ## GUI ##
-  const planeScoreP1 = createPlane("PlaneScoreP1", { width: 600, height: 600 }, { x: 300, y: -300, z: 23 }, { x: 0, y: 0, z: 0 }, scene);
-  const planeScoreP2 = createPlane("PlaneScoreP2", { width: 600, height: 600 }, { x: 900, y: -300, z: 23 }, { x: 0, y: 0, z: 0 }, scene);
-  const planeNameP1 = createPlane("PlaneNameP1", { width: 600, height: 600 }, { x: 300, y: -641, z: 62.5 }, { x: -Math.PI / 2, y: 0, z: 0 }, scene);
-  const planeNameP2 = createPlane("PlaneNameP2", { width: 600, height: 600 }, { x: 900, y: -641, z: 62.5 }, { x: -Math.PI / 2, y: 0, z: 0 }, scene);
-  const planeEndGame = createPlane("planeEndGame", { width: 1200, height: 1200 }, { x: 600, y: -300, z: 23 }, { x: 0, y: 0, z: 0 }, scene);
+  const planeScoreP1 = createPlane("PlaneScoreP1", { width: 600 , height:  600 }, new Vector3(300, -300, 23  ), new Vector3(           0, 0, 0), scene);
+  const planeScoreP2 = createPlane("PlaneScoreP2", { width: 600 , height:  600 }, new Vector3(900, -300, 23  ), new Vector3(           0, 0, 0), scene);
+  const planeNameP1  = createPlane("PlaneNameP1" , { width: 600 , height:  600 }, new Vector3(300, -641, 62.5), new Vector3(-Math.PI / 2, 0, 0), scene);
+  const planeNameP2  = createPlane("PlaneNameP2" , { width: 600 , height:  600 }, new Vector3(900, -641, 62.5), new Vector3(-Math.PI / 2, 0, 0), scene);
+  const planeEndGame = createPlane("planeEndGame", { width: 1200, height: 1200 }, new Vector3(600, -300, 23  ), new Vector3(           0, 0, 0), scene);
 
-  const textScoreP1 = createTextBlock("gray", 400, "");
-  const textScoreP2 = createTextBlock("gray", 400, "");
-  const textNameP1 = createTextBlock("white", 150, "");
-  const textNameP2 = createTextBlock("white", 150, "");
+  const textScoreP1 = createTextBlock("gray" , 400, "");
+  const textScoreP2 = createTextBlock("gray" , 400, "");
+  const textNameP1  = createTextBlock("white", 150, "");
+  const textNameP2  = createTextBlock("white", 150, "");
   const textEndGame = createTextBlock("white", 200, "");
 
   const guiScoreP1 = GUI.AdvancedDynamicTexture.CreateForMesh(planeScoreP1);
   const guiScoreP2 = GUI.AdvancedDynamicTexture.CreateForMesh(planeScoreP2);
-  const guiNameP1 = GUI.AdvancedDynamicTexture.CreateForMesh(planeNameP1);
-  const guiNameP2 = GUI.AdvancedDynamicTexture.CreateForMesh(planeNameP2);
+  const guiNameP1  = GUI.AdvancedDynamicTexture.CreateForMesh(planeNameP1);
+  const guiNameP2  = GUI.AdvancedDynamicTexture.CreateForMesh(planeNameP2);
   const guiEndGame = GUI.AdvancedDynamicTexture.CreateForMesh(planeEndGame);
 
   guiScoreP1.addControl(textScoreP1);
@@ -383,33 +380,16 @@ function drawBall(context: CanvasRenderingContext2D, ball: Ball) {
   context.closePath();
 }
 
-let scoreP1 = -1;
-let scoreP2 = -1;
-let nameP1IsSet = false;
-let nameP2IsSet = false;
 
-function  drawScore3D(context: any, player1: Player, player2: Player)
-{
-  if (scoreP1 != player1.score) {
-    scoreP1 = player1.score;
-    context.textScoreP1.text = String(player1.score);
-  }
-
-  if (scoreP2 != player2.score) {
-    scoreP2 = player2.score;
+function  drawScore3D(context: GameElements, player1: Player, player2: Player) {
+  if (context.textScoreP1.text != String(player1.score))
+    context.textScoreP1.text = String(player1.score)
+  if (context.textScoreP2.text != String(player2.score))
     context.textScoreP2.text = String(player2.score);
-  }
-
-  if (!nameP1IsSet) {
-    nameP1IsSet = true;
-    context.textNameP1.text = String(player1.name);
-  }
-
-  if (!nameP2IsSet) {
-    nameP2IsSet = true;
-    context.textNameP2.text = String(player2.name);
-  }
-
+  if (context.textNameP1.text != player1.name)
+    context.textNameP1.text = player1.name;
+  if (context.textNameP2.text != player2.name)
+    context.textNameP2.text = player2.name;
 }
 
 function drawScore(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, player1: Player, player2: Player) {
@@ -439,3 +419,4 @@ function drawEndGame(canvas: HTMLCanvasElement, context: CanvasRenderingContext2
   context.textBaseline = "middle";
   context.fillText(player + " win", canvas.width / 2, canvas.height / 4);
 }
+
