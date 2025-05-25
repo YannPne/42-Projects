@@ -92,7 +92,7 @@ To run the project locally without Docker, follow these steps:
 
 4. Access the application\
 Open your browser and navigate to:
-http://localhost:8000
+https://localhost:5173
 
 ## Contributing
 Contributions are welcome! Please fork the repository, create a feature branch, and submit a pull request. For major changes, please open an issue first to discuss what you would like to change.
