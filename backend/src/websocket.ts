@@ -220,57 +220,72 @@ function invitePlayer(user: User, message: any)
 function broadcastMessage(message: any, id_user: number)
 {
   let blocked_list: string[];
-  const dm: any = parseMessage(message.content, id_user);
-    
+  let dm: any;
+  
+  if (id_user)
+    dm = parseMessage(message.content, id_user);
+  
+
   for (let entry of onlineUsers)
   {
-    blocked_list = getBlocked(entry.id);
-    if (dm.is_dm == true)
+    if (id_user)
     {
-        if (entry.displayName == dm.user && !blocked_list.includes(getDisplayName(id_user)) && (id_user != entry.id))
-          entry.socket!.send(JSON.stringify({
-            event: "broadcast_message",
-            sender: getDisplayName(id_user),
-            senderid: id_user,
-            content: dm.content,
-            is_blocked: false,
-            is_dm: true
-          }));
-        if (entry.displayName == dm.user && (id_user != entry.id))
-          entry.socket!.send(JSON.stringify({
-            event: "broadcast_message",
-            sender: getDisplayName(id_user),
-            senderid: id_user,
-            content: dm.content,
-            is_blocked: true,
-            is_dm: true
-        }));
-    }
-    else if (dm.is_dm == false)
-    {
-      if (!blocked_list.includes(getDisplayName(id_user)) && (id_user !== entry.id))
+      blocked_list = getBlocked(entry.id);
+      if (dm.is_dm == true)
       {
-        
-        entry.socket!.send(JSON.stringify({
-          event: "broadcast_message",
-          sender: getDisplayName(id_user),
-          senderid: id_user,
-          content: message.content,
-          is_blocked: false,
-          is_dm: false
+          if (entry.displayName == dm.user && !blocked_list.includes(getDisplayName(id_user)) && (id_user != entry.id))
+            entry.socket!.send(JSON.stringify({
+              event: "broadcast_message",
+              sender: getDisplayName(id_user),
+              senderid: id_user,
+              content: dm.content,
+              is_blocked: false,
+              is_dm: true
+            }));
+          if (entry.displayName == dm.user && (id_user != entry.id))
+            entry.socket!.send(JSON.stringify({
+              event: "broadcast_message",
+              sender: getDisplayName(id_user),
+              senderid: id_user,
+              content: dm.content,
+              is_blocked: true,
+              is_dm: true
+          }));
+      }
+      else if (dm.is_dm == false)
+      {
+        if (!blocked_list.includes(getDisplayName(id_user)) && (id_user !== entry.id))
+        {
+          entry.socket!.send(JSON.stringify({
+            event: "broadcast_message",
+            sender: getDisplayName(id_user),
+            senderid: id_user,
+            content: message.content,
+            is_blocked: false,
+            is_dm: false
+        }));
+        }
+
+        if (blocked_list.includes(getDisplayName(id_user)) && (id_user !== entry.id))
+          entry.socket!.send(JSON.stringify({
+            event: "broadcast_message",
+            sender: getDisplayName(id_user),
+            senderid: id_user,
+            content: "blocked message",
+            is_blocked: true,
+            is_dm: false
         }));
       }
-
-      if (blocked_list.includes(getDisplayName(id_user)) && (id_user !== entry.id))
-        entry.socket!.send(JSON.stringify({
-          event: "broadcast_message",
-          sender: getDisplayName(id_user),
-          senderid: id_user,
-          content: "blocked message",
-          is_blocked: true,
-          is_dm: false
-      }));
     }
+    else if (id_user == 0)
+      entry.socket!.send(JSON.stringify({
+        event: "broadcast_message",
+        sender: "",
+        senderid: 0,
+        content: message,
+        is_blocked: false,
+        is_dm: false
+    }));
   }
 }
 
@@ -407,6 +422,7 @@ function getGames(socket: WebSocket) {
 function joinGame(user: User, message: any) {
   let game = games.find((g) => g.uid == message.uid);
   if (game == undefined) {
+    broadcastMessage("The tournament " + message.name + " has been created! Come join it!", 0)
     games.push(game = new Game(message.name, message.uid));
     for (let user of onlineUsers)
       user.socket.send(JSON.stringify({ event: "get_games", games }));
@@ -416,7 +432,9 @@ function joinGame(user: User, message: any) {
 }
 
 function leaveGame(user: User) {
-  let game = user.game;
+  if (!user || !user.game)
+    return ;
+  const game = user.game;
   if (!game)
     return;
   game.removeUser(user);

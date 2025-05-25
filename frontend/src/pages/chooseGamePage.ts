@@ -36,7 +36,8 @@ export const chooseGamePage: Page = {
     const createGameName = document.querySelector<HTMLInputElement>("#createGameName")!;
     const games = document.querySelector<HTMLUListElement>("#games")!;
 
-    createGame.onsubmit = event => {
+    createGame.onsubmit = 
+    event => {
       event.preventDefault();
       loadPage(pongPage, {
         event: "join_game",

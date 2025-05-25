@@ -84,21 +84,27 @@ export const chatPage: Page = {
           dm_html = ["bg-pink-800", "text-purple-300", " whispered: "];
         else
           dm_html = ["bg-gray-600", "text-blue-300", ": "];
+        if (data.senderid == 0)
+          dm_html = ["bg-yellow-600", "text-orange-300", "Announcer: "]
         if (data.is_dm == true && data.is_blocked == true)
           return;
-          
+
         const newMessage = document.createElement('div');
         newMessage.className = 'text-white ' + dm_html[0] + ' p-2 rounded w-fit relative';
         
-        const senderSpan = document.createElement('span');
-        senderSpan.textContent = data.sender;
-        senderSpan.className = 'font-bold ' + dm_html[1] + ' cursor-pointer hover:underline';
-        senderSpan.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleUserMenu(senderSpan, data.senderid, data.sender);
-        });
-        
-        newMessage.appendChild(senderSpan);
+        if (data.senderid != 0)
+        {
+          const senderSpan = document.createElement('span');
+          senderSpan.textContent = data.sender;
+          senderSpan.className = 'font-bold ' + dm_html[1] + ' cursor-pointer hover:underline';
+          senderSpan.addEventListener('click', (e) => {
+              e.stopPropagation();
+              toggleUserMenu(senderSpan, data.senderid, data.sender);
+          });
+
+          newMessage.appendChild(senderSpan);
+        }
+
         newMessage.appendChild(document.createTextNode(dm_html[2] + data.content));
         container?.prepend(newMessage);
       } 

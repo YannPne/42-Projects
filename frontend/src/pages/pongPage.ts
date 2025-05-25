@@ -49,7 +49,7 @@ export const pongPage: Page<any> = {
     const context = canvas.getContext("2d")!;
 
     start.onclick = async () => {
-      await countdownOnCanvas(context);
+      //await countdownOnCanvas(context);
       ws!.send(JSON.stringify({ event: "play" }));
     };
 
@@ -93,6 +93,7 @@ export const pongPage: Page<any> = {
   },
 
   onUnmount() {
+    ws!.send(JSON.stringify({event: "leave_game"}));
     if (keydownListener != undefined)
       document.removeEventListener("keydown", keydownListener);
     if (keyupListener != undefined)
@@ -102,8 +103,6 @@ export const pongPage: Page<any> = {
     keydownListener = undefined;
     keyupListener = undefined;
     wsListener = undefined;
-
-    ws!.send(JSON.stringify({event: "leave_game"}));
   }
 };
 
