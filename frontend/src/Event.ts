@@ -28,6 +28,7 @@ export type Event =
   | { event: "get_info_profile", name?: string, avatar?: { type: "Buffer", data: number[] } | null, friends?: string[] }
   | { event: "remove_friend", name?: string, success?: boolean }
   | { event: "get_status", friends?: string[], status?: boolean[] }
+  | { event: "get_tournament", tournament?: string[]}
 
 export function sendAndWait<T extends Event>(data: T, timeout: number = 5_000) {
   ws?.send(JSON.stringify(data));

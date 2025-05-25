@@ -39,6 +39,7 @@ export const pongPage: Page<any> = {
             class="absolute left-1 top-1 w-7 h-7 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out"></span>
           </button>
         </div>
+        <div id="tournamentLine" class="text-white mt-4 text-lg font-semibold text-center whitespace-nowrap"></div>
       </div>
     `;
   },
@@ -51,6 +52,7 @@ export const pongPage: Page<any> = {
       return;
     }
 
+    ws!.send(JSON.stringify({ event: "get_tournament" }));
     // Header
     const start = document.querySelector<HTMLButtonElement>("#start")!;
     const addLocalName = document.querySelector<HTMLInputElement>("#addLocalName")!;
@@ -135,6 +137,11 @@ export const pongPage: Page<any> = {
         case "win":
           drawEndGame3D(context3d, message.player);
           drawEndGame(canvas2d, context2d, message.player);
+          break;
+        case "get_tournament":
+          if (message.tournament) {
+            updateTournamentLine(message.tournament);
+          }
           break;
       }
     });
@@ -416,3 +423,22 @@ function drawEndGame(canvas: HTMLCanvasElement, context: CanvasRenderingContext2
   context.fillText(player + " win", canvas.width / 2, canvas.height / 4);
 }
 
+// ## Tournament footer Banner ##
+function updateTournamentLine(tournament: string[]) {
+  const line = document.getElementById("tournamentLine");
+  if (!line) return;
+
+  const [p1, p2, ...rest] = tournament;
+  let text = "";
+
+  if (p1 && p2) {
+    text += `${p1} ⚔ ${p2}`;
+    if (rest.length > 0) {
+      text += " | " + rest.join(" | ");
+    }
+  } else {
+    text = tournament.join(" | ");
+  }
+
+  line.textContent = text;
+}
