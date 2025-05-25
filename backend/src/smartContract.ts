@@ -1,7 +1,6 @@
 import { ethers } from "ethers";
 import * as dotenv from "dotenv";
 import abi from "./abi/Contract.json";
-import { promises } from "dns";
 
 dotenv.config();
 
@@ -16,19 +15,16 @@ const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, wallet);
 
 let txQueue: Promise<void> = Promise.resolve();
 
-export  async function addTournamentMatches(
-  matchIds: number[],
-  matchScores: number[][]
-): Promise<void> 
-{
+export async function addTournamentMatches(
+    matchIds: number[],
+    matchScores: number[][]
+): Promise<void> {
   txQueue = txQueue.then(async () => {
     try {
       const tx = await contract.addTournamentMatches(matchIds, matchScores);
       await tx.wait();
       console.log("Matchs added with success !");
-    } 
-    catch (err)
-    {
+    } catch (err) {
       console.error("Error when the match is send to the smart contract :", err);
     }
   });
@@ -37,7 +33,7 @@ export  async function addTournamentMatches(
 }
 
 export async function getTournamentMatches(tournamentId: number) {
-  const [matchIds, scores] = await contract.getTournamentMatches(tournamentId);
+  const [ matchIds, scores ] = await contract.getTournamentMatches(tournamentId);
   console.log("Match IDs:", matchIds.map((id: any) => id.toString()));
   console.log("Scores:", scores.map((score: any[]) => score.map(s => s.toString())));
 }

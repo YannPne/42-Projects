@@ -1,7 +1,7 @@
 DC := docker compose
 
 up:
-	$(DC) up -d
+	$(DC) up -d --build
 
 down:
 	$(DC) down

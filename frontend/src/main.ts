@@ -8,7 +8,7 @@ export function connectWs() {
     if (ws)
       ws.close();
 
-    ws = new WebSocket("ws://" + document.location.host + "/api/ws?token=" + sessionStorage.getItem("token"));
+    ws = new WebSocket("wss://" + document.location.host + "/api/ws?token=" + sessionStorage.getItem("token"));
     ws.onopen = () => console.log("WebSocket connection opened");
     ws.onclose = () => {
       console.log("WebSocket connection closed");
@@ -77,9 +77,14 @@ for (let page of pages) {
   nav.appendChild(button);
 }
 
-if (sessionStorage.getItem("token") != null) {
-  try {
-    await connectWs();
-  } catch (e) {}
+start();
+
+async function start() {
+  if (sessionStorage.getItem("token") != null) {
+    try {
+      await connectWs();
+    } catch (e) {
+    }
+  }
+  loadPage(findPage(window.location.pathname));
 }
-loadPage(findPage(window.location.pathname));
