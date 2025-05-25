@@ -33,6 +33,7 @@ export type Event =
   | { event: "set_hide_profile", hide?: boolean}
   | { event: "2fa", enable?: boolean, secret?: string, username?: string }
   | { event: "2fa_check", code?: string, success?: boolean }
+  | { event: "invite_player", gameID?: any, userToInvite?: string, sender?: string}
   | { event: "broadcast_message", content: string}
   | { event: "swap_blocked", id: number, success?: boolean}
   | { event: "getInfoDm", other_user: string, blocked?: boolean, id?: any, is_me?: boolean, is_exist?: boolean}

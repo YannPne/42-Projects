@@ -1,18 +1,19 @@
 import { loadPage, type Page } from "./Page.ts";
-import { awaitWs, closeWs, ws } from "../main.ts";
+import { awaitWs, ws } from "../main.ts";
 import { loginPage } from "./loginPage.ts";
 import { profilePage } from "./profilePage.ts"
-import { sendAndWait } from "../Event.ts";
+import { sendAndWait, type Event } from "../Event.ts";
+import { pongPage } from "./pongPage.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 
 
 export const chatPage: Page = {
-  url: "/Chat",
+  url: "/chat",
   title: "Chat",
   navbar: true,
 
-  getPage(): string {
+  getPage() {
     return `
     <div class="h-full flex flex-col justify-center items-center">
 
@@ -35,8 +36,8 @@ export const chatPage: Page = {
 
   async onMount() {
     if (ws === undefined) {
-        loadPage(loginPage, chatPage);
-        return;
+      loadPage(loginPage, chatPage);
+      return;
     }
 
     await awaitWs();
@@ -46,8 +47,37 @@ export const chatPage: Page = {
     const container = document.querySelector<HTMLElement>("#printMessage")!;
 
     wsListener = (event: MessageEvent) => {
-      const data = JSON.parse(event.data);
-      console.log(data);
+      const data: Event = JSON.parse(event.data);
+
+      if (data.event === "invite_player")
+      {
+        const inviteBox = document.createElement("div");
+        inviteBox.className = 'text-white bg-yellow-700 p-2 rounded w-fit relative';
+
+        const senderSpan = document.createElement('span');
+        senderSpan.textContent = data.sender;
+        senderSpan.className = 'font-bold text-yellow-300 cursor-pointer hover:underline';
+        senderSpan.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleUserMenu(senderSpan, data.senderid, data.sender);
+        });
+
+        const inviteButton = document.createElement("button");
+        inviteButton.textContent = `Accept game invite`;
+        inviteButton.className = 'ml-2 px-2 py-1 bg-green-600 rounded hover:bg-green-700 text-white';
+        inviteButton.addEventListener('click', () => {
+          console.log(data);
+          loadPage(pongPage, {
+            event: "join_game",
+            uid: data.gameID,
+          });
+          inviteBox.remove();
+        });
+
+        inviteBox.appendChild(senderSpan);
+        inviteBox.appendChild(inviteButton);
+        container?.prepend(inviteBox);
+      }
       if (data.event === "broadcast_message") {
         let dm_html: [string, string, string];
         if (data.is_dm)
@@ -168,7 +198,7 @@ function toggleUserMenu(target: HTMLElement, userid: number, username: string) {
           input.className = 'p-1 rounded text-gray-200 ml-1';
     
           const sendBtn = document.createElement('button');
-          sendBtn.textContent = 'Send';
+          sendBtn.textContent = 'Create';
           sendBtn.className = 'ml-2 px-2 py-1 bg-blue-600 rounded hover:bg-blue-700 text-white';
     
           btn.parentNode?.insertBefore(input, btn.nextSibling);
@@ -176,11 +206,17 @@ function toggleUserMenu(target: HTMLElement, userid: number, username: string) {
     
           sendBtn.addEventListener('click', () => {
             const gameName = input.value.trim();
-            console.log(gameName);
-            input.remove();
-            sendBtn.remove();
+            const uid = crypto.randomUUID();
 
-            btn.style.display = '';
+            loadPage(pongPage, {
+              event: "join_game",
+              uid: uid,
+              name: gameName
+            });
+
+            ws?.send(JSON.stringify({ event: "invite_player", gameID: uid, userToInvite: username, gameName: gameName}));
+
+            menu.remove();
           });
         }
       });

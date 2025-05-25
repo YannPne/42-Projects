@@ -63,7 +63,7 @@ if (privacyLink) {
 const nav = document.querySelector<HTMLElement>("nav")!;
 
 for (let page of pages) {
-  if (page.navbar === false)
+  if (page.navbar == false)
     continue;
   const button = document.createElement("a");
   button.className = "flex-1 text-center p-3 bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950 transition-all hover:via-gray-950";

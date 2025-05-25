@@ -53,7 +53,7 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         removeFriend(socket, user.id, message.name);
         break;
       case "broadcast_message":
-          broadcastMessage(socket, message, user!.id);
+          broadcastMessage(message, user!.id);
           break;
       case "swap_blocked":
           swapBlocked(socket, user?.id, message.id);
@@ -77,6 +77,9 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         break;
       case "move":
         move(user, message);
+        break;
+      case "invite_player":
+        invitePlayer(user, message);
         break;
       case "update_info":
         updateInfo(socket, user!, message);
@@ -207,14 +210,18 @@ function getFriends(userToGet: number) {
   return rows.map(row => row.displayName);
 }
 
-function broadcastMessage(socket: WebSocket, message: any, id_user: number)
+function invitePlayer(user: User, message: any)
+{
+  const invite = onlineUsers.find(u => u.displayName == message.userToInvite);
+
+  invite!.socket.send(JSON.stringify({ event: "invite_player", gameID: message.gameID, sender: user.displayName, gameName: message.gameName}));
+}
+
+function broadcastMessage(message: any, id_user: number)
 {
   let blocked_list: string[];
   const dm: any = parseMessage(message.content, id_user);
-
-  console.log(onlineUsers);
-
-
+    
   for (let entry of onlineUsers)
   {
     blocked_list = getBlocked(entry.id);
