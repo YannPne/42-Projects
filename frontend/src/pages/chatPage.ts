@@ -47,6 +47,7 @@ export const chatPage: Page = {
 
     wsListener = (event: MessageEvent) => {
       const data = JSON.parse(event.data);
+      console.log(data);
       if (data.event === "broadcast_message") {
         let dm_html: [string, string, string];
         if (data.is_dm)
@@ -144,7 +145,7 @@ function toggleUserMenu(target: HTMLElement, userid: number, username: string) {
 
         if (action === 'Profile')
         {
-          loadPage(profilePage);
+          loadPage(profilePage, username);
           menu.remove();
         }
 
@@ -174,8 +175,11 @@ function toggleUserMenu(target: HTMLElement, userid: number, username: string) {
           btn.parentNode?.insertBefore(sendBtn, input.nextSibling);
     
           sendBtn.addEventListener('click', () => {
+            const gameName = input.value.trim();
+            console.log(gameName);
             input.remove();
             sendBtn.remove();
+
             btn.style.display = '';
           });
         }

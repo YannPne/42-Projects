@@ -2,5 +2,6 @@
 dist/
 node_modules/
 tsconfig.tsbuildinfo
+.env
 backend/database.sqlite
-log_db.sql
+backend/log_db.sql

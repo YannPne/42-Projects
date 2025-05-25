@@ -1,10 +1,9 @@
-import { sendAndWait } from "../Event.ts";
-import { closeWs, connectWs, ws } from "../main.ts";
+import { connectWs, ws } from "../main.ts";
 import { loadPage, type Page } from "./Page.ts";
 import { registerPage } from "./registerPage.ts";
 import { profilePage } from "./profilePage.ts";
 
-export const loginPage: Page = {
+export const loginPage: Page<Page<any>> = {
   url: "/login",
   title: "Login",
   navbar: false,
@@ -17,11 +16,11 @@ export const loginPage: Page = {
           <form id="login" class="flex flex-col mt-5 mb-5 space-y-2">
             <label>
               <p>Username: </p>
-              <input id="username" type="text" required class="p-1 bg-gray-600 rounded-lg w-full" />
+              <input name="username" type="text" required class="p-1 bg-gray-600 rounded-lg w-full" />
             </label>
             <label>
               <p>Password: </p>
-              <input id="password" type="password" required class="p-1 bg-gray-600 rounded-lg w-full" />
+              <input name="password" type="password" required class="p-1 bg-gray-600 rounded-lg w-full" />
             </label>
             <div class="flex justify-center">
               <button class="rounded-2xl bg-gray-900 hover:bg-gray-950 p-2 mt-5 cursor-pointer">Login</button>
@@ -33,18 +32,16 @@ export const loginPage: Page = {
           </div>
         </div>
       </div>
-	`;
+	  `;
   },
 
-  onMount(requestedPage: any) {
+  onMount(requestedPage) {
     if (ws != undefined) {
-      loadPage(profilePage);
+      loadPage(requestedPage ?? profilePage);
       return;
     }
 
-    const username = document.querySelector<HTMLInputElement>("#username")!;
-    const password = document.querySelector<HTMLInputElement>("#password")!;
-    const loginButton = document.querySelector<HTMLFormElement>("#login")!;
+    const loginForm = document.querySelector<HTMLFormElement>("#login")!;
     const registerLink = document.querySelector<HTMLAnchorElement>("#register")!;
 
     registerLink.onclick = (event) => {
@@ -52,24 +49,42 @@ export const loginPage: Page = {
       loadPage(registerPage, requestedPage);
     };
 
-    loginButton.onsubmit = async (event) => {
+    loginForm.onsubmit = async (event) => {
       event.preventDefault();
 
-      if (username.value.trim() == "" && password.value == "")
-        return;
+      const formData = new FormData(loginForm);
 
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        await connectWs();
+      const require2fa = await fetch("http://" + document.location.host + "/api/require_2fa", {
+        method: "POST",
+        body: formData.get("username") as string
+      });
+
+      if (await require2fa.json()) {
+        const code2fa = prompt("Please enter your 2FA code");
+        if (code2fa == null)
+          return;
+        formData.append("2fa", code2fa);
       }
 
-      sendAndWait({ event: "login", username: username.value.trim(), password: password.value }).then(message => {
-        if (message.success === true)
-          loadPage(requestedPage ?? profilePage);
-        else {
-          closeWs();
-          alert("Invalid username / password");
-        }
+      const loginResponse = await fetch("http://" + document.location.host + "/api/login", {
+        method: "POST",
+        body: formData
       });
+
+      if (loginResponse.status == 401) {
+        alert("Wrong username / password");
+        return;
+      } else if (loginResponse.status == 403) {
+        alert("Invalid 2FA code");
+        return;
+      } else if (loginResponse.status != 200) {
+        console.error(loginResponse.body);
+        return;
+      }
+
+      sessionStorage.setItem("token", await loginResponse.text());
+      await connectWs();
+      loadPage(requestedPage ?? profilePage);
     };
   },
 
