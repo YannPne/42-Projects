@@ -364,10 +364,9 @@ function joinGame(user: User, message: any) {
   }
 
   const names = game.players.map(p => p.name);
-  for (const u of game.users) {
+  for (const u of game.users)
     u.socket.send(JSON.stringify({ event: "get_tournament", tournament: names }));
-  }
-  if (!(game.players.find(u => u.name == user.displayName)))
+  if (!(game.players.some(u => u.name == user.displayName)))
     game.addUser(user);
 }
 
