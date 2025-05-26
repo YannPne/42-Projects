@@ -6,6 +6,7 @@ import { registerPage } from "./registerPage.ts";
 import { profilePage } from "./profilePage.ts";
 import { chatPage } from "./chatPage.ts";
 import { privacyPage } from "./privacyPage.ts";
+import { profileNewPage } from "./profileNewPage.ts";
 
 export type Page<T = undefined> = {
   url: string;
@@ -25,6 +26,7 @@ export const pages: Page[] = [
   profilePage,
   chatPage,
   privacyPage,
+  profileNewPage
 ];
 
 let currentPage: Page<any> | undefined;

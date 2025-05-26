@@ -31,7 +31,7 @@ export type Event =
   | { event: "remove_friend", name?: string, success?: boolean }
   | { event: "get_status", friends?: string[], status?: boolean[] }
   | { event: "get_tournament", tournament?: string[] }
-  | { event: "set_hide_profile", hide?: boolean}
+  | { event: "set_hide_profile", hide?: boolean }
   | { event: "2fa", enable?: boolean, secret?: string, username?: string }
   | { event: "2fa_check", code?: string, success?: boolean }
   | { event: "invite_player", gameId?: any, userToInvite?: string, sender?: string, senderId?: number }

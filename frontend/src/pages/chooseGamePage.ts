@@ -72,7 +72,7 @@ export const chooseGamePage: Page = {
 
   onUnmount() {
     if (wsListener != undefined)
-      ws!.removeEventListener("message", wsListener);
+      ws?.removeEventListener("message", wsListener);
     wsListener = undefined;
   }
 };
