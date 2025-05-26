@@ -267,9 +267,6 @@ function parseMessage(message: string, userId: number) {
     i++;
   }
 
-  if (i >= message.length)
-    return undefined;
-
   i++;
 
   if (getUserID(tempName) == undefined || getUserID(tempName) == userId)

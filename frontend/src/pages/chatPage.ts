@@ -15,7 +15,7 @@ export const chatPage: Page = {
   getPage() {
     return `
       <div class="h-full flex flex-col justify-center items-center">
-        <div class="bg-gray-700 w-[700px] h-[550px] flex flex-col">
+        <div class="bg-gray-700 w-[80%] h-[80%] flex flex-col">
           <div id="printMessage" class="flex-1 flex flex-col-reverse overflow-y-auto space-y-reverse space-y-1">
           </div>
 
