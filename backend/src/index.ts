@@ -41,6 +41,13 @@ sqlite.exec(`CREATE TABLE IF NOT EXISTS friends (
     FOREIGN KEY (friendid) REFERENCES users (id) ON DELETE CASCADE
 )`);
 
+sqlite.exec(`CREATE TABLE IF NOT EXISTS blocked (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    userid INTEGER NOT NULL, 
+    blockedid INTEGER NOT NULL, 
+    UNIQUE(userid, blockedid))`);
+
+
 const app = fastify({ logger: true });
 
 app.register(fastifyWebsocket);
