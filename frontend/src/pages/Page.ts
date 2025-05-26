@@ -17,7 +17,7 @@ export type Page<T = undefined> = {
   onUnmount(): void;
 };
 
-export const pages: Page[] = [
+export const pages: Page<any>[] = [
   homePage,
   chooseGamePage,
   pongPage,

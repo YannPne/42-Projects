@@ -1,20 +1,22 @@
-import { type Page } from "./Page.ts";
+import { loadPage, type Page } from "./Page.ts";
+import { type Friend, type Game, send, sendAndWait } from "../Event.ts";
 
-export const profileNewPage: Page<Page<number>> = {
+export const profileNewPage: Page<number> = {
   url: "/profile_new",
   title: "Profile",
   navbar: false,
 
-  getPage(): string {
+  getPage() {
     return `
       <div class="h-full flex flex-col overflow-hidden">
         <div class="p-5 flex justify-between">
           <div class="flex items-center gap-2">
-            <img alt="avatar" src="/avatar.webp" class="w-[100px] h-[100px] bg-gray-950 border border-white rounded-full">
+            <img id="avatar" alt="avatar" src="/avatar.webp" class="w-[100px] h-[100px] bg-gray-950 border border-white rounded-full">
+            <!-- TODO: Add the status as a circle -->
             <div>
-              <p class="text-4xl font-bold">Name</p>
-              <p class="text-gray-400">email</p>
-              <p class="text-green-500">online</p>
+              <p id="display-name" class="text-4xl font-bold">Name</p>
+              <p id="username">username</p>
+              <p id="email" class="text-gray-400">email</p>
             </div>
           </div>
           <div>
@@ -49,14 +51,67 @@ export const profileNewPage: Page<Page<number>> = {
 	  `;
   },
 
-  onMount() {
+  async onMount() {
     const lock = document.querySelector<HTMLDivElement>("#lock")!;
+    const avatar = document.querySelector<HTMLImageElement>("#avatar")!;
+    const displayName = document.querySelector<HTMLParagraphElement>("#display-name")!;
+    const username = document.querySelector<HTMLParagraphElement>("#username")!;
+    const email = document.querySelector<HTMLParagraphElement>("#email")!;
     const gameHistory = document.querySelector<HTMLUListElement>("#game-history")!;
     const friends = document.querySelector<HTMLUListElement>("#friends")!;
 
-    lock.style.display = "none";
+    friends.appendChild(createFriend({ id: 0, displayName: "hello" }));
+    friends.appendChild(createFriend({ id: 0, displayName: "world" }));
+    friends.appendChild(createFriend({ id: 0, displayName: "foo" }));
+    friends.appendChild(createFriend({ id: 0, displayName: "bar" }));
+
+    const profile = await sendAndWait({ event: "get_profile" });
+    if (!profile.locked) {
+      lock.style.display = "none";
+
+      if (profile.avatar)
+        avatar.src = URL.createObjectURL(new Blob([ new Uint8Array(profile.avatar) ]));
+
+      displayName.textContent = profile.displayName;
+      username.textContent = profile.username;
+      email.textContent = profile.email;
+
+      for (let friend of profile.friends)
+        friends.appendChild(createFriend(friend));
+      for (let game of profile.gameHistory)
+        gameHistory.appendChild(createGame(game));
+    }
   },
 
   onUnmount() {
   }
 };
+
+function createFriend(friend: Friend) {
+  const li = document.createElement("li");
+
+  li.innerHTML = `
+    <div class="flex">
+      <img alt="avatar" src="/avatar.webp" class="rounded-full h-[50px] w-[50px]">
+      <p class="cursor-pointer hover:underline"></p>
+      <button>Remove</button>
+    </div>
+  `;
+
+  const p = li.querySelector("p")!;
+
+  p.innerText = friend.displayName;
+  p.onclick = () => loadPage(profileNewPage, friend.id);
+
+  li.querySelector("button")!.onclick = () => {
+    send({ event: "remove_friend", id: friend.id });
+    li.remove();
+  };
+
+  return li;
+}
+
+function createGame(game: Game) {
+  const li = document.createElement("li");
+  return li;
+}

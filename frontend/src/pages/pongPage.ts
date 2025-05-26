@@ -1,6 +1,6 @@
 import { loadPage, type Page } from "./Page.ts";
 import { ws } from "../main.ts";
-import type { Ball, Event, Player } from "../Event.ts";
+import { type Ball, type ClientEvent, type Player, send, type ServerEvent } from "../Event.ts";
 import { chooseGamePage } from "./chooseGamePage.ts";
 import { ArcRotateCamera, Color3, Color4, Engine, HemisphericLight, GlowLayer, MeshBuilder, Scene, StandardMaterial, Texture, Vector3, Mesh } from "@babylonjs/core";
 import { TextBlock, AdvancedDynamicTexture } from "@babylonjs/gui";
@@ -9,7 +9,7 @@ let wsListener: ((event: MessageEvent) => void) | undefined;
 let keydownListener: ((event: KeyboardEvent) => void) | undefined;
 let keyupListener: ((event: KeyboardEvent) => void) | undefined;
 
-export const pongPage: Page<any> = {
+export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
   url: "/pong",
   title: "Pong",
   navbar: false,
@@ -44,13 +44,13 @@ export const pongPage: Page<any> = {
 
   onMount(data) {
     if (data != undefined) {
-      ws!.send(JSON.stringify(data)); // join_game event
+      send(data);
     } else {
       loadPage(chooseGamePage);
       return;
     }
 
-    ws!.send(JSON.stringify({ event: "get_tournament" }));
+    send({ event: "get_tournament" });
     // Header
     const start = document.querySelector<HTMLButtonElement>("#start")!;
     const addLocalName = document.querySelector<HTMLInputElement>("#addLocalName")!;
@@ -88,13 +88,13 @@ export const pongPage: Page<any> = {
 
     start.onclick = async () => {
       myDiv.style.display = "none";
-      ws?.send(JSON.stringify({ event: "play" }));
+      send({ event: "play" });
     };
 
     addLocalForm.onsubmit = event => {
       event.preventDefault();
       if (addLocalName.value.trim() != "") {
-        ws!.send(JSON.stringify({ event: "add_local_player", name: addLocalName.value, isAi: addLocalCheck.checked }));
+        send({ event: "add_local_player", name: addLocalName.value, isAi: addLocalCheck.checked });
         addLocalName.value = "";
         addLocalCheck.checked = false;
       }
@@ -110,7 +110,7 @@ export const pongPage: Page<any> = {
     });
 
     ws?.addEventListener("message", wsListener = async (event) => {
-      const message: Event = JSON.parse(event.data);
+      const message: ServerEvent = JSON.parse(event.data);
 
       switch (message.event) {
         case "update":
@@ -138,7 +138,7 @@ export const pongPage: Page<any> = {
   },
 
   onUnmount() {
-    ws?.send(JSON.stringify({ event: "leave_game" }));
+    send({ event: "leave_game" });
     if (keydownListener != undefined)
       document.removeEventListener("keydown", keydownListener);
     if (keyupListener != undefined)
@@ -166,18 +166,20 @@ async function nextMatch(context: CanvasRenderingContext2D, players: Player[]) {
 }
 
 function move(event: KeyboardEvent, up: boolean) {
-  let send: Partial<Event> = { event: "move" };
+  let goUp: boolean | undefined;
+  let goDown: boolean | undefined;
 
   if (event.code == "KeyW" || event.code == "ArrowUp")
-    send.goUp = !up;
+    goUp = !up;
   else if (event.code == "KeyS" || event.code == "ArrowDown")
-    send.goDown = !up;
+    goDown = !up;
   else
     return;
 
-  send.id = event.code == "ArrowUp" || event.code == "ArrowDown" ? 1 : 0;
-
-  ws?.send(JSON.stringify(send));
+  send({
+    event: "move", goUp, goDown,
+    id: event.code == "ArrowUp" || event.code == "ArrowDown" ? 1 : 0
+  });
 }
 
 function createTextBlock(color: string, fontSize: number, text: string) {
@@ -348,7 +350,7 @@ function drawMap(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
   context.clearRect(0, 0, canvas.width, canvas.height);
 
   context.beginPath();
-  context.setLineDash([10, 15]);
+  context.setLineDash([ 10, 15 ]);
   context.moveTo(canvas.width / 2, 0);
   context.lineTo(canvas.width / 2, canvas.height);
   context.strokeStyle = "#ffffff44";
@@ -471,7 +473,7 @@ async function drawEndGame(canvas: HTMLCanvasElement, context: CanvasRenderingCo
 function updateTournamentLine(tournament: string[]) {
   const line = document.querySelector<HTMLDivElement>("#tournamentLine")!;
 
-  const [p1, p2, ...remain] = tournament;
+  const [ p1, p2, ...remain ] = tournament;
   let text = "";
 
   if (p1 && p2) {

@@ -1,7 +1,7 @@
 import { loadPage, type Page } from "./Page.ts";
 import { closeWs, ws } from "../main.ts";
 import { loginPage } from "./loginPage.ts";
-import { sendAndWait } from "../Event.ts";
+import { send, sendAndWait } from "../Event.ts";
 import qrcode from "qrcode";
 
 let visible = true;
@@ -158,7 +158,7 @@ function editAndHide() {
 
   btn_hide.onclick = () => {
     visible = !visible;
-    ws!.send(JSON.stringify({ event: "set_hide_profile", hide: visible }));
+    send({ event: "set_hide_profile", hide: visible });
     setBtnEye(visible);
   };
 
@@ -291,9 +291,9 @@ function removeFriend() {
     const target = event.target as HTMLElement;
 
     if (target.id == "btn_remove") {
-      const friendName = target.dataset.friend;
+      const friendName = target.dataset.friend!;
 
-      const message = await sendAndWait({ event: "remove_friend", name: friendName });
+      const message = await sendAndWait({ event: "remove_friend", id: friendName as any as number });
 
       if (message.success)
         target.closest("li")?.remove();

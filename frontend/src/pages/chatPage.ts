@@ -2,7 +2,7 @@ import { loadPage, type Page } from "./Page.ts";
 import { ws } from "../main.ts";
 import { loginPage } from "./loginPage.ts";
 import { profilePage } from "./profilePage.ts";
-import { sendAndWait, type Event } from "../Event.ts";
+import { send, sendAndWait, type ServerEvent } from "../Event.ts";
 import { pongPage } from "./pongPage.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
@@ -41,17 +41,17 @@ export const chatPage: Page = {
     const container = document.querySelector<HTMLDivElement>("#printMessage")!;
 
     ws.addEventListener("message", wsListener = (event: MessageEvent) => {
-      const data: Event = JSON.parse(event.data);
+      const data: ServerEvent = JSON.parse(event.data);
 
       const box = document.createElement("div");
       let senderSpan: HTMLSpanElement | undefined;
 
       if (data.event == "invite_player" || data.event == "broadcast_message" && data.senderId != 0) {
         senderSpan = document.createElement("span");
-        senderSpan.textContent = data.sender!;
+        senderSpan.textContent = data.sender;
         senderSpan.onclick = event => {
           event.stopPropagation();
-          toggleUserMenu(senderSpan!, data.senderId!, data.sender!);
+          toggleUserMenu(senderSpan!, data.senderId, data.sender);
         };
 
         box.appendChild(senderSpan);
@@ -121,7 +121,7 @@ export const chatPage: Page = {
           myMessage.appendChild(document.createTextNode(": " + dm.content));
         }
         container?.prepend(myMessage);
-        ws?.send(JSON.stringify({ event: "broadcast_message", content: value }));
+        send({ event: "broadcast_message", content: value });
         input.value = "";
       });
     };
@@ -189,12 +189,12 @@ function toggleUserMenu(target: HTMLElement, userId: number, username: string) {
               name: gameName
             });
 
-            ws?.send(JSON.stringify({
+            send({
               event: "invite_player",
               gameId: uid,
               userToInvite: username,
               gameName: gameName
-            }));
+            });
 
             menu.remove();
           };

@@ -1,8 +1,8 @@
 import { awaitWs, ws } from "../main.ts";
 import { loadPage, type Page } from "./Page.ts";
 import { pongPage } from "./pongPage.ts";
-import type { Event } from "../Event.ts";
 import { loginPage } from "./loginPage.ts";
+import { send, type ServerEvent } from "../Event.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 
@@ -36,7 +36,7 @@ export const chooseGamePage: Page = {
     const createGameName = document.querySelector<HTMLInputElement>("#createGameName")!;
     const games = document.querySelector<HTMLUListElement>("#games")!;
 
-    createGame.onsubmit = 
+    createGame.onsubmit =
     event => {
       event.preventDefault();
       loadPage(pongPage, {
@@ -47,12 +47,12 @@ export const chooseGamePage: Page = {
     };
 
     ws.addEventListener("message", wsListener = event => {
-      const message: Event = JSON.parse(event.data);
+      const message: ServerEvent = JSON.parse(event.data);
 
       switch (message.event) {
         case "get_games":
           games.innerHTML = "";
-          for (let game of message.games!) {
+          for (let game of message.games) {
             const li = document.createElement("li");
             li.textContent = game.name;
             li.className = "pl-9 pr-9 p-2.5 hover:bg-gray-500 cursor-pointer";
@@ -67,7 +67,7 @@ export const chooseGamePage: Page = {
           break;
       }
     });
-    ws.send(JSON.stringify({ event: "get_games" }));
+    send({ event: "get_games" });
   },
 
   onUnmount() {
