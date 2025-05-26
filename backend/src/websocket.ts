@@ -9,7 +9,7 @@ export let onlineUsers: User[] = [];
 
 export default function registerWebSocket(socket: WebSocket, req: FastifyRequest) {
   const row: any = sqlite.prepare("SELECT username, displayName, secret2fa FROM users WHERE id = ?")
-      .get(req.jwtUserId);
+    .get(req.jwtUserId);
 
   if (row == undefined) {
     socket.close();
@@ -112,19 +112,18 @@ function updateInfo(socket: WebSocket, user: User, msg: any) {
         SET username = ?, displayName = ?, email = ?, avatar = ?
         WHERE id = ? AND NOT EXISTS (
             SELECT 1 FROM users WHERE (username = ? OR displayName = ?) AND id != ?)`)
-        .run(msg.username, msg.displayName, msg.email, msg.avatar, user.id, msg.username, msg.displayName, user.id);
+      .run(msg.username, msg.displayName, msg.email, msg.avatar, user.id, msg.username, msg.displayName, user.id);
   } else {
     result = sqlite.prepare(`UPDATE users
         SET username = ?, displayName = ?, email = ?, avatar = ?, password = ?
         WHERE id = ? AND NOT EXISTS (
             SELECT 1 FROM users WHERE (username = ? OR displayName = ?) AND id != ?)`)
-        .run(msg.username, msg.displayName, msg.email, msg.avatar, bcrypt.hashSync(msg.password, 10), user.id, msg.username, msg.displayName, user.id);
+      .run(msg.username, msg.displayName, msg.email, msg.avatar, bcrypt.hashSync(msg.password, 10), user.id, msg.username, msg.displayName, user.id);
   }
-
 
   socket.send(JSON.stringify({
     event: "update_info",
-    success: result.changes > 0,
+    success: result.changes > 0
   }));
 
   if (result.changes > 0)
@@ -330,8 +329,7 @@ function getBlocked(userId: number) {
 
 function getInfoProfile(user: User, userToGet: number) {
   const row: any = sqlite.prepare("SELECT * FROM users WHERE id = ?")
-      .get(userToGet);
-
+    .get(userToGet);
   const friends = getFriends(userToGet);
 
   user.socket.send(JSON.stringify({
@@ -342,8 +340,8 @@ function getInfoProfile(user: User, userToGet: number) {
     email: row.email,
     friends: friends,
     mainProfile: userToGet == user.id,
-    status: !!onlineUsers.find(u => u.id == user.id),
-    hideProfile: row.hideProfile,
+    status: onlineUsers.some(u => u == user),
+    hideProfile: row.hideProfile
   }));
 }
 
@@ -376,7 +374,7 @@ export function insertGameHistory(data: {
 }) {
   sqlite.prepare(`INSERT INTO games (name1, name2, score1, score2, date)
         VALUES (?, ?, ?, ?, ?)`)
-      .run(data.name1, data.name2, data.score1, data.score2, data.date);
+    .run(data.name1, data.name2, data.score1, data.score2, data.date);
 }
 
 function getDisplayName(userId: number): string {
@@ -387,13 +385,23 @@ function getDisplayName(userId: number): string {
 }
 
 function getGamesHistory(socket: WebSocket, userId: number) {
-  const rows = sqlite.prepare("SELECT name2, score1, score2, date FROM games WHERE name1 = ?")
-      .all(getDisplayName(userId));
+  const displayName = getDisplayName(userId);
+  const games: any[] = sqlite.prepare("SELECT name1, name2, score1, score2, date FROM games WHERE name1 = ? OR name2 = ?")
+    .all(displayName, displayName);
 
-  socket.send(JSON.stringify({
-    event: "get_games_history",
-    games: rows
-  }));
+  for (let game of games) {
+    if (game.name1 == displayName) {
+      delete game.name1;
+    } else {
+      game.name2 = game.name1;
+      delete game.name1;
+      const tempScore1 = game.score1;
+      game.score1 = game.score2;
+      game.score2 = tempScore1;
+    }
+  }
+
+  socket.send(JSON.stringify({ event: "get_games_history", games }));
 }
 
 function addLocalPlayer(user: User, message: any) {
@@ -425,7 +433,7 @@ function move(user: User, message: any) {
 function setup2fa(socket: WebSocket, user: User, secret: string | undefined, message: any) {
   if (message.enable == undefined) {
     const row: any = sqlite.prepare("SELECT secret2fa FROM users WHERE id = ?")
-        .get(user.id);
+      .get(user.id);
     socket.send(JSON.stringify({ event: "2fa", enable: row && row.secret2fa }));
   } else if (message.enable) {
     secret = generateRandomSecret();
@@ -433,7 +441,7 @@ function setup2fa(socket: WebSocket, user: User, secret: string | undefined, mes
     return secret;
   } else {
     sqlite.prepare("UPDATE users SET secret2fa = NULL WHERE id = ?")
-        .run(user.id);
+      .run(user.id);
   }
 }
 
@@ -444,7 +452,7 @@ async function check2fa(user: User, secret: string | undefined, message: any) {
   const success = await getTotpCode(secret) == message.code;
   if (success) {
     sqlite.prepare("UPDATE users SET secret2fa = ? WHERE id = ?")
-        .run(secret, user.id);
+      .run(secret, user.id);
   }
   user.socket.send(JSON.stringify({ event: "2fa_check", success }));
 }
