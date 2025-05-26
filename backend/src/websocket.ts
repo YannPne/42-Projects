@@ -64,6 +64,11 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
       case "get_games_history":
         getGamesHistory(socket, getUserID(message.name) || user.id);
         break;
+      case "get_tournament":
+        const tournament: string[] = user?.game?.players.map(u => u.name)!;
+        console.log(tournament);
+        socket.send(JSON.stringify({ event: "get_tournament", tournament: tournament }));
+        break;
       case "add_local_player":
         addLocalPlayer(user, message);
         break;
@@ -357,6 +362,11 @@ function joinGame(user: User, message: any) {
     for (let user of onlineUsers)
       user.socket.send(JSON.stringify({ event: "get_games", games }));
   }
+
+  const names = game.players.map(p => p.name);
+  for (const u of game.users) {
+    u.socket.send(JSON.stringify({ event: "get_tournament", tournament: names }));
+  }
   if (!(game.players.find(u => u.name == user.displayName)))
     game.addUser(user);
 }
@@ -405,7 +415,14 @@ function getGamesHistory(socket: WebSocket, userId: number) {
 }
 
 function addLocalPlayer(user: User, message: any) {
-  user.game?.addLocalPlayer(message.name, message.isAi ? undefined : user);
+  if (!user.game) return;
+
+  user.game.addLocalPlayer(message.name, message.isAi ? undefined : user);
+
+  const names = user.game?.players.map(p => p.name);
+  for (const u of user.game.users) {
+    u.socket.send(JSON.stringify({ event: "get_tournament", tournament: names }));
+  }
 }
 
 function play(user: User) {
