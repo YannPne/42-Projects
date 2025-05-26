@@ -30,6 +30,7 @@ export type Event =
   | { event: "get_info_profile", name?: string, profileUsername?: string, mainProfile?: boolean, displayName?: string, avatar?: { type: "Buffer", data: number[] } | null, email?: string, friends?: string[], status?: boolean, hideProfile?: boolean }
   | { event: "remove_friend", name?: string, success?: boolean }
   | { event: "get_status", friends?: string[], status?: boolean[] }
+  | { event: "get_tournament", tournament?: string[] }
   | { event: "set_hide_profile", hide?: boolean}
   | { event: "2fa", enable?: boolean, secret?: string, username?: string }
   | { event: "2fa_check", code?: string, success?: boolean }

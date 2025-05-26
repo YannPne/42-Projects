@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@babylonjs/core": "^8.9.0",
+    "@babylonjs/gui": "^8.9.0",
     "@tailwindcss/vite": "^4.1.7",
     "@types/qrcode": "^1.5.5",
     "qrcode": "^1.5.4",

@@ -17,7 +17,7 @@ export enum GameState {
 export const idtournament = getTotalTournaments();
 
 export class Game {
-  readonly winScore: number = 2;
+  readonly winScore: number = 5;
   readonly width: number = 1200;
   readonly height: number = 600;
 
@@ -117,6 +117,8 @@ export class Game {
       });
     }
 
+    for (const u of this.users) 
+      u.socket.send(JSON.stringify({ event: "get_tournament", tournament: this.players.map(u => u.name) }));
     if (this.players.length == 1) {
       this.state = GameState.SHOW_WINNER;
       return true;
@@ -133,6 +135,9 @@ export class Game {
     let [ player1, player2 ] = this.players;
     this.resetPos();
 
+    for (const u of this.users) 
+      u.socket.send(JSON.stringify({ event: "get_tournament", tournament: this.players.map(u => u.name) }));
+
     while (this.state == GameState.IN_GAME) {
       const startTime = Date.now();
 
@@ -145,6 +150,8 @@ export class Game {
         // @ts-ignore
         if (this.state == GameState.SHOW_WINNER) break;
         [ player1, player2 ] = this.players;
+        // for (const u of this.users) 
+        //   u.socket.send(JSON.stringify({ event: "get_tournament", tournament: this.players.map(u => u.name) }));
       }
 
       for (let user of this.users) {
@@ -153,6 +160,8 @@ export class Game {
           ball: this.ball,
           players: [ player1, player2 ]
         }));
+        // for (const u of this.users) 
+        //   u.socket.send(JSON.stringify({ event: "get_tournament", tournament: this.players.map(u => u.name) }));
       }
 
       await new Promise((res) =>
