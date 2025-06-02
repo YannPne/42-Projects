@@ -4,6 +4,7 @@ import { Game, games, GameState } from "./Game";
 import { sqlite } from ".";
 import { generateRandomSecret, getTotpCode } from "./2fa";
 import bcrypt from "bcrypt";
+import { ClientEvent } from "@ft_transcendence/core";
 
 export let onlineUsers: User[] = [];
 
@@ -26,13 +27,10 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
   });
 
   socket.addEventListener("message", async (event) => {
-    const message = JSON.parse(event.data);
+    const message: ClientEvent = JSON.parse(event.data);
     switch (message.event) {
       case "get_games":
-        getGames(socket);
-        break;
-      case "get_status":
-        getStatus(socket, message);
+        getGames(user);
         break;
       case "join_game":
         joinGame(user, message);
@@ -40,34 +38,31 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
       case "leave_game":
         leaveGame(user);
         break;
-      case "set_friend":
-        setFriend(socket, user.id, message);
+      case "add_friend":
+        addFriend(user, message);
         break;
       case "set_hide_profile":
         setHideProfile(user.id, message.hide);
         break;
       case "remove_friend":
-        removeFriend(socket, user.id, message.name);
+        removeFriend(user, message.id);
         break;
       case "broadcast_message":
         broadcastMessage(message, user.id);
         break;
       case "swap_blocked":
-        swapBlocked(socket, user.id, message.id);
+        swapBlocked(user, message.id);
         break;
       case "get_dm_info":
-        getInfoDm(socket, user.id, message.otherUser);
+        getInfoDm(user, message.otherUser);
         break;
-      case "get_info_profile":
-        getInfoProfile(user, getUserID(message.profileUsername) ?? user.id);
-        break;
-      case "get_games_history":
-        getGamesHistory(socket, getUserID(message.name) || user.id);
+      case "get_profile":
+        getProfile(user, message.id ?? user.id);
         break;
       case "get_tournament":
-        const tournament: string[] = user?.game?.players.map(u => u.name)!;
+        const tournament: string[] = user.game?.players.map(u => u.name)!;
         console.log(tournament);
-        socket.send(JSON.stringify({ event: "get_tournament", tournament: tournament }));
+        user.send({ event: "get_tournament", tournament });
         break;
       case "add_local_player":
         addLocalPlayer(user, message);
@@ -82,16 +77,16 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
         invitePlayer(user, message);
         break;
       case "update_info":
-        updateInfo(socket, user!, message);
+        updateInfo(user, message);
         break;
       case "del_account":
         const success = deleteAccount(user.id);
-        socket.send(JSON.stringify({ event: "del_account", success }));
+        user.send({ event: "del_account", success });
         if (success)
           socket.close();
         break;
       case "2fa":
-        const secret = setup2fa(socket, user, secret2fa, message);
+        const secret = setup2fa(user, secret2fa, message);
         if (secret != undefined)
           secret2fa = secret;
         break;
@@ -104,10 +99,10 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
 
 function setHideProfile(userId: number, hide: boolean) {
   sqlite.prepare("UPDATE users SET hideProfile = ? WHERE id = ?")
-      .run(hide ? 1 : 0, userId);
+    .run(hide ? 1 : 0, userId);
 }
 
-function updateInfo(socket: WebSocket, user: User, msg: any) {
+function updateInfo(user: User, msg: ClientEvent & { event: "update_info" }) {
   let result;
   if (msg.avatar)
     msg.avatar = Buffer.from(msg.avatar);
@@ -126,27 +121,16 @@ function updateInfo(socket: WebSocket, user: User, msg: any) {
       .run(msg.username, msg.displayName, msg.email, msg.avatar, bcrypt.hashSync(msg.password, 10), user.id, msg.username, msg.displayName, user.id);
   }
 
-  socket.send(JSON.stringify({
+  user.send({
     event: "update_info",
     success: result.changes > 0
-  }));
-
-  if (result.changes > 0)
-    user.displayName = msg.displayName;
-}
-
-function getStatus(socket: WebSocket, message: any) {
-  const allStatus: boolean[] = message.friends.map((friend: string) => {
-    return !!onlineUsers.find(u => u.displayName === friend);
   });
 
-  socket.send(JSON.stringify({
-    event: "get_status",
-    status: allStatus
-  }));
+  if (result.changes > 0)
+    user.displayName = msg.displayName!;
 }
 
-function deleteAccount(userId: number): boolean {
+function deleteAccount(userId: number) {
   const name: string = getDisplayName(userId);
 
   const result = sqlite.prepare("DELETE FROM users WHERE id = ?").run(userId);
@@ -161,30 +145,28 @@ function deleteAccount(userId: number): boolean {
 
 function getUserID(name: string): number | undefined {
   const result: any = sqlite.prepare("SELECT id FROM users WHERE displayName = ?")
-      .get(name);
+    .get(name);
   return result?.id;
 }
 
-function removeFriend(socket: WebSocket, userId: number, friend: string) {
-  const friendId = getUserID(friend);
-
+function removeFriend(user: User, friend: number) {
   const result = sqlite.prepare("DELETE FROM friends WHERE userid = ? AND friendid = ?")
-      .run(userId, friendId);
+    .run(user.id, friend);
 
-  socket.send(JSON.stringify({
+  user.send({
     event: "remove_friend",
     success: result.changes != 0
-  }));
+  });
 }
 
-function setFriend(socket: WebSocket, userId: any, message: any) {
+function addFriend(user: User, message: ClientEvent & { event: "add_friend" }) {
   const friendId = getUserID(message.name);
 
-  if (!friendId || userId == friendId) {
-    socket.send(JSON.stringify({
-      event: "set_friend",
+  if (!friendId || user.id == friendId) {
+    user.send({
+      event: "add_friend",
       success: false
-    }));
+    });
     return;
   }
 
@@ -192,12 +174,12 @@ function setFriend(socket: WebSocket, userId: any, message: any) {
       INSERT INTO friends (userid, friendid)
       SELECT ?, ?
       WHERE NOT EXISTS (SELECT 1 FROM friends WHERE userid = ? AND friendid = ?)
-  `).run(userId, friendId, userId, friendId);
+  `).run(user.id, friendId, user.id, friendId);
 
-  socket.send(JSON.stringify({
-    event: "set_friend",
+  user.send({
+    event: "add_friend",
     success: result.changes != 0
-  }));
+  });
 }
 
 function getFriends(userToGet: number) {
@@ -208,15 +190,14 @@ function getFriends(userToGet: number) {
   return rows.map(row => row.displayName);
 }
 
-function invitePlayer(user: User, message: any) {
-  const invite = onlineUsers.find(u => u.displayName == message.userToInvite);
-
-  invite!.socket.send(JSON.stringify({
+function invitePlayer(user: User, message: ClientEvent & { event: "invite_player" }) {
+  onlineUsers.find(u => u.displayName == message.userToInvite)?.send({
     event: "invite_player",
     gameId: message.gameId,
+    gameName: message.gameName,
     sender: user.displayName,
-    gameName: message.gameName
-  }));
+    senderId: user.id
+  });
 }
 
 function broadcastMessage(message: any, userId: number) {
@@ -245,7 +226,7 @@ function broadcastMessage(message: any, userId: number) {
       } else {
         entry.socket.send(JSON.stringify({
           ...event,
-          content: event.isBlocked ? "Blocked message" : message.content,
+          content: event.isBlocked ? "Blocked message" : message.content
         }));
       }
     } else {
@@ -280,14 +261,14 @@ function parseMessage(message: string, userId: number) {
 }
 
 //block
-function swapBlocked(socket: WebSocket, userId: number, blockedId: number) {
-  const blockedList = getBlocked(userId);
+function swapBlocked(user: User, blockedId: number) {
+  const blockedList = getBlocked(user.id);
 
-  if (!blockedId || userId == blockedId) {
-    socket.send(JSON.stringify({
+  if (!blockedId || user.id == blockedId) {
+    user.send({
       event: "swap_blocked",
       success: false
-    }));
+    });
     return;
   }
 
@@ -301,27 +282,27 @@ function swapBlocked(socket: WebSocket, userId: number, blockedId: number) {
       VALUES (?, ?)
       ON CONFLICT(userid, blockedid) 
       DO NOTHING
-    `).run(userId, blockedId);
+    `).run(user.id, blockedId);
   } else {
     result = sqlite.prepare("DELETE FROM blocked WHERE userid = ? AND blockedid = ?")
-        .run(userId, blockedId);
+      .run(user.id, blockedId);
   }
 
-  socket.send(JSON.stringify({
+  user.send({
     event: "swap_blocked",
     success: result.changes != 0
-  }));
+  });
 }
 
-function getInfoDm(socket: WebSocket, userId: number, otherUser: string) {
+function getInfoDm(user: User, otherUser: string) {
   const otherId = getUserID(otherUser);
-  socket.send(JSON.stringify({
+  user.send({
     event: "get_dm_info",
-    isBlocked: otherId && userId != otherId && getBlocked(userId).includes(otherId),
-    id: otherId,
-    isMe: otherUser == getDisplayName(userId),
+    isBlocked: otherId != undefined && user.id != otherId && getBlocked(user.id).includes(otherId),
+    id: otherId ?? 0,
+    isMe: otherUser == getDisplayName(user.id),
     exists: otherId != undefined
-  }));
+  });
 }
 
 function getBlocked(userId: number) {
@@ -332,40 +313,89 @@ function getBlocked(userId: number) {
   `).all(userId).map((row: any) => row.id as number);
 }
 
-function getInfoProfile(user: User, userToGet: number) {
-  const row: any = sqlite.prepare("SELECT * FROM users WHERE id = ?")
-    .get(userToGet);
-  const friends = getFriends(userToGet);
+function getProfile(user: User, userToGet: number) {
+  let row: any = sqlite.prepare(`
+    SELECT
+      json_object(
+        'id', u.id,
+        'displayName', u.displayName,
+        'username', u.username,
+        'email', u.email,
+        'avatar', u.avatar,
+        'friends', (
+          SELECT json_group_array(
+            json_object(
+              'id', uf.id,
+              'displayName', uf.displayName,
+              'avatar', uf.avatar
+            )
+          )
+          FROM friends f
+          JOIN users uf ON f.friendid = uf.id AND f.userid = u.id
+        ),
+        'games', (
+          SELECT json_group_array(
+            CASE WHEN g.name1 = ug.displayName THEN
+              json_object(
+                'type', 'game',
+                'opponent', g.name2,
+                'selfScore', g.score1,
+                'opponentScore', g.score2,
+                'date', g.date
+              )
+            ELSE
+              json_object(
+                'type', 'game',
+                'opponent', g.name1,
+                'selfScore', g.score2,
+                'opponentScore', g.score1,
+                'date', g.date
+              )
+            END
+          )
+          FROM games g
+          JOIN users ug ON g.name1 = ug.displayName OR g.name2 = ug.displayName
+          WHERE g.name1 = u.displayName OR g.name2 = u.displayName
+        )
+      ) AS data, u.hideProfile
+    FROM users u
+    WHERE u.id = ?`).get(userToGet);
 
-  user.socket.send(JSON.stringify({
-    event: "get_info_profile",
-    name: row.username,
-    displayName: row.displayName,
-    avatar: row.avatar,
-    email: row.email,
-    friends: friends,
-    mainProfile: userToGet == user.id,
-    status: onlineUsers.some(u => u == user),
-    hideProfile: row.hideProfile
-  }));
+  row.data = JSON.parse(row.data);
+
+  if (row.hideProfile && user.id != userToGet)
+    user.send({ event: "get_profile", locked: true, displayName: row.data.displayName });
+  else {
+    row = row.data;
+    row.event = "get_profile";
+    row.locked = false;
+    row.online = onlineUsers.some(u => u.id == userToGet);
+    row.avatar = (row.avatar as Buffer | null)?.toJSON().data;
+    for (let friend of row.friends) {
+      friend.online = onlineUsers.some(u => u.id == friend.id);
+      friend.avatar = (friend.avatar as Buffer | null)?.toJSON().data;
+    }
+
+    user.send(row);
+  }
 }
 
-function getGames(socket: WebSocket) {
-  socket.send(JSON.stringify({ event: "get_games", games }));
+function getGames(user: User) {
+  user.send({ event: "get_games", games });
 }
 
-function joinGame(user: User, message: any) {
+function joinGame(user: User, message: ClientEvent & { event: "join_game" }) {
   let game = games.find((g) => g.uid == message.uid);
   if (game == undefined) {
     broadcastMessage("The tournament " + message.name + " has been created! Come join it!", 0);
-    games.push(game = new Game(message.name, message.uid));
+    games.push(game = new Game(message.name!, message.uid));
     for (let user of onlineUsers)
-      user.socket.send(JSON.stringify({ event: "get_games", games }));
+      user.send({ event: "get_games", games });
   }
 
   const names = game.players.map(p => p.name);
   for (const u of game.users)
-    u.socket.send(JSON.stringify({ event: "get_tournament", tournament: names }));
+    u.send({ event: "get_tournament", tournament: names });
   if (!(game.players.some(u => u.name == user.displayName)))
     game.addUser(user);
 }
@@ -393,35 +423,14 @@ function getDisplayName(userId: number): string {
   return row.displayName;
 }
 
-function getGamesHistory(socket: WebSocket, userId: number) {
-  const displayName = getDisplayName(userId);
-  const games: any[] = sqlite.prepare("SELECT name1, name2, score1, score2, date FROM games WHERE name1 = ? OR name2 = ?")
-    .all(displayName, displayName);
-
-  for (let game of games) {
-    if (game.name1 == displayName) {
-      delete game.name1;
-    } else {
-      game.name2 = game.name1;
-      delete game.name1;
-      const tempScore1 = game.score1;
-      game.score1 = game.score2;
-      game.score2 = tempScore1;
-    }
-  }
-
-  socket.send(JSON.stringify({ event: "get_games_history", games }));
-}
-
 function addLocalPlayer(user: User, message: any) {
   if (!user.game) return;
 
   user.game.addLocalPlayer(message.name, message.isAi ? undefined : user);
 
   const names = user.game?.players.map(p => p.name);
-  for (const u of user.game.users) {
-    u.socket.send(JSON.stringify({ event: "get_tournament", tournament: names }));
-  }
+  for (const u of user.game.users)
+    u.send({ event: "get_tournament", tournament: names });
 }
 
 function play(user: User) {
@@ -446,14 +455,14 @@ function move(user: User, message: any) {
     player.goDown = message.goDown;
 }
 
-function setup2fa(socket: WebSocket, user: User, secret: string | undefined, message: any) {
+function setup2fa(user: User, secret: string | undefined, message: ClientEvent & { event: "2fa" }) {
   if (message.enable == undefined) {
     const row: any = sqlite.prepare("SELECT secret2fa FROM users WHERE id = ?")
       .get(user.id);
-    socket.send(JSON.stringify({ event: "2fa", enable: row && row.secret2fa }));
+    user.send({ event: "2fa", enable: row && row.secret2fa });
   } else if (message.enable) {
     secret = generateRandomSecret();
-    socket.send(JSON.stringify({ event: "2fa", secret: secret, username: user.username }));
+    user.send({ event: "2fa", secret: secret, username: user.username });
     return secret;
   } else {
     sqlite.prepare("UPDATE users SET secret2fa = NULL WHERE id = ?")
@@ -461,7 +470,7 @@ function setup2fa(socket: WebSocket, user: User, secret: string | undefined, mes
   }
 }
 
-async function check2fa(user: User, secret: string | undefined, message: any) {
+async function check2fa(user: User, secret: string | undefined, message: ClientEvent & { event: "2fa_check" }) {
   if (secret == undefined)
     return;
 
@@ -470,5 +479,5 @@ async function check2fa(user: User, secret: string | undefined, message: any) {
     sqlite.prepare("UPDATE users SET secret2fa = ? WHERE id = ?")
       .run(secret, user.id);
   }
-  user.socket.send(JSON.stringify({ event: "2fa_check", success }));
+  user.send({ event: "2fa_check", success });
 }

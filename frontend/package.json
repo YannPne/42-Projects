@@ -1,5 +1,5 @@
 {
-  "name": "frontend",
+  "name": "@ft_transcendence/frontend",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -8,15 +8,19 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@babylonjs/core": "^8.9.0",
-    "@babylonjs/gui": "^8.9.0",
-    "@tailwindcss/vite": "^4.1.7",
+    "@babylonjs/core": "^8.10.0",
+    "@babylonjs/gui": "^8.10.0",
+    "@fortawesome/fontawesome-free": "^6.7.2",
+    "@ft_transcendence/core": "^1.0.0",
+    "@tailwindcss/vite": "^4.1.8",
     "@types/qrcode": "^1.5.5",
+    "brackets-viewer": "^1.6.2",
     "qrcode": "^1.5.4",
     "tailwindcss": "^4.1.7"
   },
   "devDependencies": {
-    "@types/node": "^22.15.21",
+    "@types/node": "^22.15.29",
+    "brackets-model": "^1.5.0",
     "prettier": "^3.5.3",
     "typescript": "^5.8.3",
     "vite": "^6.3.5"

@@ -1,5 +1,6 @@
 import Player from "./Player";
 import { Game } from "./Game";
+import { ServerEvent } from "@ft_transcendence/core";
 
 export default class User {
   socket: WebSocket;
@@ -17,5 +18,9 @@ export default class User {
     this.username = username;
     this.displayName = displayName;
     this.socket = socket;
+  }
+
+  send(data: ServerEvent) {
+    this.socket.send(JSON.stringify(data));
   }
 }
