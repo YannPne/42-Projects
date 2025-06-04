@@ -1,9 +1,10 @@
 import { loadPage, type Page } from "./Page.ts";
 import { ws } from "../main.ts";
-import { type Ball, type ClientEvent, type Player, send, type ServerEvent } from "../Event.ts";
 import { chooseGamePage } from "./chooseGamePage.ts";
 import { ArcRotateCamera, Color3, Color4, Engine, HemisphericLight, GlowLayer, MeshBuilder, Scene, StandardMaterial, Texture, Vector3, Mesh } from "@babylonjs/core";
 import { TextBlock, AdvancedDynamicTexture } from "@babylonjs/gui";
+import type { Ball, ClientEvent, Player, ServerEvent } from "@ft_transcendence/core";
+import { send } from "../Event.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 let keydownListener: ((event: KeyboardEvent) => void) | undefined;

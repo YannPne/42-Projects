@@ -42,43 +42,55 @@ export type Friend = {
 }
 
 export type ClientEvent =
+  // GAME
   | { event: "get_games" }
   | { event: "join_game", uid: string, name?: string }
   | { event: "add_local_player", name: string, isAi: boolean }
   | { event: "play" }
   | { event: "leave_game" }
   | { event: "move", id: number, goUp?: boolean, goDown?: boolean }
-  | { event: "update_info", username?: string, displayName?: string, password?: string, email?: string, avatar?: number[] | null }
-  | { event: "add_friend", name: string }
-  | { event: "del_account" }
-  | { event: "remove_friend", id: number }
   | { event: "get_tournament" }
-  | { event: "set_hide_profile", hide: boolean }
-  | { event: "2fa", enable?: boolean }
-  | { event: "2fa_check", code: string }
+  // PROFILE
+  | { event: "get_profile", id?: number }
+  | { event: "add_friend", name: string }
+  | { event: "remove_friend", id: number }
+  // SETTINGS
+  | { event: "get_settings" }
+  | { event: "update_info", username?: string, displayName?: string, password?: string, email?: string, avatar?: number[] }
+  | { event: "setup_2fa", enable: boolean }
+  | { event: "setup_2fa_check", code: string }
+  | { event: "hide_profile", hide: boolean }
+  | { event: "remove_account" }
+  // CHAT
   | { event: "invite_player", gameId: string, gameName: string, userToInvite: string }
   | { event: "broadcast_message", content: string }
   | { event: "swap_blocked", id: number }
   | { event: "get_dm_info", otherUser: string }
-  | { event: "get_profile", id?: number };
+  ;
 
 export type ServerEvent =
+  // GAME
   | { event: "get_games", games: { uid: string, name: string }[] }
   | { event: "update", players: Player[], ball: Ball }
   | { event: "win", player: string }
-  | { event: "update_info", success: boolean }
-  | { event: "add_friend", success: boolean }
-  | { event: "del_account", success: boolean }
-  | { event: "remove_friend", success: boolean }
   | { event: "get_tournament", tournament: string[] }
-  | { event: "2fa", enable?: boolean, secret?: string, username?: string }
-  | { event: "2fa_check", success: boolean }
+  // PROFILE
+  | { event: "get_profile", locked: true, displayName: string }
+  | { event: "get_profile", locked: false, self: boolean, avatar?: number[], online: boolean, displayName: string, username: string, email: string, games: (Game | Tournament)[], friends: Friend[] }
+  | { event: "add_friend", success: boolean }
+  | { event: "remove_friend", success: boolean }
+  // SETTINGS
+  | { event: "get_settings", username: string, displayName: string, email: string, avatar?: number[], enabled2fa: boolean, hidden: boolean }
+  | { event: "update_info", success: boolean }
+  | { event: "setup_2fa", secret?: string, username?: string }
+  | { event: "setup_2fa_check", success: boolean }
+  | { event: "remove_account", success: boolean }
+  // CHAT
   | { event: "invite_player", gameId: string, gameName: string, sender: string, senderId: number }
   | { event: "broadcast_message", content: string, sender: string, senderId: number, isBlocked: boolean, isDm: boolean }
   | { event: "swap_blocked", success: boolean }
   | { event: "get_dm_info", isBlocked: boolean, id: number, isMe: boolean, exists: boolean }
-  | { event: "get_profile", locked: true, displayName: string }
-  | { event: "get_profile", locked: false, avatar?: number[], online: boolean, displayName: string, username: string, email: string, games: (Game | Tournament)[], friends: Friend[] };
+  ;
 
 export type ServerResponseByEvent = {
   [E in ServerEvent as E["event"]]: E;

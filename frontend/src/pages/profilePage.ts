@@ -1,463 +1,223 @@
 import { loadPage, type Page } from "./Page.ts";
-import { closeWs, ws } from "../main.ts";
-import { loginPage } from "./loginPage.ts";
 import { send, sendAndWait } from "../Event.ts";
-import qrcode from "qrcode";
+import type { Friend, Game, Tournament } from "@ft_transcendence/core";
+import { ws } from "../main.ts";
+import { loginPage } from "./loginPage.ts";
+import { settingsPage } from "./settingsPage.ts";
 
-let visible = true;
-
-export const profilePage: Page<string> = {
+export const profilePage: Page<number> = {
   url: "/profile",
   title: "Profile",
   navbar: true,
 
-  getPage(): string {
-    return /*html*/`
-      <button id="btnDisconnect" class="absolute top-15 right-4 bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-lg shadow">Disconnect</button>
+  getPage() {
+    return `
       <div class="h-full flex flex-col overflow-hidden">
-        <div class="flex items-center px-20 py-2 gap-2">
-          <img id="image" alt="avatar" class="w-32 h-32 p-1 bg-gray-700" />
-          <div>
-            <p id="username" class="text-5xl pb-1 font-bold"></p>
-            <p id="email" class="text-2xl font-bold pb-4"></p>
-            <p id="status" class="text-xl pb-5 font-bold">online</p>
+        <div class="p-5 flex justify-between">
+          <div class="flex items-center gap-2 flex-1">
+            <div class="relative">
+              <img id="avatar" alt="avatar" src="/avatar.webp" class="w-[100px] h-[100px] bg-gray-950 border border-white rounded-full">
+              <div id="status" class="rounded-full w-[25px] h-[25px] bg-gray-500 absolute bottom-[2px] right-[2px] border-4 border-gray-800"></div>
+            </div>
+            <div>
+              <p id="display-name" class="text-4xl font-bold">Display Name</p>
+              <p id="username">username</p>
+              <a id="email" class="text-gray-400">email@email.com</a>
+            </div>
           </div>
-          <i id="btn_hide" class="fas fa-eye pb-2 cursor-pointer"></i>
+          <div class="flex flex-col items-center">
+            <canvas id="graph" height="101" class="h-[70px] aspect-square"></canvas>
+            <p id="graph-percent">50%</p>
+          </div>
+          <div class="flex-1 flex flex-col items-end">
+            <i id="settings" class="fa-solid fa-gear hover:text-gray-400 cursor-pointer hover:rotate-90"></i>
+          </div>
         </div>
-
-        <div class="flex-1 flex justify-between space-x-8 w-full p-4 overflow-hidden">
-
-          <div id="div_history" class="flex-1 flex flex-col bg-gray-700 space-y-1 p-4 rounded-xl">
-            <p class="text-3xl pb-5">Match History:</p>
-            <ul id="match-history" class="mx-3 overflow-auto"></ul>
+        <hr class="h-px bg-gray-200 border-0">
+        <div class="flex-1 flex bg-gradient-to-b from-gray-900 to-gray-700 overflow-hidden">
+          <div class="flex-1 flex flex-col p-5 overflow-hidden">
+            <p class="text-center font-bold text-2xl mb-5">GAME HISTORY</p>
+            <div id="game-history" class="overflow-auto grid gap-x-3 gap-y-1" style="grid-template-columns: auto auto auto 1fr"></div>
           </div>
-      
-          <div class="flex flex-col justify-between">
-            <div class="bg-gray-700 p-6 rounded-xl text-white flex flex-col items-center">
-              <p class="text-3xl pb-2">Win rate:</p>
-              <p id="win-rate" class="text-4xl font-bold pb-4">50%</p>
-            </div>
-
-            <div id="manage" class="bg-gray-700 p-6 rounded-xl text-white flex flex-col items-center mt-4 space-y-3">
-              <p class="text-3xl pb-2">Manage:</p>
-              <button id="button2fa" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200 w-40">2FA</button>
-              <button id="edit-profile-btn" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded w-40">Edit profile</button>
-              <button id="delete" class="bg-red-600 hover:bg-red-800 text-white font-bold py-2 px-4 rounded transition duration-200 w-40">Delete Account</button>
-            </div>
-          </div>
-
-          <div id="div_friend" class="flex-1 bg-gray-700 p-4 rounded-xl flex flex-col justify-between">
-            <p class="text-3xl pb-5">Friend List:</p>
-            <ul id="friends-list" class="mx-3 flex-1 space-y-1 overflow-y-auto"></ul>
-
-            <form id="add_friend" class="flex items-center space-x-2 mt-5 w-full">
-              <input id="username_to_add" placeholder="username" type="text" required class="p-1 bg-gray-600 rounded-lg flex-1" />
-              <button class="rounded-2xl bg-green-600 hover:bg-green-600 p-2 cursor-pointer">ADD</button>
+          <div class="h-full border border-gray-600"></div>
+          <div class="flex-1 flex flex-col px-5">
+            <p class="text-center font-bold text-2xl my-5">FRIENDS</p>
+            <ul id="friends" class="overflow-auto flex-1 space-y-3"></ul>
+            <form id="add-friend" class="w-full p-4 flex gap-4">
+              <input id="add-friend-name" placeholder="Username" required class="flex-1 bg-gray-600 p-2 rounded-xl">
+              <button class="px-5 bg-gray-900 rounded-xl cursor-pointer hover:bg-gray-950">Add</button>
             </form>
           </div>
         </div>
-
       </div>
-
-      <div id="modal-2fa" class="fixed inset-0 bg-black/50 flex items-center justify-center">
-        <div class="bg-gray-800 p-10 rounded-4xl shadow-lg w-full max-w-md">
-          <h1 class="font-bold text-xl text-center mb-5">2FA setup - Authenticator app</h1>
-            <ol class="list-decimal list-outside space-y-2">
-              <li>
-                Use an authenticator app for TOTP codes like Google Authenticator or Authy
-              </li>
-              <li>
-                Scan this QRCode:
-                <canvas id="qrcode"></canvas>
-                <p>Or enter this secret in your app:</p>
-                <div id="secret" class="overflow-auto bg-gray-900 p-1"></div>
-              </li>
-              <li>
-                <p>Input the value indicated by your authentication app:</p>
-                <input id="verify" type="text" class="bg-gray-700 p-1 rounded">
-              </li>
-            </ol>
-            <div class="flex justify-end gap-3">
-              <button id="cancel" class="cursor-pointer m-2 hover:underline">Cancel</button>
-              <button id="validate" class="cursor-pointer p-2 bg-blue-800 hover:bg-blue-900 rounded-2xl">Validate</button>
-            </div>
-        </div>
+      <div id="lock" class="absolute bg-gray-900/70 inset-0 flex flex-col items-center justify-center">
+        <i class="fa-solid fa-lock text-9xl"></i>
+        <p id="lock-name" class="text-7xl font-bold mt-2">Name</p>
+        <p class="text-3xl">Private profile</p>
       </div>
-
-      <div id="edit-profile-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden">
-        <div class="bg-gray-800 rounded-lg p-6 w-96">
-          <h2 class="text-white text-xl mb-4">Edit profile</h2>
-          <form id="edit-profile-form" class="flex flex-col space-y-4">
-            <label>Username</label>
-            <input type="text" id="edit_username" placeholder="Username" class="p-2 rounded bg-gray-700 text-white" required />
-            <label>Display name</label>
-            <input type="text" id="edit_displayName" placeholder="Display name" class="p-2 rounded bg-gray-700 text-white" required />
-            <label>Email</label>
-            <input type="email" id="edit_email" placeholder="Email" class="p-2 rounded bg-gray-700 text-white" required />
-            <label>Password</label>
-            <input type="password" id="edit_password" placeholder="password" class="p-2 rounded bg-gray-700 text-white" />
-            <label>Avatar</label>
-            <input type="file" id="edit_avatar" accept="image/*" class="border rounded-lg cursor-pointer text-gray-400 bg-gray-700 border-gray-600" />
-            <div class="flex justify-end space-x-2">
-              <button type="button" id="cancel-btn" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded">Annuler</button>
-              <button type="submit" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">Sauvegarder</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    `;
+	  `;
   },
 
-  async onMount(profileUsername) {
+  async onMount(profileId) {
     if (ws == undefined) {
       loadPage(loginPage, profilePage);
       return;
     }
 
-    disconnect();
-    deleteAccount();
-    editAndHide();
-    addFriend();
-    removeFriend();
-    getInfo(profileUsername ?? "");
-    gameHistory();
-    setup2fa();
+    const avatar = document.querySelector<HTMLImageElement>("#avatar")!;
+    const status = document.querySelector<HTMLDivElement>("#status")!;
+    const displayName = document.querySelector<HTMLParagraphElement>("#display-name")!;
+    const username = document.querySelector<HTMLParagraphElement>("#username")!;
+    const email = document.querySelector<HTMLAnchorElement>("#email")!;
+    const gameHistory = document.querySelector<HTMLDivElement>("#game-history")!;
+    const friends = document.querySelector<HTMLUListElement>("#friends")!;
+    const addFriendForm = document.querySelector<HTMLFormElement>("#add-friend")!;
+    const addFriendName = document.querySelector<HTMLInputElement>("#add-friend-name")!;
+    const settings = document.querySelector<HTMLDivElement>("#settings")!;
+    const lock = document.querySelector<HTMLDivElement>("#lock")!;
+    const lockName = document.querySelector<HTMLParagraphElement>("#lock-name")!;
+
+    addFriendForm.onsubmit = async (event) => {
+      event.preventDefault();
+      const result = await sendAndWait({ event: "add_friend", name: addFriendName.value });
+      if (result.success)
+        loadPage(profilePage);
+      else
+        alert("Failed to add the friend.");
+    };
+
+    settings.onclick = () => loadPage(settingsPage);
+
+    const profile = await sendAndWait({ event: "get_profile", id: profileId });
+    if (profile.locked)
+      lockName.textContent = profile.displayName;
+    else {
+      lock.style.display = "none";
+
+      if (profile.avatar)
+        avatar.src = URL.createObjectURL(new Blob([new Uint8Array(profile.avatar)]));
+
+      if (profile.online)
+        status.classList.add("bg-green-500");
+      displayName.textContent = profile.displayName;
+      username.textContent = profile.username;
+      email.textContent = profile.email;
+      email.href = "mailto:" + profile.email;
+
+      for (let friend of profile.friends)
+        friends.appendChild(createFriend(friend));
+      for (let game of profile.games)
+        createGame(game, gameHistory);
+
+      createGraph(profile.games);
+
+      if (!profile.self) {
+        settings.style.display = "none";
+        addFriendForm.style.display = "none";
+        for (let trash of document.querySelectorAll<HTMLElement>(".friend-remove"))
+          trash.style.display = "none";
+      }
+    }
   },
 
   onUnmount() {
   }
 };
 
-function disconnect() {
-  const btnDisconnect = document.querySelector<HTMLButtonElement>("#btnDisconnect")!;
+function createGraph(games: (Game | Tournament)[]) {
+  const canvas = document.querySelector<HTMLCanvasElement>("#graph")!;
+  const context = canvas.getContext("2d")!;
+  const percent = document.querySelector<HTMLParagraphElement>("#graph-percent")!;
 
-  btnDisconnect.onclick = () => {
-    closeWs();
-    loadPage(loginPage, profilePage);
-  };
-}
+  let winCount = 0;
+  let looseCount = 0;
 
-// TODO: GPDR is a lie
-function editAndHide() {
-  const btn_hide = document.querySelector<HTMLElement>("#btn_hide")!;
-  const div_history = document.querySelector<HTMLDivElement>("#div_history")!;
-  const div_friend = document.querySelector<HTMLDivElement>("#div_friend")!;
-  const email = document.querySelector<HTMLParagraphElement>("#email")!;
-  const toggleElements = [ div_history, div_friend, email ];
-
-
-  function setBtnEye(visible: boolean) {
-    btn_hide.classList.toggle("fa-eye", visible);
-    btn_hide.classList.toggle("fa-eye-slash", !visible);
-
-    for (let element of toggleElements) {
-      element.classList.toggle("text-white", visible);
-      element.classList.toggle("text-gray-400", !visible);
-    }
-  }
-
-  btn_hide.onclick = () => {
-    visible = !visible;
-    send({ event: "set_hide_profile", hide: visible });
-    setBtnEye(visible);
-  };
-
-  // EDIT PROFILE
-  const editBtn = document.querySelector("#edit-profile-btn")!;
-  const modal = document.querySelector("#edit-profile-modal")!;
-  const cancelBtn = document.querySelector("#cancel-btn")!;
-  const form = document.querySelector<HTMLFormElement>("#edit-profile-form");
-
-  editBtn.addEventListener("click", async () => {
-    modal.classList.remove("hidden");
-    const data = await sendAndWait({ event: "get_info_profile" });
-    document.querySelector<HTMLInputElement>("#edit_username")!.value = data.name!;
-    document.querySelector<HTMLInputElement>("#edit_displayName")!.value = data.displayName!;
-    document.querySelector<HTMLInputElement>("#edit_email")!.value = data.email!;
-  });
-
-  cancelBtn.addEventListener("click", () => {
-    modal.classList.add("hidden");
-    loadPage(profilePage);
-  });
-
-  form!.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const userName = document.querySelector<HTMLInputElement>("#edit_username")!;
-    const displayName = document.querySelector<HTMLInputElement>("#edit_displayName")!;
-    const email = document.querySelector<HTMLInputElement>("#edit_email")!;
-    const avatar = document.querySelector<HTMLInputElement>("#edit_avatar")!;
-    const password = document.querySelector<HTMLInputElement>("#edit_password")!;
-    let avatarBuffer: number[] | null = null;
-
-    if (avatar.files && avatar.files.length != 0 && !avatar.files[0].type.startsWith("image/")) {
-      alert("Please select a valid image.");
-      return;
-    } else if (avatar.files && avatar.files.length != 0 && avatar.files[0].type.startsWith("image/"))
-      avatarBuffer = Array.from(new Uint8Array(await avatar.files[0].arrayBuffer()));
-
-
-    const message = await sendAndWait({
-      event: "update_info",
-      username: userName.value,
-      displayName: displayName.value,
-      password: password.value,
-      email: email.value,
-      avatar: avatarBuffer
-    });
-
-    if (!message.success)
-      alert("Username or display name already exist");
-
-    modal.classList.add("hidden");
-    loadPage(profilePage);
-  });
-}
-
-function setup2fa() {
-  const button = document.querySelector<HTMLButtonElement>("#button2fa")!;
-  const modal = document.querySelector<HTMLDivElement>("#modal-2fa")!;
-  const qrcodeCanvas = modal.querySelector<HTMLCanvasElement>("#qrcode")!;
-  const secret = modal.querySelector<HTMLSpanElement>("#secret")!;
-  const verify = modal.querySelector<HTMLInputElement>("#verify")!;
-  const validate = modal.querySelector<HTMLButtonElement>("#validate")!;
-  const cancel = modal.querySelector<HTMLButtonElement>("#cancel")!;
-
-  modal.style.display = "none";
-
-  button.onclick = async () => {
-    let message = await sendAndWait({ event: "2fa" });
-    if (message.enable) {
-      if (confirm("The 2FA is currently enabled. Do you want to disable it?"))
-        await sendAndWait({ event: "2fa", enable: false });
-    } else {
-      message = await sendAndWait({ event: "2fa", enable: true });
-      qrcode.toCanvas(qrcodeCanvas, `otpauth://totp/ft_transcendence:${message.username}?secret=${message.secret}&issuer=ft_transcendence`);
-      secret.innerText = message.secret!;
-      modal.style.display = "";
-      verify.value = "";
-    }
-  };
-
-  validate.onclick = async () => {
-    const message = await sendAndWait({ event: "2fa_check", code: verify.value });
-    if (message.success)
-      modal.style.display = "none";
-    else
-      alert("Invalid code");
-  };
-
-  cancel.onclick = () => {
-    modal.style.display = "none";
-  };
-}
-
-function deleteAccount() {
-  document.querySelector<HTMLButtonElement>("#delete")!.onclick = () => {
-    const confirmDelete = confirm("Are you sure you want to delete your account?");
-
-    if (!confirmDelete)
-      return;
-
-    sendAndWait({ event: "del_account" }).then(message => {
-      if (message.success) {
-        closeWs();
-        loadPage(loginPage, profilePage);
-      } else
-        alert("An error occurred.");
-    });
-  };
-}
-
-function addFriend() {
-  const form = document.querySelector<HTMLFormElement>("#add_friend")!;
-  const username = document.querySelector<HTMLInputElement>("#username_to_add")!;
-
-  form.onsubmit = event => {
-    event.preventDefault();
-
-    sendAndWait({ event: "set_friend", name: username.value.trim() }).then(message => {
-      if (message.success)
-        loadPage(profilePage);
+  for (let game of games) {
+    if (game.type == "game") {
+      if (game.selfScore > game.opponentScore)
+        winCount++;
       else
-        alert("The user does not exist.");
-    });
-  };
-}
-
-function removeFriend() {
-  document.querySelector<HTMLButtonElement>("#friends-list")!.onclick = async (event) => {
-    const target = event.target as HTMLElement;
-
-    if (target.id == "btn_remove") {
-      const friendName = target.dataset.friend!;
-
-      const message = await sendAndWait({ event: "remove_friend", id: friendName as any as number });
-
-      if (message.success)
-        target.closest("li")?.remove();
-      else
-        alert("An error occurred.");
+        looseCount++;
     }
-  };
-}
-
-function setBtnEye(visible: boolean) {
-  const btnHide = document.querySelector<HTMLElement>("#btn_hide")!;
-  const divHistory = document.querySelector<HTMLDivElement>("#div_history")!;
-  const divFriend = document.querySelector<HTMLDivElement>("#div_friend")!;
-  const email = document.querySelector<HTMLParagraphElement>("#email")!;
-  const toggleElements = [ divHistory, divFriend, email ];
-
-  btnHide.classList.toggle("fa-eye", visible);
-  btnHide.classList.toggle("fa-eye-slash", !visible);
-
-  toggleElements.forEach(el => {
-    el.classList.toggle("text-white", visible);
-    el.classList.toggle("text-gray-400", !visible);
-  });
-}
-
-function hideProfile(hideProfile: boolean, hideData: boolean) {
-  const btnHide = document.querySelector<HTMLElement>("#btn_hide")!;
-  const divHistory = document.querySelector<HTMLDivElement>("#div_history")!;
-  const divFriend = document.querySelector<HTMLDivElement>("#div_friend")!;
-  const email = document.querySelector<HTMLParagraphElement>("#email")!;
-  const toggleElements = [ divHistory, divFriend, email ];
-
-  if (!hideProfile) {
-    btnHide.style.visibility = "hidden";
-    document.querySelector("#manage")!.classList.add("hidden");
-    document.querySelector("#add_friend")!.classList.add("hidden");
-    const btnRemove = document.querySelector<HTMLButtonElement>("#btn_remove");
-    btnRemove?.classList.add("hidden");
-    toggleElements.forEach(el => {
-      el.classList.toggle("text-white", true);
-    });
-  } else {
-    btnHide.style.visibility = "visible";
-    document.querySelector("#manage")!.classList.remove("hidden");
-    document.querySelector("#add_friend")!.classList.remove("hidden");
-    const btnRemove = document.querySelector<HTMLButtonElement>("#btn_remove");
-    btnRemove?.classList.remove("hidden");
   }
 
-  if (!hideData && !hideProfile) {
-    for (const child of divHistory.children)
-      (child as HTMLElement).style.visibility = "hidden";
-    for (const child of divFriend.children)
-      (child as HTMLElement).style.visibility = "hidden";
-    email.style.visibility = "hidden";
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "white";
+  context.fillRect(0, 100, canvas.width, 1);
+  context.fillStyle = "gray";
+  context.fillRect(0, 50, canvas.width, 1);
+
+  if (winCount + looseCount > 0) {
+    context.fillStyle = "green";
+    let height = winCount / (winCount + looseCount) * 100;
+    context.fillRect(20, 100 - height, canvas.width / 2 - 40, height);
+    context.fillStyle = "red";
+    height = looseCount / (winCount + looseCount) * 100;
+    context.fillRect(canvas.width / 2 + 20, 100 - height, canvas.width / 2 - 40, height);
+
+    percent.innerText = (winCount / (winCount + looseCount) * 100).toFixed(0) + "%";
   } else {
-    for (const child of divHistory.children)
-      (child as HTMLElement).style.visibility = "visible";
-    for (const child of divFriend.children)
-      (child as HTMLElement).style.visibility = "visible";
-    email.style.visibility = "visible";
+    percent.innerText = "--%";
   }
 }
 
-function getInfo(profileUsername: string) {
-  const username = document.querySelector<HTMLParagraphElement>("#username")!;
-  const email = document.querySelector<HTMLParagraphElement>("#email")!;
-  const friendsList = document.querySelector<HTMLAnchorElement>("#friends-list")!;
-  const imageElement = document.querySelector<HTMLImageElement>("#image")!;
+function createFriend(friend: Friend) {
+  const li = document.createElement("li");
 
-  sendAndWait({ event: "get_info_profile", profileUsername }).then(async (message) => {
-    username.innerText = message.displayName + " Profile";
-    email.innerText = message.email!;
-    const friendsCount = message.friends!.length;
+  li.innerHTML = `
+    <div class="flex items-center py-2 px-5 bg-gradient-to-br from-gray-400/0 via-gray-200/5 to-gray-100/10 border border-gray-600 rounded-lg">
+      <div class="relative">
+        <img alt="avatar" src="/avatar.webp" class="rounded-full h-[50px] w-[50px] bg-gray-950 border border-white">
+        <div class="friend-status rounded-full w-[15px] h-[15px] bg-gray-500 absolute bottom-[0.25px] right-[0.25px] border-3 border-gray-800"></div>
+      </div>
+      <p class="cursor-pointer hover:underline flex-1 mx-5">Display Name</p>
+      <i class="friend-remove fa-solid fa-trash cursor-pointer p-2 text-red-500 hover:text-red-800"></i>
+    </div>
+  `;
 
-    const statusElement = document.querySelector<HTMLParagraphElement>("#status")!;
+  const p = li.querySelector("p")!;
 
-    // hide profile
-    visible = message.hideProfile!;
-    setBtnEye(visible);
+  p.innerText = friend.displayName;
+  p.onclick = () => loadPage(profilePage, friend.id);
 
-    // status
-    if (message.status) {
-      statusElement.textContent = "online";
-      statusElement.classList.remove("text-gray-500");
-      statusElement.classList.add("text-green-500");
-    } else {
-      statusElement.textContent = "offline";
-      statusElement.classList.remove("text-green-500");
-      statusElement.classList.add("text-gray-500");
-    }
+  if (friend.online)
+    li.querySelector<HTMLDivElement>(".friend-status")!.classList.add("bg-green-500");
 
-    if (friendsCount === 0) {
-      const li = document.createElement("li");
-      li.textContent = "No friends yet :'(";
-      friendsList.appendChild(li);
-    } else {
-      const status = await sendAndWait({ event: "get_status", friends: message.friends });
+  li.querySelector("i")!.onclick = () => {
+    send({ event: "remove_friend", id: friend.id });
+    li.remove();
+  };
 
-      for (let i = 0; i < friendsCount; i++) {
-        const friend = message.friends![i];
-        const li = document.createElement("li");
-
-        let statusDisplay = status.status![i] ? "bg-green-500" : "bg-gray-500";
-
-        li.innerHTML = `
-          <div class="w-full flex justify-between items-center">
-            <div class="flex items-center gap-2">
-              <span class="inline-block w-2.5 h-2.5 ${statusDisplay} rounded-full mr-2 shadow-md"></span>
-              <button id="btnFriend" class="friend-link hover:underline" data-friend="${friend}">${friend}</button>
-            </div>
-            <button id="btn_remove" class="bg-red-700 text-white px-2 py-1 rounded hover:bg-red-800" data-friend="${friend}">
-              Remove
-            </button>
-          </div>
-          `;
-        friendsList.appendChild(li);
-
-        const friendLink = li.querySelector<HTMLButtonElement>("#btnFriend")!;
-        friendLink.innerText = friend;
-        friendLink.onclick = (e) => {
-          e.preventDefault();
-
-          const friendName = friendLink.dataset.friend!;
-          loadPage(profilePage, friendName);
-        };
-      }
-    }
-
-    imageElement.src = message.avatar != null
-        ? URL.createObjectURL(new Blob([ new Uint8Array(message.avatar.data) ]))
-        : "/avatar.webp";
-
-    hideProfile(message.mainProfile!, message.hideProfile!);
-  });
+  return li;
 }
 
-function gameHistory() {
-  sendAndWait({ event: "get_games_history" }).then(message => {
-    const historyList = document.querySelector<HTMLUListElement>("#match-history")!;
-    const matchCount = message.games!.length;
+function createGame(game: Game | Tournament, grid: HTMLDivElement) {
+  if (game.type == "game") {
+    let node = document.createElement("div");
+    node.innerText = new Date(game.date).toDateString();
+    node.className = "text-gray-500";
+    grid.appendChild(node);
 
-    if (matchCount === 0) {
-      const li = document.createElement("li");
-      li.textContent = "No matches played yet.";
-      historyList.appendChild(li);
-      document.querySelector<HTMLParagraphElement>("#win-rate")!.innerHTML = "- %";
+    node = document.createElement("div");
+    node.className = "text-center";
+    if (game.selfScore < game.opponentScore) {
+      node.innerText = "LOOSE";
+      node.classList.add("text-red-500");
     } else {
-      let winRate = 0;
-
-      for (let game of message.games!.reverse()) {
-        const li = document.createElement("li");
-
-        if (game.score1 > game.score2) {
-          winRate += 1;
-          // TODO: XSS attack
-          li.innerHTML = `${game.date} | <span class="text-green-500">WIN</span> ${game.score1} - ${game.score2} versus ${game.name2}`;
-        } else
-          li.innerHTML = `${game.date} | <span class="text-red-500">LOSS</span> ${game.score1} - ${game.score2} versus ${game.name2}`;
-
-        historyList.appendChild(li);
-      }
-
-      document.querySelector<HTMLParagraphElement>("#win-rate")!.innerHTML = ~~(winRate / matchCount * 100) + "%";
+      node.innerText = "WIN";
+      node.classList.add("text-green-500");
     }
-  });
+    grid.appendChild(node);
+
+    node = document.createElement("div");
+    node.innerText = `${game.selfScore} - ${game.opponentScore}`;
+    node.className = "text-center";
+    grid.appendChild(node);
+
+    node = document.createElement("div");
+    node.innerText = game.opponent;
+    grid.appendChild(node);
+  } else {
+
+  }
 }

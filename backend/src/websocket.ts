@@ -5,6 +5,7 @@ import { sqlite } from ".";
 import { generateRandomSecret, getTotpCode } from "./2fa";
 import bcrypt from "bcrypt";
 import { ClientEvent } from "@ft_transcendence/core";
+import { RunResult, SqliteError } from "better-sqlite3";
 
 export let onlineUsers: User[] = [];
 
@@ -41,7 +42,7 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
       case "add_friend":
         addFriend(user, message);
         break;
-      case "set_hide_profile":
+      case "hide_profile":
         setHideProfile(user.id, message.hide);
         break;
       case "remove_friend":
@@ -79,19 +80,22 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
       case "update_info":
         updateInfo(user, message);
         break;
-      case "del_account":
-        const success = deleteAccount(user.id);
-        user.send({ event: "del_account", success });
+      case "remove_account":
+        const success = removeAccount(user.id);
+        user.send({ event: "remove_account", success });
         if (success)
           socket.close();
         break;
-      case "2fa":
+      case "setup_2fa":
         const secret = setup2fa(user, secret2fa, message);
         if (secret != undefined)
           secret2fa = secret;
         break;
-      case "2fa_check":
+      case "setup_2fa_check":
         await check2fa(user, secret2fa, message);
+        break;
+      case "get_settings":
+        getSettings(user);
         break;
     }
   });
@@ -102,35 +106,37 @@ function setHideProfile(userId: number, hide: boolean) {
     .run(hide ? 1 : 0, userId);
 }
 
-function updateInfo(user: User, msg: ClientEvent & { event: "update_info" }) {
-  let result;
-  if (msg.avatar)
-    msg.avatar = Buffer.from(msg.avatar);
+function updateInfo(user: User, message: ClientEvent & { event: "update_info" }) {
+  let result: undefined | RunResult;
 
-  if (!msg.password) {
-    result = sqlite.prepare(`UPDATE users
-        SET username = ?, displayName = ?, email = ?, avatar = ?
-        WHERE id = ? AND NOT EXISTS (
-            SELECT 1 FROM users WHERE (username = ? OR displayName = ?) AND id != ?)`)
-      .run(msg.username, msg.displayName, msg.email, msg.avatar, user.id, msg.username, msg.displayName, user.id);
-  } else {
-    result = sqlite.prepare(`UPDATE users
-        SET username = ?, displayName = ?, email = ?, avatar = ?, password = ?
-        WHERE id = ? AND NOT EXISTS (
-            SELECT 1 FROM users WHERE (username = ? OR displayName = ?) AND id != ?)`)
-      .run(msg.username, msg.displayName, msg.email, msg.avatar, bcrypt.hashSync(msg.password, 10), user.id, msg.username, msg.displayName, user.id);
+  if (message.avatar != undefined) {
+    result = sqlite.prepare("UPDATE users SET avatar = ? WHERE id = ?")
+      .run(Buffer.from(message.avatar), user.id);
   }
+  if (message.username != undefined) {
+    try {
+      result = sqlite.prepare("UPDATE users SET username = ? WHERE id = ?").run(message.username, user.id);
+      if (result.changes > 0)
+        user.username = message.username;
+    } catch (e) {}
+  }
+  if (message.displayName != undefined) {
+    result = sqlite.prepare("UPDATE users SET displayName = ? WHERE id = ?").run(message.displayName, user.id);
+    if (result.changes > 0)
+      user.displayName = message.displayName;
+  }
+  if (message.email != undefined) {
+    try {
+      result = sqlite.prepare("UPDATE users SET email = ? WHERE id = ?").run(message.email, user.id);
+    } catch (e) {}
+  }
+  if (message.password != undefined)
+    result = sqlite.prepare("UPDATE users SET password = ? WHERE id = ?").run(bcrypt.hashSync(message.password, 10), user.id);
 
-  user.send({
-    event: "update_info",
-    success: result.changes > 0
-  });
-
-  if (result.changes > 0)
-    user.displayName = msg.displayName!;
+  user.send({ event: "update_info", success: result != undefined && result.changes > 0 });
 }
 
-function deleteAccount(userId: number) {
+function removeAccount(userId: number) {
   const name: string = getDisplayName(userId);
 
   const result = sqlite.prepare("DELETE FROM users WHERE id = ?").run(userId);
@@ -180,14 +186,6 @@ function addFriend(user: User, message: ClientEvent & { event: "add_friend" }) {
     event: "add_friend",
     success: result.changes != 0
   });
-}
-
-function getFriends(userToGet: number) {
-  const rows: any[] = sqlite.prepare(`SELECT u.displayName
-      FROM friends f
-      JOIN users u ON f.friendid = u.id
-      WHERE f.userid = ?`).all(userToGet);
-  return rows.map(row => row.displayName);
 }
 
 function invitePlayer(user: User, message: ClientEvent & { event: "invite_player" }) {
@@ -321,13 +319,13 @@ function getProfile(user: User, userToGet: number) {
         'displayName', u.displayName,
         'username', u.username,
         'email', u.email,
-        'avatar', u.avatar,
+        'avatar', CASE WHEN u.avatar IS NULL THEN NULL ELSE lower(hex(u.avatar)) END,
         'friends', (
           SELECT json_group_array(
             json_object(
               'id', uf.id,
               'displayName', uf.displayName,
-              'avatar', uf.avatar
+              'avatar', CASE WHEN uf.avatar IS NULL THEN NULL ELSE lower(hex(uf.avatar)) END
             )
           )
           FROM friends f
@@ -369,11 +367,18 @@ function getProfile(user: User, userToGet: number) {
     row = row.data;
     row.event = "get_profile";
     row.locked = false;
+    row.self = user.id == userToGet;
     row.online = onlineUsers.some(u => u.id == userToGet);
-    row.avatar = (row.avatar as Buffer | null)?.toJSON().data;
+    if (row.avatar == null)
+      row.avatar = undefined;
+    else
+      row.avatar = Buffer.from(row.avatar, "hex").toJSON().data;
     for (let friend of row.friends) {
       friend.online = onlineUsers.some(u => u.id == friend.id);
-      friend.avatar = (friend.avatar as Buffer | null)?.toJSON().data;
+      if (friend.avatar == null)
+        friend.avatar = undefined;
+      else
+        friend.avatar = Buffer.from(friend.avatar, "hex").toJSON().data;
     }
 
     user.send(row);
@@ -455,14 +460,10 @@ function move(user: User, message: any) {
     player.goDown = message.goDown;
 }
 
-function setup2fa(user: User, secret: string | undefined, message: ClientEvent & { event: "2fa" }) {
-  if (message.enable == undefined) {
-    const row: any = sqlite.prepare("SELECT secret2fa FROM users WHERE id = ?")
-      .get(user.id);
-    user.send({ event: "2fa", enable: row && row.secret2fa });
-  } else if (message.enable) {
+function setup2fa(user: User, secret: string | undefined, message: ClientEvent & { event: "setup_2fa" }) {
+  if (message.enable) {
     secret = generateRandomSecret();
-    user.send({ event: "2fa", secret: secret, username: user.username });
+    user.send({ event: "setup_2fa", secret, username: user.username });
     return secret;
   } else {
     sqlite.prepare("UPDATE users SET secret2fa = NULL WHERE id = ?")
@@ -470,7 +471,7 @@ function setup2fa(user: User, secret: string | undefined, message: ClientEvent &
   }
 }
 
-async function check2fa(user: User, secret: string | undefined, message: ClientEvent & { event: "2fa_check" }) {
+async function check2fa(user: User, secret: string | undefined, message: ClientEvent & { event: "setup_2fa_check" }) {
   if (secret == undefined)
     return;
 
@@ -479,5 +480,20 @@ async function check2fa(user: User, secret: string | undefined, message: ClientE
     sqlite.prepare("UPDATE users SET secret2fa = ? WHERE id = ?")
       .run(secret, user.id);
   }
-  user.send({ event: "2fa_check", success });
+  user.send({ event: "setup_2fa_check", success });
+}
+
+function getSettings(user: User) {
+  const row: any = sqlite.prepare("SELECT username, displayName, email, hideProfile, avatar, secret2fa FROM users WHERE id = ?")
+    .get(user.id);
+
+  user.send({
+    event: "get_settings",
+    username: row.username,
+    displayName: row.displayName,
+    email: row.email,
+    hidden: row.hideProfile,
+    avatar: (row.avatar as Buffer | null)?.toJSON().data,
+    enabled2fa: row.secret2fa != null
+  });
 }

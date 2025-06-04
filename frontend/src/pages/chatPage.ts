@@ -1,9 +1,10 @@
 import { loadPage, type Page } from "./Page.ts";
 import { ws } from "../main.ts";
 import { loginPage } from "./loginPage.ts";
-import { profilePage } from "./profilePage.ts";
-import { send, sendAndWait, type ServerEvent } from "../Event.ts";
+import { send, sendAndWait } from "../Event.ts";
 import { pongPage } from "./pongPage.ts";
+import type { ServerEvent } from "@ft_transcendence/core";
+import { profilePage } from "./profilePage.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 
@@ -152,7 +153,7 @@ function toggleUserMenu(target: HTMLElement, userId: number, username: string) {
       btn.className = "hover:bg-gray-700 px-2 py-1 text-left";
       btn.onclick = () => {
         if (action === "Profile") {
-          loadPage(profilePage, username);
+          loadPage(profilePage, userId);
           menu.remove();
         }
 

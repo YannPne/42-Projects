@@ -16,9 +16,9 @@ export const sqlite = initSqlite("./database.sqlite", { verbose: (msg) => fs.app
 
 sqlite.exec(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    username TEXT NOT NULL,
+    username TEXT NOT NULL UNIQUE,
     displayName TEXT NOT NULL,
-    email TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
     avatar BLOB DEFAULT NULL,
     secret2fa TEXT DEFAULT NULL,

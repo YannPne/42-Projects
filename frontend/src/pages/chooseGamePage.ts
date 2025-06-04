@@ -2,7 +2,8 @@ import { awaitWs, ws } from "../main.ts";
 import { loadPage, type Page } from "./Page.ts";
 import { pongPage } from "./pongPage.ts";
 import { loginPage } from "./loginPage.ts";
-import { send, type ServerEvent } from "../Event.ts";
+import { send } from "../Event.ts";
+import type { ServerEvent } from "@ft_transcendence/core";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 

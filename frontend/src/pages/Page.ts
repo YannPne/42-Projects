@@ -3,10 +3,10 @@ import { chooseGamePage } from "./chooseGamePage.ts";
 import { pongPage } from "./pongPage.ts";
 import { loginPage } from "./loginPage.ts";
 import { registerPage } from "./registerPage.ts";
-import { profilePage } from "./profilePage.ts";
 import { chatPage } from "./chatPage.ts";
 import { privacyPage } from "./privacyPage.ts";
-import { profileNewPage } from "./profileNewPage.ts";
+import { profilePage } from "./profilePage.ts";
+import { settingsPage } from "./settingsPage.ts";
 
 export type Page<T = undefined> = {
   url: string;
@@ -21,12 +21,12 @@ export const pages: Page<any>[] = [
   homePage,
   chooseGamePage,
   pongPage,
+  chatPage,
   loginPage,
   registerPage,
   profilePage,
-  chatPage,
-  privacyPage,
-  profileNewPage
+  settingsPage,
+  privacyPage
 ];
 
 let currentPage: Page<any> | undefined;
