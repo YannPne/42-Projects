@@ -83,7 +83,7 @@ export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
     is3d.addEventListener("click", () => {
       is3dActive = !is3dActive;
       (is3dActive ? canvas2d : canvas3d).style.display = "none";
-      (is3dActive ? canvas3d : canvas2d).style.display = "inline";
+      (is3dActive ? canvas3d : canvas2d).style.display = "";
       updateToggleUI();
     });
 
@@ -342,7 +342,7 @@ function setup3d(canvas: HTMLCanvasElement): GameElements {
   guiNameP2.addControl(textNameP2);
   guiEndGame.addControl(textEndGame);
 
-  engine.runRenderLoop(scene.render);
+  engine.runRenderLoop(() => scene.render());
 
   return { ball, player1, player2, textNameP1, textNameP2, textScoreP1, textScoreP2, textEndGame };
 }
