@@ -8,17 +8,17 @@ RUN openssl req -x509 -nodes \
 
 FROM node:22-alpine AS builder
 
-COPY ./frontend /app
+COPY ./ /app
 
 WORKDIR /app
 
 RUN npm ci
-RUN npm run build
+RUN npm --workspace=frontend run build
 
 FROM nginx:stable-alpine
 
 COPY --from=ssl /ssl /etc/nginx/ssl
-COPY --from=builder /app/dist /www
+COPY --from=builder /app/frontend/dist /www
 COPY ./nginx.conf /etc/nginx/conf.d/default.conf
 
 WORKDIR /www

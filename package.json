@@ -1,0 +1,12 @@
+{
+  "name": "ft_transcendence",
+  "version": "1.0.0",
+  "description": "The art of transcending the reality.",
+  "license": "ISC",
+  "private": true,
+  "workspaces": [
+    "core",
+    "backend",
+    "frontend"
+  ]
+}
