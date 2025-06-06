@@ -6,6 +6,7 @@ export const loggedNav = document.querySelector<HTMLElement>("#logged-nav")!;
 export const unloggedNav = document.querySelector<HTMLElement>("#unlogged-nav")!;
 export const loggedNavProfile = document.querySelector<HTMLDivElement>("#logged-nav-profile")!;
 const loggedNavMenu = document.querySelector<HTMLDivElement>("#logged-nav-menu")!;
+const footerIntra = document.querySelector<HTMLParagraphElement>("#footer-intra")!;
 
 loggedNavProfile.onclick = () => {
   loggedNavMenu.style.display = "";
@@ -29,6 +30,8 @@ loggedNavMenu.querySelector("button")!.addEventListener("click", () => {
 
 // Navbar anchors
 for (let a of document.querySelectorAll("a")) {
+  if (footerIntra.contains(a))
+    continue;
   a.onclick = event => {
     event.preventDefault();
     if (unloggedNav.contains(a))
