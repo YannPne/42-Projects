@@ -69,6 +69,8 @@ export type ClientEvent =
   ;
 
 export type ServerEvent =
+  // GENERAL
+  | { event: "connected", displayName: string, avatar?: number[] }
   // GAME
   | { event: "get_games", games: { uid: string, name: string }[] }
   | { event: "update", players: Player[], ball: Ball }

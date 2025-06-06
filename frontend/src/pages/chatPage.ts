@@ -1,17 +1,16 @@
 import { loadPage, type Page } from "./Page.ts";
-import { ws } from "../main.ts";
 import { loginPage } from "./loginPage.ts";
 import { send, sendAndWait } from "../Event.ts";
 import { pongPage } from "./pongPage.ts";
 import type { ServerEvent } from "@ft_transcendence/core";
 import { profilePage } from "./profilePage.ts";
+import { ws } from "../websocket.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 
 export const chatPage: Page = {
   url: "/chat",
   title: "Chat",
-  navbar: true,
 
   getPage() {
     return `

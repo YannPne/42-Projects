@@ -1,5 +1,5 @@
 import { loadPage, type Page } from "./Page.ts";
-import { ws } from "../main.ts";
+import { ws } from "../websocket.ts";
 import { chooseGamePage } from "./chooseGamePage.ts";
 import { ArcRotateCamera, Color3, Color4, Engine, HemisphericLight, GlowLayer, MeshBuilder, Scene, StandardMaterial, Texture, Vector3, Mesh } from "@babylonjs/core";
 import { TextBlock, AdvancedDynamicTexture } from "@babylonjs/gui";
@@ -13,9 +13,8 @@ let keyupListener: ((event: KeyboardEvent) => void) | undefined;
 export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
   url: "/pong",
   title: "Pong",
-  navbar: false,
 
-  getPage(): string {
+  getPage() {
     return `
       <div class="flex flex-col items-center justify-center h-full w-full p-5">
         <div class="pb-5 w-full flex justify-around" id="up-bar">
@@ -270,7 +269,7 @@ function setup3d(canvas: HTMLCanvasElement): GameElements {
   createLight("light", new Vector3(0, 0, -1), new Color3(1, 1, 1), new Color3(1, 1, 1), new Color3(0.2, 0.2, 0.5), scene);
 
   // ## MATERIAL ##
-  const material42 = createTextureMaterial("material42", "/42-Perpignan-white500x170.png", scene, true);
+  const material42 = createTextureMaterial("material42", "/banner.png", scene, true);
   const materialBlack = createMaterial("materialBlack", new Color3(0.2, 0.2, 0.2), new Color3(0.1, 0.1, 0.1), new Color3(0, 0, 0), scene);
   const materialBlue = createMaterial("materialBlack", new Color3(0.13 / 255, 0.03 / 255, 261.69 / 255), new Color3(0.1, 0.1, 0.1), new Color3(0, 0, 0), scene);
   const materialWhite = createMaterial("materialWhite", new Color3(0, 0, 0), new Color3(0, 0, 0), new Color3(1, 1, 1), scene);

@@ -1,14 +1,14 @@
 import { loadPage, type Page } from "./Page.ts";
 import { profilePage } from "./profilePage.ts";
-import { closeWs, ws } from "../main.ts";
+import { closeWs, ws } from "../websocket.ts";
 import { loginPage } from "./loginPage.ts";
 import { send, sendAndWait } from "../Event.ts";
 import qrcode from "qrcode";
+import { loggedNavProfile } from "../main.ts";
 
 export const settingsPage: Page = {
   title: "Settings",
   url: "/settings",
-  navbar: false,
 
   getPage() {
     return `
@@ -24,7 +24,7 @@ export const settingsPage: Page = {
               <form id="avatar">
                 <label>Avatar:</label>
                 <div class="flex-1 flex gap-2 items-center">
-                  <img src="/avatar.webp" class="w-15 h-15 bg-gray-900 rounded-full border">
+                  <img src="/avatar.webp" alt="Avatar" class="w-15 h-15 bg-gray-900 rounded-full border">
                   <input type="file" required accept="image/*" class="flex-1 bg-gray-500 p-1 rounded-lg cursor-pointer">
                   <button class="py-1 px-2 bg-blue-500 hover:bg-blue-600 rounded-lg"><i class="fa fa-pencil"></i> Update</button>
                 </div>
@@ -95,7 +95,7 @@ export const settingsPage: Page = {
           </div>
         </div>
       </div>
-      <div id="modal-2fa" class="fixed inset-0 bg-black/50 flex items-center justify-center">
+      <div id="modal-2fa" class="fixed inset-0 bg-black/50 flex items-center justify-center" style="display: none">
         <div class="bg-gray-800 p-10 rounded-4xl shadow-lg w-full max-w-md">
           <h1 class="font-bold text-xl text-center mb-5">2FA setup - Authenticator app</h1>
             <ol class="list-decimal list-outside space-y-2">
@@ -135,7 +135,6 @@ export const settingsPage: Page = {
     const status2fa = document.querySelector<HTMLSpanElement>("#status-2fa")!;
     const enable2fa = document.querySelector<HTMLSpanElement>("#enable-2fa")!;
     const disable2fa = document.querySelector<HTMLSpanElement>("#disable-2fa")!;
-    const modal2fa = document.querySelector<HTMLDivElement>("#modal-2fa")!;
     const visible = document.querySelector<HTMLButtonElement>("#visible")!;
     const hidden = document.querySelector<HTMLButtonElement>("#hidden")!;
     const remove = document.querySelector<HTMLButtonElement>("#remove")!;
@@ -145,7 +144,9 @@ export const settingsPage: Page = {
     const settings = await sendAndWait({ event: "get_settings" });
 
     setupInfo(document.querySelector("#username")!, settings.username, "username");
-    setupInfo(document.querySelector("#display-name")!, settings.displayName, "displayName");
+    const displayName = document.querySelector<HTMLFormElement>("#display-name")!;
+    setupInfo(displayName, settings.displayName, "displayName", () =>
+      loggedNavProfile.querySelector("p")!.innerText = displayName.querySelector("input")!.value);
     setupInfo(document.querySelector("#email")!, settings.email, "email");
     setupInfo(document.querySelector("#password")!, "****************************************", "username");
 
@@ -166,9 +167,9 @@ export const settingsPage: Page = {
 
       if (response.success) {
         loadPage(this);
-      } else {
+        loggedNavProfile.querySelector("img")!.src = URL.createObjectURL(avatarInput.files[0])
+      } else
         alert("An error occurred when updating the avatar.");
-      }
     };
 
     if (settings.enabled2fa) {
@@ -181,7 +182,6 @@ export const settingsPage: Page = {
       disable2fa.style.display = "none";
     }
 
-    modal2fa.style.display = "none";
     enable2fa.onclick = async () => await setup2fa();
     disable2fa.onclick = async () => {
       if (confirm("Are you sure disabling 2FA is a reasonable choice?")) {
@@ -228,7 +228,7 @@ export const settingsPage: Page = {
   }
 };
 
-function setupInfo(form: HTMLFormElement, defaultValue: string, eventName: string) {
+function setupInfo(form: HTMLFormElement, defaultValue: string, eventName: string, onSuccess?: () => void) {
   const input = form.querySelector("input")!;
   input.placeholder = defaultValue;
 
@@ -241,9 +241,10 @@ function setupInfo(form: HTMLFormElement, defaultValue: string, eventName: strin
 
     if (response.success) {
       loadPage(settingsPage);
-    } else {
+      if (onSuccess != undefined)
+        onSuccess();
+    } else
       alert("An error occurred when trying to update your information.\nIt's commonly due to an existing value.");
-    }
   };
 }
 
@@ -270,7 +271,5 @@ async function setup2fa() {
       alert("Invalid code");
   };
 
-  cancel.onclick = () => {
-    modal.style.display = "none";
-  };
+  cancel.onclick = () => modal.style.display = "none";
 }

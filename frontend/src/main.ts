@@ -1,80 +1,44 @@
-import { findPage, loadPage, pages } from "./pages/Page.ts";
-import { privacyPage } from "./pages/privacyPage.ts";
+import { findPage, loadPage } from "./pages/Page.ts";
+import { closeWs, connectWs } from "./websocket.ts";
+import { chooseGamePage } from "./pages/chooseGamePage.ts";
 
-export let ws: WebSocket | undefined;
+export const loggedNav = document.querySelector<HTMLElement>("#logged-nav")!;
+export const unloggedNav = document.querySelector<HTMLElement>("#unlogged-nav")!;
+export const loggedNavProfile = document.querySelector<HTMLDivElement>("#logged-nav-profile")!;
+const loggedNavMenu = document.querySelector<HTMLDivElement>("#logged-nav-menu")!;
+const footerIntra = document.querySelector<HTMLParagraphElement>("#footer-intra")!;
 
-export function connectWs() {
-  return new Promise((resolve, reject) => {
-    if (ws)
-      ws.close();
+loggedNavProfile.onclick = () => {
+  loggedNavMenu.style.display = "";
+};
 
-    ws = new WebSocket("wss://" + document.location.host + "/api/ws?token=" + sessionStorage.getItem("token"));
-    ws.onopen = () => console.log("WebSocket connection opened");
-    ws.onclose = () => {
-      console.log("WebSocket connection closed");
-      ws = undefined;
-      sessionStorage.removeItem("token");
-    };
-    ws.onerror = () => {
-      sessionStorage.removeItem("token");
-      ws = undefined;
-      reject("Connection failed");
-    };
+document.addEventListener("click", event => {
+  if (!loggedNavProfile.contains(event.target as Node | null))
+    loggedNavMenu.style.display = "none";
+});
 
-    ws.addEventListener("open", () => {
-      resolve(undefined);
-    }, { once: true });
-    setTimeout(() => reject("Timeout"), 5_000);
+for (let entry of loggedNavMenu.querySelectorAll("a, button")) {
+  entry.addEventListener("click", event => {
+    loggedNavMenu.style.display = "none";
+    event.stopPropagation();
   });
 }
 
-export function awaitWs(timeout: number = 5_000) {
-  return new Promise((resolve, reject) => {
-    if (ws!.readyState == ws!.OPEN)
-      resolve(undefined);
-    else if (ws!.readyState == ws!.CONNECTING) {
-      ws!.addEventListener("open", () => {
-        resolve(undefined);
-      }, { once: true });
+loggedNavMenu.querySelector("button")!.addEventListener("click", () => {
+  closeWs();
+});
 
-      setTimeout(() => reject("Timeout"), timeout);
-    } else
-      reject("WebSocket closing or closed");
-
-  });
-}
-
-export function closeWs() {
-  if (ws && ws.readyState == ws.OPEN)
-    ws.close();
-  ws = undefined;
-  sessionStorage.removeItem("token");
-}
-
-const privacyLink = document.querySelector("#footer-privacy");
-
-if (privacyLink) {
-  privacyLink.addEventListener("click", async event => {
-    event.preventDefault();
-    loadPage(privacyPage);
-  });
-}
-
-const nav = document.querySelector<HTMLElement>("nav")!;
-
-for (let page of pages) {
-  if (page.navbar == false)
+// Navbar anchors
+for (let a of document.querySelectorAll("a")) {
+  if (footerIntra.contains(a))
     continue;
-  const button = document.createElement("a");
-  button.className = "flex-1 text-center p-3 bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950 transition-all hover:via-gray-950";
-  button.innerHTML = typeof page.navbar == "string" ? page.navbar : page.title;
-  button.href = page.url;
-  button.onclick = async event => {
+  a.onclick = event => {
     event.preventDefault();
-    loadPage(page);
+    if (unloggedNav.contains(a))
+      loadPage(findPage(a.getAttribute("href") ?? ""), chooseGamePage);
+    else
+      loadPage(findPage(a.getAttribute("href") ?? ""));
   };
-
-  nav.appendChild(button);
 }
 
 start();

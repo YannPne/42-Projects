@@ -1,18 +1,17 @@
-import { awaitWs, ws } from "../main.ts";
 import { loadPage, type Page } from "./Page.ts";
 import { pongPage } from "./pongPage.ts";
 import { loginPage } from "./loginPage.ts";
 import { send } from "../Event.ts";
 import type { ServerEvent } from "@ft_transcendence/core";
+import { awaitWs, ws } from "../websocket.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 
 export const chooseGamePage: Page = {
   url: "/choose_game",
   title: "Choose game",
-  navbar: "Pong Game",
 
-  getPage(): string {
+  getPage() {
     return `
       <div class="flex flex-col h-full items-center p-5">
         <p class="text-2xl font-bold mb-3">Available games</p>

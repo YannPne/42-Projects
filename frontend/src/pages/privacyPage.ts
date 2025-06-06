@@ -4,9 +4,8 @@ import { type Page } from "./Page.ts";
 export const privacyPage: Page = {
   url: "/privacy",
   title: "Privacy Policy",
-  navbar: false,
 
-  getPage(): string {
+  getPage() {
     return /*html*/`
       <div class="h-full flex flex-col items-center justify-center p-8 text-left max-w-2xl mx-auto space-y-4">
         <h1 class="text-3xl font-bold text-white">Your Rights Regarding Personal Data</h1>
