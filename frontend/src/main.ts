@@ -1,5 +1,6 @@
 import { findPage, loadPage } from "./pages/Page.ts";
 import { closeWs, connectWs } from "./websocket.ts";
+import { chooseGamePage } from "./pages/chooseGamePage.ts";
 
 export const loggedNav = document.querySelector<HTMLElement>("#logged-nav")!;
 export const unloggedNav = document.querySelector<HTMLElement>("#unlogged-nav")!;
@@ -30,7 +31,10 @@ loggedNavMenu.querySelector("button")!.addEventListener("click", () => {
 for (let a of document.querySelectorAll("a")) {
   a.onclick = event => {
     event.preventDefault();
-    loadPage(findPage(a.getAttribute("href") ?? ""));
+    if (unloggedNav.contains(a))
+      loadPage(findPage(a.getAttribute("href") ?? ""), chooseGamePage);
+    else
+      loadPage(findPage(a.getAttribute("href") ?? ""));
   };
 }
 
