@@ -8,7 +8,27 @@
   <title>ft_transcendence</title>
 </head>
 <body class="bg-gray-800 text-white h-screen flex flex-col">
-<nav class="bg-gray-900 flex center border-b border-gray-300"></nav>
+<nav id="unlogged-nav" class="bg-gray-900 flex items-center justify-between p-2">
+  <a href="/"><img src="/logo.svg" alt="logo" class="h-10"></a>
+  <div class="space-x-2">
+    <a href="/register" class="py-1 px-5 rounded-xl border-3 cursor-pointer">Register</a>
+    <a href="/login" class="py-1.5 px-5 bg-gray-200 text-black rounded-xl cursor-pointer">Login</a>
+  </div>
+</nav>
+<nav id="logged-nav" class="bg-gray-900 flex items-center justify-between p-2" style="display: none">
+  <a href="/"><img src="/logo.svg" alt="logo" class="h-10"></a>
+  <div id="logged-nav-profile" class="space-x-2 flex items-center hover:bg-gray-500 py-1 px-5 rounded-xl relative cursor-pointer">
+    <p></p>
+    <img src="/avatar.webp" alt="Avatar" class="h-8 rounded-full border bg-gray-950">
+    <span>&#11206;</span>
+    <div id="logged-nav-menu" class="absolute -bottom-0.5 left-0 translate-y-full min-w-fit w-full bg-gray-700 rounded-xl border border-gray-950 p-3 flex flex-col items-start z-100 *:px-2 *:py-1 *:hover:bg-gray-500 *:rounded *:w-full *:text-left" style="display: none">
+      <a href="/profile"><i class="fa fa-user"></i> Profile</a>
+      <a href="/settings" class="flex gap-1 items-center"><i class="fa fa-gear"></i> Settings</a>
+      <button class="cursor-pointer"><i class="fa fa-right-from-bracket"></i> Logout</button>
+    </div>
+  </div>
+</nav>
+<hr class="border-gray-300">
 <div id="app" class="flex-1 overflow-auto"></div>
 <footer class="bg-gray-900 border-t border-gray-300 flex justify-around items-center text-center py-1">
   <p>

@@ -11,7 +11,6 @@ import { settingsPage } from "./settingsPage.ts";
 export type Page<T = undefined> = {
   url: string;
   title: string;
-  navbar: boolean | string;
   getPage(): string;
   onMount(data?: T): void;
   onUnmount(): void;

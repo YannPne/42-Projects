@@ -1,18 +1,17 @@
 import { loadPage, type Page } from "./Page.ts";
 import { send, sendAndWait } from "../Event.ts";
 import type { Friend, Game, Tournament } from "@ft_transcendence/core";
-import { ws } from "../main.ts";
+import { ws } from "../websocket.ts";
 import { loginPage } from "./loginPage.ts";
 import { settingsPage } from "./settingsPage.ts";
 
 export const profilePage: Page<number> = {
   url: "/profile",
   title: "Profile",
-  navbar: true,
 
   getPage() {
     return `
-      <div class="h-full flex flex-col overflow-hidden">
+      <div class="h-full flex flex-col overflow-hidden relative">
         <div class="p-5 flex justify-between">
           <div class="flex items-center gap-2 flex-1">
             <div class="relative">
@@ -20,14 +19,14 @@ export const profilePage: Page<number> = {
               <div id="status" class="rounded-full w-[25px] h-[25px] bg-gray-500 absolute bottom-[2px] right-[2px] border-4 border-gray-800"></div>
             </div>
             <div>
-              <p id="display-name" class="text-4xl font-bold">Display Name</p>
-              <p id="username">username</p>
-              <a id="email" class="text-gray-400">email@email.com</a>
+              <p id="display-name" class="text-4xl font-bold"></p>
+              <p id="username"></p>
+              <a id="email" class="text-gray-400"></a>
             </div>
           </div>
           <div class="flex flex-col items-center">
             <canvas id="graph" height="101" class="h-[70px] aspect-square"></canvas>
-            <p id="graph-percent">50%</p>
+            <p id="graph-percent"></p>
           </div>
           <div class="flex-1 flex flex-col items-end">
             <i id="settings" class="fa-solid fa-gear hover:text-gray-400 cursor-pointer hover:rotate-90"></i>
@@ -49,11 +48,11 @@ export const profilePage: Page<number> = {
             </form>
           </div>
         </div>
-      </div>
-      <div id="lock" class="absolute bg-gray-900/70 inset-0 flex flex-col items-center justify-center">
-        <i class="fa-solid fa-lock text-9xl"></i>
-        <p id="lock-name" class="text-7xl font-bold mt-2">Name</p>
-        <p class="text-3xl">Private profile</p>
+        <div id="lock" class="absolute bg-gray-900/70 w-full h-full flex flex-col items-center justify-center" style="display: none">
+          <i class="fa-solid fa-lock text-9xl"></i>
+          <p id="lock-name" class="text-7xl font-bold mt-2">Name</p>
+          <p class="text-3xl">Private profile</p>
+        </div>
       </div>
 	  `;
   },
@@ -89,11 +88,11 @@ export const profilePage: Page<number> = {
     settings.onclick = () => loadPage(settingsPage);
 
     const profile = await sendAndWait({ event: "get_profile", id: profileId });
-    if (profile.locked)
+    if (profile.locked) {
       lockName.textContent = profile.displayName;
-    else {
-      lock.style.display = "none";
-
+      lock.style.display = "";
+      addFriendForm.style.display = "none";
+    } else {
       if (profile.avatar)
         avatar.src = URL.createObjectURL(new Blob([new Uint8Array(profile.avatar)]));
 

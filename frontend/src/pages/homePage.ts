@@ -1,11 +1,12 @@
-import type { Page } from "./Page.ts";
+import { loadPage, type Page } from "./Page.ts";
+import { ws } from "../websocket.ts";
+import { chooseGamePage } from "./chooseGamePage.ts";
 
 export const homePage: Page = {
   url: "/",
   title: "Home",
-  navbar: true,
 
-  getPage(): string {
+  getPage() {
     return `
       <div class="h-full flex flex-col justify-center items-center">
         <p class="text-5xl pb-5 font-bold">ft_transcendence</p>
@@ -25,6 +26,10 @@ export const homePage: Page = {
   },
 
   onMount() {
+    if (ws != undefined) {
+      loadPage(chooseGamePage);
+      return;
+    }
   },
 
   onUnmount() {

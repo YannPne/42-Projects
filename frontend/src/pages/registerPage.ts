@@ -1,4 +1,4 @@
-import { connectWs, ws } from "../main.ts";
+import { connectWs, ws } from "../websocket.ts";
 import { loginPage } from "./loginPage.ts";
 import { loadPage, type Page } from "./Page.ts";
 import { privacyPage } from "./privacyPage.ts";
@@ -7,9 +7,8 @@ import { profilePage } from "./profilePage.ts";
 export const registerPage: Page<Page<any>> = {
   url: "/register",
   title: "Register",
-  navbar: false,
 
-  getPage(): string {
+  getPage() {
     return /* html */ `
       <div class="h-full flex flex-col items-center justify-center">
         <div class="bg-gray-700 flex flex-col items-center justify-center p-5 rounded-4xl">

@@ -5,12 +5,12 @@ import { sqlite } from ".";
 import { generateRandomSecret, getTotpCode } from "./2fa";
 import bcrypt from "bcrypt";
 import { ClientEvent } from "@ft_transcendence/core";
-import { RunResult, SqliteError } from "better-sqlite3";
+import { RunResult } from "better-sqlite3";
 
 export let onlineUsers: User[] = [];
 
 export default function registerWebSocket(socket: WebSocket, req: FastifyRequest) {
-  const row: any = sqlite.prepare("SELECT username, displayName, secret2fa FROM users WHERE id = ?")
+  const row: any = sqlite.prepare("SELECT username, displayName, avatar, secret2fa FROM users WHERE id = ?")
     .get(req.jwtUserId);
 
   if (row == undefined) {
@@ -21,6 +21,12 @@ export default function registerWebSocket(socket: WebSocket, req: FastifyRequest
   const user = new User(req.jwtUserId, row.username, row.displayName, socket);
   onlineUsers.push(user);
   let secret2fa: string | undefined = row.secret2fa ?? undefined;
+
+  user.send({
+    event: "connected",
+    displayName: row.displayName,
+    avatar: (row.avatar as Buffer | null)?.toJSON().data
+  });
 
   socket.addEventListener("close", () => {
     onlineUsers.splice(onlineUsers.indexOf(user), 1);

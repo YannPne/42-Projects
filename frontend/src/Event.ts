@@ -1,4 +1,4 @@
-import { ws } from "./main.ts";
+import { ws } from "./websocket.ts";
 import type { ClientEvent, ResponseForEvent, ServerEvent } from "@ft_transcendence/core";
 
 export function send(data: ClientEvent) {
