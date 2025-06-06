@@ -32,7 +32,7 @@ export const chatPage: Page = {
 
   async onMount() {
     if (ws === undefined) {
-      loadPage(loginPage, chatPage);
+      loadPage(loginPage, chatPage, "REPLACE");
       return;
     }
 
@@ -131,6 +131,10 @@ export const chatPage: Page = {
     if (wsListener != undefined)
       ws?.removeEventListener("message", wsListener);
     wsListener = undefined;
+  },
+
+  toJSON() {
+    return this.url;
   }
 };
 

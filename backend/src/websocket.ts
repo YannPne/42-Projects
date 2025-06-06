@@ -127,9 +127,11 @@ function updateInfo(user: User, message: ClientEvent & { event: "update_info" })
     } catch (e) {}
   }
   if (message.displayName != undefined) {
-    result = sqlite.prepare("UPDATE users SET displayName = ? WHERE id = ?").run(message.displayName, user.id);
-    if (result.changes > 0)
-      user.displayName = message.displayName;
+    try {
+      result = sqlite.prepare("UPDATE users SET displayName = ? WHERE id = ?").run(message.displayName, user.id);
+      if (result.changes > 0)
+        user.displayName = message.displayName;
+    } catch (e) {}
   }
   if (message.email != undefined) {
     try {

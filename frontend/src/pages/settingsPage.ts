@@ -124,7 +124,7 @@ export const settingsPage: Page = {
 
   async onMount() {
     if (ws == undefined) {
-      loadPage(loginPage, this);
+      loadPage(loginPage, this, "REPLACE");
       return;
     }
 
@@ -225,6 +225,10 @@ export const settingsPage: Page = {
   },
 
   onUnmount() {
+  },
+
+  toJSON() {
+    return this.url;
   }
 };
 
@@ -244,7 +248,7 @@ function setupInfo(form: HTMLFormElement, defaultValue: string, eventName: strin
       if (onSuccess != undefined)
         onSuccess();
     } else
-      alert("An error occurred when trying to update your information.\nIt's commonly due to an existing value.");
+      alert("This value is unavailable.");
   };
 }
 

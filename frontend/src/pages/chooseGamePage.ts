@@ -26,7 +26,7 @@ export const chooseGamePage: Page = {
 
   async onMount() {
     if (ws == undefined) {
-      loadPage(loginPage, chooseGamePage);
+      loadPage(loginPage, chooseGamePage, "REPLACE");
       return;
     }
 
@@ -74,5 +74,9 @@ export const chooseGamePage: Page = {
     if (wsListener != undefined)
       ws?.removeEventListener("message", wsListener);
     wsListener = undefined;
+  },
+
+  toJSON() {
+    return this.url;
   }
 };

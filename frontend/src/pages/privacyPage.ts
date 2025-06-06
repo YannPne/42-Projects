@@ -30,5 +30,9 @@ export const privacyPage: Page = {
   },
 
   onUnmount() {
+  },
+
+  toJSON() {
+    return this.url;
   }
 };

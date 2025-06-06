@@ -59,7 +59,7 @@ export const profilePage: Page<number> = {
 
   async onMount(profileId) {
     if (ws == undefined) {
-      loadPage(loginPage, profilePage);
+      loadPage(loginPage, profilePage, "REPLACE");
       return;
     }
 
@@ -120,6 +120,10 @@ export const profilePage: Page<number> = {
   },
 
   onUnmount() {
+  },
+
+  toJSON() {
+    return this.url;
   }
 };
 
