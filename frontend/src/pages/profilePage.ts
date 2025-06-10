@@ -59,7 +59,7 @@ export const profilePage: Page<number> = {
 
   async onMount(profileId) {
     if (ws == undefined) {
-      loadPage(loginPage, profilePage, "REPLACE");
+      loadPage(loginPage, this, "REPLACE");
       return;
     }
 

@@ -26,7 +26,7 @@ export const chooseGamePage: Page = {
 
   async onMount() {
     if (ws == undefined) {
-      loadPage(loginPage, chooseGamePage, "REPLACE");
+      loadPage(loginPage, this, "REPLACE");
       return;
     }
 

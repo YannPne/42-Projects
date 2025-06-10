@@ -61,7 +61,7 @@ export const loginPage: Page<Page<any> | string> = {
       if (response == null)
         return;
 
-      fetch("https://" + document.location.host + "/api/recover/request", {
+      fetch(location.host + "/api/recover/request", {
         method: "POST",
         body: response
       }).then();
@@ -74,7 +74,7 @@ export const loginPage: Page<Page<any> | string> = {
 
       const formData = new FormData(loginForm);
 
-      const require2fa = await fetch("https://" + document.location.host + "/api/require_2fa", {
+      const require2fa = await fetch(location.origin + "/api/require_2fa", {
         method: "POST",
         body: formData.get("username") as string
       });
@@ -86,7 +86,7 @@ export const loginPage: Page<Page<any> | string> = {
         formData.append("2fa", code2fa);
       }
 
-      const loginResponse = await fetch("https://" + document.location.host + "/api/login", {
+      const loginResponse = await fetch(location.origin + "/api/login", {
         method: "POST",
         body: formData
       });

@@ -82,7 +82,7 @@ export const registerPage: Page<Page<any> | string> = {
       event.preventDefault();
 
       const formData = new FormData(registerForm);
-      const response = await fetch("https://" + document.location.host + "/api/register", {
+      const response = await fetch(location.origin + "/api/register", {
         method: "POST",
         body: formData
       });

@@ -148,7 +148,7 @@ export const settingsPage: Page = {
     setupInfo(displayName, settings.displayName, "displayName", () =>
       loggedNavProfile.querySelector("p")!.innerText = displayName.querySelector("input")!.value);
     setupInfo(document.querySelector("#email")!, settings.email, "email");
-    setupInfo(document.querySelector("#password")!, "****************************************", "username");
+    setupInfo(document.querySelector("#password")!, "****************************************", "password");
 
     if (settings.avatar != undefined)
       avatarIcon.src = URL.createObjectURL(new Blob([new Uint8Array(settings.avatar)]));

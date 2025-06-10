@@ -3,7 +3,7 @@ import fastifyWebsocket from "@fastify/websocket";
 import fastifyMultipart from "@fastify/multipart";
 import fastifyJwt from "@fastify/jwt";
 import initSqlite from "better-sqlite3";
-import registerWebSocket from "./websocket";
+import registerWebSocket from "./websocket/websocket";
 import * as dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import fastifyFormbody from "@fastify/formbody";
@@ -175,7 +175,7 @@ app.post("/api/recover/submit", (request, reply) => {
     return reply.status(401).send();
 });
 
-app.listen({ host: "0.0.0.0", port: 3000 }, err => {
+app.listen({ host: "0.0.0.0", port: 3000 }, (err, address) => {
   if (err) throw err;
-  console.log("Server listening on 3000");
+  console.log("Server listening at " + address );
 });
