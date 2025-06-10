@@ -8,6 +8,7 @@ import { privacyPage } from "./privacyPage.ts";
 import { profilePage } from "./profilePage.ts";
 import { settingsPage } from "./settingsPage.ts";
 import { recoverPage } from "./recoverPage.ts";
+import { notFoundPage } from "./notFoundPage.ts";
 
 export type Page<T = undefined> = {
   url: string;
@@ -28,7 +29,8 @@ export const pages: Page<any>[] = [
   recoverPage,
   profilePage,
   settingsPage,
-  privacyPage
+  privacyPage,
+  notFoundPage
 ];
 
 let currentPage: Page<any> | undefined;
@@ -55,7 +57,7 @@ export function loadPage<T>(page: Page<T>, data?: T, historyState: "PUSH" | "REP
 }
 
 export function findPage(url: string) {
-  return pages.find(p => p.url == url) ?? pages[0];
+  return pages.find(p => p.url == url) ?? notFoundPage;
 }
 
 window.addEventListener("popstate", (event) => {

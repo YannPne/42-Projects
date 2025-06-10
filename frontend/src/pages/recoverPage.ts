@@ -1,6 +1,7 @@
 import { loadPage, type Page } from "./Page.ts";
 import { ws } from "../websocket.ts";
 import { profilePage } from "./profilePage.ts";
+import { loginPage } from "./loginPage.ts";
 
 export const recoverPage: Page = {
   url: "/recover",
@@ -14,7 +15,7 @@ export const recoverPage: Page = {
           <form id="recover" class="flex flex-col mt-5 space-y-2">
             <label>
               <p>New password: </p>
-              <input name="password" type="text" required class="p-1 bg-gray-600 rounded-lg w-full" />
+              <input id="password" type="password" required class="p-1 bg-gray-600 rounded-lg w-full" />
             </label>
             <div class="flex justify-center">
               <button class="rounded-2xl bg-gray-900 hover:bg-gray-950 p-2 mt-5 cursor-pointer">Save</button>
@@ -32,11 +33,31 @@ export const recoverPage: Page = {
     }
 
     const form = document.querySelector<HTMLFormElement>("#recover")!;
+    const password = document.querySelector<HTMLInputElement>("#password")!;
 
-    form.onsubmit = event => {
+    form.onsubmit = async (event) => {
       event.preventDefault();
-      // TODO
-    }
+
+      const key = new URLSearchParams(location.search).get("key");
+      if (key == null)
+        return;
+
+      const response = await fetch(location.origin + "/api/recover/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, password: password.value })
+      });
+
+      if (response.status == 204) {
+        alert("Password change successful");
+        loadPage(loginPage);
+      } else if (response.status == 401)
+        alert("The recover key is not valid, please use the URL provided in the mail.");
+      else {
+        console.error(response);
+        alert("Unexpected response status");
+      }
+    };
   },
 
   onUnmount() {
@@ -45,4 +66,4 @@ export const recoverPage: Page = {
   toJSON() {
     return this.url;
   }
-}
+};

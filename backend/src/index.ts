@@ -151,13 +151,28 @@ app.post("/api/register", async (request, reply) => {
   }
 });
 
-app.post("/api/recover", (request, reply) => {
+app.post("/api/recover/request", (request, reply) => {
   const email = request.body as string;
 
   sqlite.prepare("UPDATE users SET recover = ? WHERE email = ?")
     .run(crypto.randomUUID(), email);
   // In prod, a mail must be sent
   return reply.status(204).send();
+});
+
+app.post("/api/recover/submit", (request, reply) => {
+  const { key, password } = request.body as any;
+
+  if (key == undefined || password == undefined)
+    return reply.status(400).send("Invalid request");
+
+  const result = sqlite.prepare("UPDATE users SET password = ?, recover = NULL WHERE recover = ?")
+    .run(bcrypt.hashSync(password, 10), key);
+
+  if (result.changes > 0)
+    return reply.status(204).send();
+  else
+    return reply.status(401).send();
 });
 
 app.listen({ host: "0.0.0.0", port: 3000 }, err => {

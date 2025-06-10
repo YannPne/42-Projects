@@ -61,12 +61,12 @@ export const loginPage: Page<Page<any> | string> = {
       if (response == null)
         return;
 
-      fetch("https://" + document.location.host + "/api/recover", {
+      fetch("https://" + document.location.host + "/api/recover/request", {
         method: "POST",
         body: response
       }).then();
 
-      alert(`If the email '${response}' is linked to a user, an email will be sent to them`);
+      alert(`If the email '${response}' is linked to a user, an email will be sent to them with recover instructions`);
     };
 
     loginForm.onsubmit = async (event) => {
