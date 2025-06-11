@@ -2,6 +2,7 @@ import { loadPage } from "./pages/Page.ts";
 import { homePage } from "./pages/homePage.ts";
 import { loggedNav, loggedNavProfile, unloggedNav } from "./main.ts";
 import type { ServerEvent } from "@ft_transcendence/core";
+import { resetChat } from "./pages/chatPage.ts";
 
 export let ws: WebSocket | undefined;
 
@@ -23,6 +24,7 @@ export function connectWs() {
       loggedNav.style.display = "none";
       unloggedNav.style.display = "";
       loadPage(homePage);
+      resetChat();
     };
     ws.onerror = () => {
       sessionStorage.removeItem("token");
@@ -37,7 +39,7 @@ export function connectWs() {
       if (message.event == "connected") {
         loggedNavProfile.querySelector("p")!.innerText = message.displayName;
         loggedNavProfile.querySelector("img")!.src = message.avatar
-          ? URL.createObjectURL(new Blob([new Uint8Array(message.avatar)]))
+          ? URL.createObjectURL(new Blob([ new Uint8Array(message.avatar) ]))
           : "/avatar.webp";
       }
     });

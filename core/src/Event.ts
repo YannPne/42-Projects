@@ -46,7 +46,7 @@ export type Message =
   | { type: "invite" | "announce", tournament: number, name: string };
 
 export type ClientEvent =
-  // GAME
+// GAME
   | { event: "get_games" }
   | { event: "join_game", uid: string, name?: string }
   | { event: "add_local_player", name: string, isAi: boolean }
@@ -56,8 +56,8 @@ export type ClientEvent =
   | { event: "get_tournament" }
   // PROFILE
   | { event: "get_profile", id?: number }
-  | { event: "add_friend", name: string }
-  | { event: "remove_friend", id: number }
+  | { event: "add_friend", user: string | number }
+  | { event: "remove_friend", user: number }
   // SETTINGS
   | { event: "get_settings" }
   | { event: "update_info", username?: string, displayName?: string, password?: string, email?: string, avatar?: number[] }
@@ -69,10 +69,11 @@ export type ClientEvent =
   | { event: "init_chat" }
   | { event: "message", to?: number, message: Message & { type: "message" } }
   | { event: "leave_chat" }
+  | { event: "swap_block", user: number, block: boolean }
   ;
 
 export type ServerEvent =
-  // GENERAL
+// GENERAL
   | { event: "connected", displayName: string, avatar?: number[] }
   // GAME
   | { event: "get_games", games: { uid: string, name: string }[] }
@@ -91,7 +92,7 @@ export type ServerEvent =
   | { event: "setup_2fa_check", success: boolean }
   | { event: "remove_account", success: boolean }
   // CHAT
-  | { event: "init_chat", id: number, friends: number[], online: { id: number, name: string, avatar?: number[] }[] }
+  | { event: "init_chat", id: number, friends: number[], blocked: number[], online: { id: number, name: string, avatar?: number[] }[] }
   | { event: "enter_chat", id: number, name: string, avatar?: number[] }
   | { event: "leave_chat", id: number }
   | { event: "message", from?: number, message: Message }

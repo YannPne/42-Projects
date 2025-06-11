@@ -90,7 +90,6 @@ function getProfile(user: User, userToGet: number) {
   }
 }
 
-// TODO: one request is possible
 function getUserID(name: string): number | undefined {
   const result: any = sqlite.prepare("SELECT id FROM users WHERE displayName = ?")
     .get(name);
@@ -98,9 +97,9 @@ function getUserID(name: string): number | undefined {
 }
 
 function addFriend(user: User, message: ClientEvent & { event: "add_friend" }) {
-  const friendId = getUserID(message.name);
+  const id = typeof message.user == "number" ? message.user : getUserID(message.user);
 
-  if (!friendId || user.id == friendId) {
+  if (!id || user.id == id) {
     user.send({
       event: "add_friend",
       success: false
@@ -112,14 +111,14 @@ function addFriend(user: User, message: ClientEvent & { event: "add_friend" }) {
       INSERT INTO friends (userid, friendid)
       SELECT ?, ?
       WHERE NOT EXISTS (SELECT 1 FROM friends WHERE userid = ? AND friendid = ?)
-  `).run(user.id, friendId, user.id, friendId);
+  `).run(user.id, id, user.id, id);
 
   user.send({ event: "add_friend", success: result.changes > 0 });
 }
 
 function removeFriend(user: User, message: ClientEvent & { event: "remove_friend" }) {
   const result = sqlite.prepare("DELETE FROM friends WHERE userid = ? AND friendid = ?")
-    .run(user.id, message.id);
+    .run(user.id, message.user);
 
   user.send({
     event: "remove_friend",

@@ -51,7 +51,7 @@ export const loginPage: Page<Page<any> | string> = {
     const registerLink = document.querySelector<HTMLAnchorElement>("#register")!;
     const recover = document.querySelector<HTMLButtonElement>("#recover")!;
 
-    registerLink.onclick = (event) => {
+    registerLink.onclick = event => {
       event.preventDefault();
       loadPage(registerPage, requestedPage);
     };

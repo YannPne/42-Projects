@@ -46,8 +46,8 @@ sqlite.exec(`CREATE TABLE IF NOT EXISTS friends (
 
 sqlite.exec(`CREATE TABLE IF NOT EXISTS blocked (
     id        INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    userid    INTEGER NOT NULL, 
-    blockedid INTEGER NOT NULL, 
+    userid    INTEGER NOT NULL,
+    blockedid INTEGER NOT NULL,
     UNIQUE(userid, blockedid)
 )`);
 
@@ -72,7 +72,7 @@ app.decorate("authenticate", async (req: FastifyRequest, reply: FastifyReply) =>
 });
 
 app.register(app => {
-  app.get("/api/ws", { websocket: true, preHandler: [app.authenticate] }, registerWebSocket);
+  app.get("/api/ws", { websocket: true, preHandler: [ app.authenticate ] }, registerWebSocket);
 });
 
 app.post("/api/require_2fa", (request, reply) => {
@@ -175,7 +175,4 @@ app.post("/api/recover/submit", (request, reply) => {
     return reply.status(401).send();
 });
 
-app.listen({ host: "0.0.0.0", port: 3000 }, (err, address) => {
-  if (err) throw err;
-  console.log("Server listening at " + address );
-});
+app.listen({ host: "0.0.0.0", port: 3000 }).then(console.log);

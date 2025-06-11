@@ -11,6 +11,8 @@ export default function chatEvents(user: User, message: ClientEvent) {
     onMessage(user, message);
   else if (message.event == "leave_chat")
     leaveChat(user);
+  else if (message.event == "swap_block")
+    block(user, message);
   else
     return false;
 
@@ -18,15 +20,18 @@ export default function chatEvents(user: User, message: ClientEvent) {
 }
 
 function initChat(user: User) {
-  const friends: any[] = sqlite.prepare("SELECT friendid FROM friends WHERE userid = ?")
-    .all(user.id);
+  const friends = sqlite.prepare("SELECT friendid FROM friends WHERE userid = ?")
+    .all(user.id).map((f: any) => f.friendid as number);
+  const blocked = sqlite.prepare("SELECT blockedid FROM blocked WHERE userid = ?")
+    .all(user.id).map((b: any) => b.blockedid as number);
 
   inChatUsers.push(user);
 
   user.send({
     event: "init_chat",
     id: user.id,
-    friends: friends.map(f => f.friendid),
+    friends: friends,
+    blocked: blocked,
     online: inChatUsers.map(u => ({
       id: u.id,
       name: u.displayName,
@@ -51,7 +56,7 @@ function onMessage(user: User, event: ClientEvent & { event: "message" }) {
       event: "message", from: event.to, message: {
         type: "message", sender: user.id, content: event.message.content
       }
-    })
+    });
   }
 
   for (let s of send) {
@@ -73,4 +78,14 @@ export function leaveChat(user: User) {
   }));
 
   inChatUsers.splice(inChatUsers.indexOf(user), 1);
+}
+
+function block(user: User, message: ClientEvent & { event: "swap_block" }) {
+  if (message.block) {
+    sqlite.prepare("INSERT INTO blocked(userid, blockedid) VALUES (?, ?)")
+      .run(user.id, message.user);
+  } else {
+    sqlite.prepare("DELETE FROM blocked WHERE userid = ? AND blockedid = ?")
+      .run(user.id, message.user);
+  }
 }

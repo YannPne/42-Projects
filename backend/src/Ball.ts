@@ -77,7 +77,7 @@ export default class Ball {
     return {
       x: this.x,
       y: this.y,
-      size: this.size,
+      size: this.size
     };
   }
 }

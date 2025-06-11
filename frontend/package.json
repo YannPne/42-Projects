@@ -19,9 +19,8 @@
     "tailwindcss": "^4.1.8"
   },
   "devDependencies": {
-    "@types/node": "^22.15.30",
+    "@types/node": "^22.15.31",
     "brackets-model": "^1.5.0",
-    "prettier": "^3.5.3",
     "typescript": "^5.8.3",
     "vite": "^6.3.5"
   }

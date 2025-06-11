@@ -16,8 +16,8 @@ const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, wallet);
 let txQueue: Promise<void> = Promise.resolve();
 
 export async function addTournamentMatches(
-    matchIds: number[],
-    matchScores: number[][]
+  matchIds: number[],
+  matchScores: number[][]
 ): Promise<void> {
   txQueue = txQueue.then(async () => {
     try {

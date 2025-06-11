@@ -59,16 +59,15 @@ export default class Player {
   }
 
   playAi() {
-    if (Date.now() - this.aiLastCheck >= 1_000) 
-    {
+    if (Date.now() - this.aiLastCheck >= 1_000) {
       this.aiLastCheck = Date.now();
 
       const ball = this.game.ball;
       if (ball.speedX != 0 && ball.goToLeft == this.isAtLeft) {
         this.aiTargetY = ((this.isAtLeft
-                ? this.right - ball.left
-                : this.left - ball.right)
-            * ball.speedY) / ball.speedX + ball.centerY;
+            ? this.right - ball.left
+            : this.left - ball.right)
+          * ball.speedY) / ball.speedX + ball.centerY;
       }
     }
 
@@ -88,7 +87,7 @@ export default class Player {
       y: this.y,
       width: this.width,
       height: this.height,
-      score: this.score,
+      score: this.score
     };
   }
 }

@@ -37,14 +37,14 @@ export const chooseGamePage: Page = {
     const games = document.querySelector<HTMLUListElement>("#games")!;
 
     createGame.onsubmit =
-    event => {
-      event.preventDefault();
-      loadPage(pongPage, {
-        event: "join_game",
-        uid: crypto.randomUUID(),
-        name: createGameName.value
-      });
-    };
+      event => {
+        event.preventDefault();
+        loadPage(pongPage, {
+          event: "join_game",
+          uid: crypto.randomUUID(),
+          name: createGameName.value
+        });
+      };
 
     ws.addEventListener("message", wsListener = event => {
       const message: ServerEvent = JSON.parse(event.data);

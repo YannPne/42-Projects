@@ -83,7 +83,7 @@ export class Game {
 
   resetPos() {
     this.ball.resetPos();
-    const [player1, player2] = this.players;
+    const [ player1, player2 ] = this.players;
     player1.x = 30;
     player1.y = (this.height - player1.height) / 2;
     player2.x = this.width - player2.width - 30;
@@ -99,7 +99,7 @@ export class Game {
 
     player.score++;
     if (player.score >= this.winScore) {
-      const [player1, player2] = this.players.splice(0, 2);
+      const [ player1, player2 ] = this.players.splice(0, 2);
       this.tournament.push({
         player1,
         player2,
@@ -130,7 +130,7 @@ export class Game {
     while (this.state == GameState.CREATING)
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-    let [player1, player2] = this.players;
+    let [ player1, player2 ] = this.players;
     this.resetPos();
 
     for (const u of this.users)
@@ -147,7 +147,7 @@ export class Game {
       if (this.checkWin()) {
         // @ts-ignore
         if (this.state == GameState.SHOW_WINNER) break;
-        [player1, player2] = this.players;
+        [ player1, player2 ] = this.players;
         // for (const u of this.users) 
         //   u.socket.send(JSON.stringify({ event: "get_tournament", tournament: this.players.map(u => u.name) }));
       }
@@ -156,7 +156,7 @@ export class Game {
         user.socket.send(JSON.stringify({
           event: "update",
           ball: this.ball,
-          players: [player1, player2]
+          players: [ player1, player2 ]
         }));
         // for (const u of this.users) 
         //   u.socket.send(JSON.stringify({ event: "get_tournament", tournament: this.players.map(u => u.name) }));
@@ -199,7 +199,7 @@ export class Game {
     for (let i = 0; i < this.tournament.length; i++) {
       const match = this.tournament[i];
       matchIds.push(i);
-      matchScores.push([match.score1, match.score2]);
+      matchScores.push([ match.score1, match.score2 ]);
     }
 
     try {

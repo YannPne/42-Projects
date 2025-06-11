@@ -21,4 +21,4 @@ export const notFoundPage: Page = {
   toJSON() {
     return this.url;
   }
-}
+};

@@ -12,7 +12,7 @@ function numberToBytes(num: number) {
 async function hmacSha1(key: Uint8Array, data: Uint8Array) {
   const keyObj = await crypto.subtle.importKey("raw", key,
     { name: "HMAC", hash: { name: "SHA-1" } },
-    false, ["sign"]);
+    false, [ "sign" ]);
   return new Uint8Array(await crypto.subtle.sign("HMAC", keyObj, data));
 }
 

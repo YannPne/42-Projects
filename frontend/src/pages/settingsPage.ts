@@ -151,7 +151,7 @@ export const settingsPage: Page = {
     setupInfo(document.querySelector("#password")!, "****************************************", "password");
 
     if (settings.avatar != undefined)
-      avatarIcon.src = URL.createObjectURL(new Blob([new Uint8Array(settings.avatar)]));
+      avatarIcon.src = URL.createObjectURL(new Blob([ new Uint8Array(settings.avatar) ]));
     avatar.onsubmit = async (event) => {
       event.preventDefault();
 
@@ -167,7 +167,7 @@ export const settingsPage: Page = {
 
       if (response.success) {
         loadPage(this);
-        loggedNavProfile.querySelector("img")!.src = URL.createObjectURL(avatarInput.files[0])
+        loggedNavProfile.querySelector("img")!.src = URL.createObjectURL(avatarInput.files[0]);
       } else
         alert("An error occurred when updating the avatar.");
     };
