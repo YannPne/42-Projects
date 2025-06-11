@@ -43,7 +43,7 @@ export type Friend = {
 
 export type Message =
   | { type: "message", sender: number, content: string }
-  | { type: "invite" | "announce", tournament: number, name: string };
+  | { type: "invite" | "announce", id: string, name: string };
 
 export type ClientEvent =
 // GAME
@@ -67,7 +67,7 @@ export type ClientEvent =
   | { event: "remove_account" }
   // CHAT
   | { event: "init_chat" }
-  | { event: "message", to?: number, message: Message & { type: "message" } }
+  | { event: "message", to?: number, message: Message & { type: "message" | "invite" } }
   | { event: "leave_chat" }
   | { event: "swap_block", user: number, block: boolean }
   ;

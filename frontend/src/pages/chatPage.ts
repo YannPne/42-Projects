@@ -3,8 +3,8 @@ import { loginPage } from "./loginPage.ts";
 import { ws } from "../websocket.ts";
 import type { Message, ServerEvent } from "@ft_transcendence/core";
 import { send, sendAndWait } from "../Event.ts";
-
-// TODO: system messages
+import { pongPage } from "./pongPage.ts";
+import { profilePage } from "./profilePage.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 
@@ -51,10 +51,11 @@ export const chatPage: Page = {
             <i class="fa-solid fa-paper-plane"></i>
           </button>
         </form>
-        <div id="dm-actions" class="flex *:flex-1 *:py-1 *:rounded-lg *:cursor-pointer" style="display: none">
+        <div id="dm-actions" class="flex *:flex-1 *:py-1 *:rounded-lg *:not-disabled:cursor-pointer" style="display: none">
+          <button id="profile" class="bg-green-500 hover:bg-green-700">Profile</button>
           <button id="add-friend" class="bg-blue-500 hover:bg-blue-700"></button>
           <button id="block" class="bg-red-500 hover:bg-red-700">Block</button>
-          <button id="invite" class="bg-amber-500 hover:bg-amber-700">Invite to tournament</button>
+          <button id="invite" class="bg-amber-500 hover:bg-amber-700 disabled:bg-amber-800">Invite to tournament</button>
         </div>
       </div>
     `;
@@ -69,6 +70,7 @@ export const chatPage: Page = {
     const general = document.querySelector<HTMLButtonElement>("#general")!;
     const form = document.querySelector("form")!;
     const formMessage = form.querySelector("input")!;
+    const profile = document.querySelector<HTMLButtonElement>("#profile")!;
     const addFriend = document.querySelector<HTMLButtonElement>("#add-friend")!;
     const block = document.querySelector<HTMLButtonElement>("#block")!;
     const invite = document.querySelector<HTMLButtonElement>("#invite")!;
@@ -87,6 +89,8 @@ export const chatPage: Page = {
       });
       formMessage.value = "";
     };
+
+    profile.onclick = () => loadPage(profilePage, currentChannel!);
 
     addFriend.onclick = () => {
       if (currentChannelButton!.dataset.isFriend == "0") {
@@ -108,12 +112,16 @@ export const chatPage: Page = {
 
       send({ event: "swap_block", user: currentChannel!, block: true });
       currentChannelButton!.remove();
-      info!.blocked.push(currentChannel!);
+      info.blocked.push(currentChannel!);
       general.click();
     };
 
     invite.onclick = () => {
       // TODO: Must be implemented with splitted window, when a user can be in the chat and in a tournament at the same time.
+      const id = crypto.randomUUID();
+      const name = "Game";
+      loadPage(pongPage, { event: "join_game", uid: id, name });
+      send({ event: "message", to: currentChannel!, message: { type: "invite", id, name } });
     };
 
     info = await sendAndWait({ event: "init_chat" });
@@ -123,29 +131,31 @@ export const chatPage: Page = {
 
       if (data.event == "message") {
         if (data.from == undefined)
-          messages!.general.push(data.message);
+          messages.general.push(data.message);
         else
-          messages!.users[data.from].messages.push(data.message);
+          messages.users[data.from].messages.push(data.message);
+
         if (data.from == currentChannel) {
-          if (data.message.type == "message") {
+          if (data.message.type == "message")
             createMessage(data.message);
-          }
+          else
+            createSystemMessage(data.message, data.from);
         } else {
           if (data.from == undefined)
-            messages!.generalAllRead = false;
+            messages.generalAllRead = false;
           else
-            messages!.users[data.from].allRead = false;
+            messages.users[data.from].allRead = false;
           updateUsers();
         }
       } else if (data.event == "enter_chat") {
-        info!.online.push({ ...data });
-        messages!.users[data.id] ??= {
+        info.online.push({ ...data });
+        messages.users[data.id] ??= {
           messages: [],
           allRead: true
         };
         updateUsers();
       } else if (data.event == "leave_chat") {
-        info!.online.splice(info!.online.findIndex(o => o.id == data.id), 1);
+        info.online.splice(info.online.findIndex(o => o.id == data.id), 1);
         updateUsers();
       }
     });
@@ -176,19 +186,19 @@ export const chatPage: Page = {
 function updateUsers() {
   const users = document.querySelector<HTMLDivElement>("#users")!;
 
-  const online = info!.online
-    .filter(u => !info!.blocked.some(b => b == u.id))
-    .filter(u => u.id != info!.id);
+  const online = info.online
+    .filter(u => !info.blocked.some(b => b == u.id))
+    .filter(u => u.id != info.id);
 
   online.sort((a, b) => {
     let result = 0;
-    if (info!.friends.some(f => f == a.id))
+    if (info.friends.some(f => f == a.id))
       result -= 5;
-    if (!messages!.users[a.id].allRead)
+    if (!messages.users[a.id].allRead)
       result--;
-    if (info!.friends.some(f => f == b.id))
+    if (info.friends.some(f => f == b.id))
       result += 5;
-    if (!messages!.users[b.id].allRead)
+    if (!messages.users[b.id].allRead)
       result++;
     return result;
   });
@@ -202,7 +212,7 @@ function updateUsers() {
   // createUser might set currentChannelButton, don't trust static analysis
   if (currentChannelButton == undefined)
     general.click();
-  if (!messages!.generalAllRead)
+  if (!messages.generalAllRead)
     general.querySelector("div")!.style.display = "";
 }
 
@@ -218,12 +228,12 @@ function createUser(users: HTMLDivElement, user: { id: number, avatar?: number[]
     <i class="fa-solid fa-star text-yellow-500" style="display: none"></i>
   `;
 
-  if (!messages!.users[user.id].allRead)
+  if (!messages.users[user.id].allRead)
     button.querySelector("div")!.style.display = "";
   if (user.avatar != undefined)
     button.querySelector("img")!.src = URL.createObjectURL(new Blob([ new Uint8Array(user.avatar) ]));
   button.querySelector("span")!.innerText = user.name;
-  if (info!.friends.some(f => f == user.id))
+  if (info.friends.some(f => f == user.id))
     button.querySelector("i")!.style.display = "";
 
   button.onclick = () => channelChange(button, user.id);
@@ -241,9 +251,9 @@ function channelChange(button: HTMLButtonElement, id?: number) {
 
   button.classList.add("border-b-2", "border-white");
   if (id == undefined)
-    messages!.generalAllRead = true;
+    messages.generalAllRead = true;
   else
-    messages!.users[id].allRead = true;
+    messages.users[id].allRead = true;
   button.querySelector("div")!.style.display = "none";
   currentChannel = id;
   currentChannelButton = button;
@@ -251,18 +261,18 @@ function channelChange(button: HTMLButtonElement, id?: number) {
   const messagesList = document.querySelector<HTMLUListElement>("#messages")!;
 
   messagesList.innerHTML = "";
-  if (messages == undefined)
-    return;
   (id == undefined ? messages.general : messages.users[id].messages).forEach(m => {
     if (m.type == "message")
       createMessage(m);
+    else
+      createSystemMessage(m, id);
   });
 
   document.querySelector<HTMLDivElement>("#dm-actions")!
     .style.display = id == undefined ? "none" : "";
   if (id != undefined) {
     const addFriend = document.querySelector<HTMLButtonElement>("#add-friend")!;
-    const isFriend = info!.friends.some(f => f == id);
+    const isFriend = info.friends.some(f => f == id);
     addFriend.innerText = isFriend ? "Remove friend" : "Add friend";
     button.dataset.isFriend = isFriend ? "1" : "0";
   }
@@ -274,21 +284,23 @@ function createMessage(message: Message & { type: "message" }) {
   const li = document.createElement("li");
   li.innerHTML = `
     <div class="flex gap-1 h-full w-full">
-      <img src="/avatar.webp" alt="avatar" class="rounded-full h-[25px] w-[25px] bg-gray-950 border border-white mr-1">
-      <span class="font-bold"></span>
+      <div class="message-user flex gap-2">
+        <img src="/avatar.webp" alt="avatar" class="rounded-full h-[25px] w-[25px] bg-gray-950 border border-white">
+        <span class="font-bold"></span>
+      </div>
       <div class="border border-white h-full mx-3"></div>
       <p class="flex-1"></p>
       <button class="rounded-lg bg-gray-500 hover:bg-gray-600 cursor-pointer px-1" style="display: none">Unblock</button>
     </div>
   `;
 
-  const sender = info!.online.find(o => o.id == message.sender)!;
+  const sender = info.online.find(o => o.id == message.sender)!;
   if (sender.avatar != undefined)
     li.querySelector("img")!.src = URL.createObjectURL(new Blob([ new Uint8Array(sender.avatar) ]));
   li.querySelector("span")!.innerText = sender.name;
   const content = li.querySelector("p")!;
 
-  if (info!.blocked.some(b => b == message.sender)) {
+  if (info.blocked.some(b => b == message.sender)) {
     content.innerText = "Blocked user";
     content.classList.add("text-gray-500");
 
@@ -296,12 +308,53 @@ function createMessage(message: Message & { type: "message" }) {
     unblock.style.display = "";
     unblock.onclick = () => {
       send({ event: "swap_block", user: message.sender, block: false });
-      info!.blocked.splice(info!.blocked.indexOf(message.sender), 1);
+      info.blocked.splice(info.blocked.indexOf(message.sender), 1);
       updateUsers();
       currentChannelButton!.click();
     };
-  } else
+  } else {
+    if (currentChannel == undefined && message.sender != info.id) {
+      const messageUser = li.querySelector<HTMLDivElement>(".message-user")!;
+      messageUser.classList.add("hover:*:underline");
+      messageUser.onclick = () => {
+        for (let child of document.querySelector<HTMLDivElement>("#users")!.children) {
+          if (parseInt((child as HTMLButtonElement).dataset.id!) == sender.id) {
+            (child as HTMLButtonElement).click();
+            break;
+          }
+        }
+      };
+    }
+
     content.innerText = message.content;
+  }
+
+  ul.prepend(li);
+}
+
+function createSystemMessage(message: Message & { type: "invite" | "announce" }, sender?: number) {
+  const ul = document.querySelector<HTMLUListElement>("#messages")!;
+
+  const li = document.createElement("li");
+  li.innerHTML = `
+    <div class="flex border border-amber-500 bg-amber-500/30 rounded-xl px-5 py-1 items-center">
+      <i class="fa-solid fa-circle-info text-amber-500 mr-5"></i>
+        <p class="flex-1 ml-1">
+          <span class="message-user font-bold"></span>
+          <span class="message-content"></span>
+        </p>
+      <button class="bg-amber-500 hover:bg-amber-700 px-3 py-1 rounded-md cursor-pointer">Join</button>
+    </div>
+  `;
+
+  if (message.type == "invite") {
+    li.querySelector<HTMLSpanElement>(".message-user")!.innerText = info.online.find(u => u.id == sender)!.name;
+    li.querySelector<HTMLSpanElement>(".message-content")!.innerText = `send you a request to join the tournament '${message.name}'!`;
+  } else
+    li.querySelector<HTMLSpanElement>(".message-content")!.innerText = `The tournament '${message.name}' has just been created. Come play with others!`;
+
+  li.querySelector("button")!.onclick = () =>
+    loadPage(pongPage, {event: "join_game", uid: message.id});
 
   ul.prepend(li);
 }

@@ -2,6 +2,7 @@ import User from "../User";
 import { ClientEvent } from "@ft_transcendence/core";
 import { Game, games, GameState } from "../Game";
 import { onlineUsers } from "./websocket";
+import { chatAnnounceGame } from "./chat";
 
 export default function gameEvents(user: User, message: ClientEvent) {
   if (message.event === "get_games")
@@ -30,12 +31,14 @@ function getGames(user: User) {
   user.send({ event: "get_games", games });
 }
 
+// TODO: if you join a game already ended, it recreate with name 'undefined', due to changes will come to this part, I let the bug now.
 function joinGame(user: User, message: ClientEvent & { event: "join_game" }) {
   let game = games.find((g) => g.uid == message.uid);
   if (game == undefined) {
     games.push(game = new Game(message.name!, message.uid));
     for (let user of onlineUsers)
       user.send({ event: "get_games", games });
+    chatAnnounceGame(game.uid, game.name);
   }
 
   const names = game.players.map(p => p.name);

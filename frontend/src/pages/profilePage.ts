@@ -187,7 +187,7 @@ function createFriend(friend: Friend) {
     li.querySelector<HTMLDivElement>(".friend-status")!.classList.add("bg-green-500");
 
   li.querySelector("i")!.onclick = () => {
-    send({ event: "remove_friend", id: friend.id });
+    send({ event: "remove_friend", user: friend.id });
     li.remove();
   };
 

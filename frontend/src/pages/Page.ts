@@ -60,6 +60,6 @@ export function findPage(url: string) {
   return pages.find(p => p.url == url) ?? notFoundPage;
 }
 
-window.addEventListener("popstate", (event) => {
+window.addEventListener("popstate", event => {
   loadPage(findPage(window.location.pathname), event.state, "NONE");
 });
