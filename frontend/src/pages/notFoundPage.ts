@@ -8,7 +8,7 @@ export const notFoundPage: Page = {
     return `
       <p class="flex h-full items-center justify-center text-5xl font-bold">
         404 Not Found
-      <div>
+      </p>
     `;
   },
 
