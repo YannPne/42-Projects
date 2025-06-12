@@ -27,7 +27,10 @@ export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
           </form>
         </div>
         <canvas id="game2d" width="1200" height="600" class="w-[90%] aspect-[2/1] bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
-        <canvas id="game3d" width="1200" height="600" class="w-[90%] aspect-[2/1] not-focus-visible"></canvas>
+        <div class="w-[90%] relative">
+          <canvas id="game3d" width="1200" height="600" class="w-full aspect-[2/1] not-focus-visible"></canvas>
+          <i class="fa-solid fa-arrows-rotate fa-spin text-4xl absolute right-0 bottom-0"></i>
+        </div>
         <div class="flex items-center space-x-4 mt-4">
           <span id="toggleText" class="text-lg font-medium text-white select-none cursor-pointer">Mode 3D</span>
           <button id="is3d" type="button"
@@ -43,13 +46,12 @@ export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
   },
 
   onMount(data) {
-    if (data != undefined) {
-      send(data);
-    } else {
-      loadPage(chooseGamePage);
+    if (data == undefined) {
+      loadPage(chooseGamePage, undefined, "REPLACE");
       return;
     }
 
+    send(data);
     send({ event: "get_tournament" });
     // Header
     const start = document.querySelector<HTMLButtonElement>("#start")!;
@@ -81,8 +83,8 @@ export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
     canvas2d.style.display = "none";
     is3d.addEventListener("click", () => {
       is3dActive = !is3dActive;
-      (is3dActive ? canvas2d : canvas3d).style.display = "none";
-      (is3dActive ? canvas3d : canvas2d).style.display = "";
+      (is3dActive ? canvas2d : canvas3d.parentElement!).style.display = "none";
+      (is3dActive ? canvas3d.parentElement! : canvas2d).style.display = "";
       updateToggleUI();
     });
 
@@ -148,6 +150,10 @@ export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
     keydownListener = undefined;
     keyupListener = undefined;
     wsListener = undefined;
+  },
+
+  toJSON() {
+    return this.url;
   }
 };
 

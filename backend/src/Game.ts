@@ -2,9 +2,11 @@ import Ball from "./Ball";
 import { addTournamentMatches, getTotalTournaments, getTournamentMatches } from "./smartContract";
 import Player from "./Player";
 import User from "./User";
-import {insertGameHistory, onlineUsers} from "./websocket";
+import { onlineUsers } from "./websocket/websocket";
+import { sqlite } from "./index";
 
 export let games: Game[] = [];
+
 export enum GameState {
   CREATING,
   IN_GAME,
@@ -12,9 +14,9 @@ export enum GameState {
   ABORTED,
 }
 
-// get the max-number of tournement already in the blockchain at launch
-// use it for retrieve the good tournement (actual id + idtournament = actual pos in the blockchain)
-export const idtournament = getTotalTournaments();
+// get the max-number of tournament already in the blockchain at launch
+// use it for retrieve the good tournament (actual id + idTournament = actual pos in the blockchain)
+export const idTournament = getTotalTournaments();
 
 export class Game {
   readonly winScore: number = 5;
@@ -39,8 +41,8 @@ export class Game {
     this.uid = uid;
 
     this.loop()
-        .then(() => console.log("Game finished"))
-        .catch(console.error);
+      .then(() => console.log("Game finished"))
+      .catch(console.error);
   }
 
   addUser(user: User) {
@@ -108,16 +110,12 @@ export class Game {
 
       let date = new Date();
       const convertDate = date.toISOString().split("T")[0];
-      insertGameHistory({
-        name1: player1.name,
-        name2: player2.name,
-        score1: player1.score,
-        score2: player2.score,
-        date: convertDate
-      });
+      sqlite.prepare(`INSERT INTO games (name1, name2, score1, score2, date)
+        VALUES (?, ?, ?, ?, ?)`)
+        .run(player1.name, player2.name, player1.score, player2.score, convertDate);
     }
 
-    for (const u of this.users) 
+    for (const u of this.users)
       u.socket.send(JSON.stringify({ event: "get_tournament", tournament: this.players.map(u => u.name) }));
     if (this.players.length == 1) {
       this.state = GameState.SHOW_WINNER;
@@ -135,7 +133,7 @@ export class Game {
     let [ player1, player2 ] = this.players;
     this.resetPos();
 
-    for (const u of this.users) 
+    for (const u of this.users)
       u.socket.send(JSON.stringify({ event: "get_tournament", tournament: this.players.map(u => u.name) }));
 
     while (this.state == GameState.IN_GAME) {
@@ -165,7 +163,7 @@ export class Game {
       }
 
       await new Promise((res) =>
-          setTimeout(res, 10 - (Date.now() - startTime)));
+        setTimeout(res, 10 - (Date.now() - startTime)));
     }
 
     for (let user of this.users) {
@@ -194,15 +192,14 @@ export class Game {
   }
 
   /*blockchain function*/
-  async saveTournament() 
-  {
+  async saveTournament() {
     const matchIds: number[] = [];
     const matchScores: number[][] = [];
 
     for (let i = 0; i < this.tournament.length; i++) {
       const match = this.tournament[i];
       matchIds.push(i);
-      matchScores.push([match.score1, match.score2]);
+      matchScores.push([ match.score1, match.score2 ]);
     }
 
     try {
@@ -214,7 +211,7 @@ export class Game {
   }
 
   async getTournament() {
-    const tournamentId = await idtournament; // + id actual in your database
+    const tournamentId = await idTournament; // + id actual in your database
 
     try {
       await getTournamentMatches(tournamentId);

@@ -2,6 +2,7 @@ import { loadPage } from "./pages/Page.ts";
 import { homePage } from "./pages/homePage.ts";
 import { loggedNav, loggedNavProfile, unloggedNav } from "./main.ts";
 import type { ServerEvent } from "@ft_transcendence/core";
+import { resetChat } from "./pages/chatPage.ts";
 
 export let ws: WebSocket | undefined;
 
@@ -10,7 +11,7 @@ export function connectWs() {
     if (ws)
       ws.close();
 
-    ws = new WebSocket("wss://" + document.location.host + "/api/ws?token=" + sessionStorage.getItem("token"));
+    ws = new WebSocket("wss://" + location.host + "/api/ws?token=" + sessionStorage.getItem("token"));
     ws.onopen = () => {
       console.log("WebSocket connection opened");
       loggedNav.style.display = "";
@@ -23,6 +24,7 @@ export function connectWs() {
       loggedNav.style.display = "none";
       unloggedNav.style.display = "";
       loadPage(homePage);
+      resetChat();
     };
     ws.onerror = () => {
       sessionStorage.removeItem("token");
@@ -37,7 +39,7 @@ export function connectWs() {
       if (message.event == "connected") {
         loggedNavProfile.querySelector("p")!.innerText = message.displayName;
         loggedNavProfile.querySelector("img")!.src = message.avatar
-          ? URL.createObjectURL(new Blob([new Uint8Array(message.avatar)]))
+          ? URL.createObjectURL(new Blob([ new Uint8Array(message.avatar) ]))
           : "/avatar.webp";
       }
     });
@@ -51,17 +53,18 @@ export function connectWs() {
 
 export function awaitWs(timeout: number = 5_000) {
   return new Promise((resolve, reject) => {
-    if (ws!.readyState == ws!.OPEN)
+    if (ws == undefined)
+      return reject("No WebSocket");
+    if (ws.readyState == ws.OPEN)
       resolve(undefined);
-    else if (ws!.readyState == ws!.CONNECTING) {
-      ws!.addEventListener("open", () => {
+    else if (ws.readyState == ws.CONNECTING) {
+      ws.addEventListener("open", () => {
         resolve(undefined);
       }, { once: true });
 
       setTimeout(() => reject("Timeout"), timeout);
     } else
       reject("WebSocket closing or closed");
-
   });
 }
 

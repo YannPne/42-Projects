@@ -13,7 +13,6 @@
     "@fastify/jwt": "^9.1.0",
     "@fastify/multipart": "^9.0.3",
     "@fastify/websocket": "^11.1.0",
-    "@ft_transcendence/core": "^1.0.0",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^11.10.0",
     "dotenv": "^16.5.0",
@@ -22,11 +21,11 @@
     "hi-base32": "^0.5.1"
   },
   "devDependencies": {
+    "@ft_transcendence/core": "^1.0.0",
     "@types/bcrypt": "^5.0.2",
     "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^22.15.29",
-    "prettier": "^3.5.3",
-    "tsx": "^4.19.4",
+    "@types/node": "^22.15.31",
+    "tsx": "^4.20.2",
     "typescript": "^5.8.3"
   }
 }

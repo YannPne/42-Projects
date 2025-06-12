@@ -1,10 +1,10 @@
 import { connectWs, ws } from "../websocket.ts";
 import { loginPage } from "./loginPage.ts";
-import { loadPage, type Page } from "./Page.ts";
+import { findPage, loadPage, type Page } from "./Page.ts";
 import { privacyPage } from "./privacyPage.ts";
 import { profilePage } from "./profilePage.ts";
 
-export const registerPage: Page<Page<any>> = {
+export const registerPage: Page<Page<any> | string> = {
   url: "/register",
   title: "Register",
 
@@ -56,25 +56,24 @@ export const registerPage: Page<Page<any>> = {
   },
 
   onMount(requestedPage) {
+    if (typeof requestedPage == "string")
+      requestedPage = findPage(requestedPage);
 
     if (ws != undefined) {
-      loadPage(requestedPage ?? profilePage);
+      loadPage(requestedPage ?? profilePage, undefined, "REPLACE");
       return;
     }
 
     const registerForm = document.querySelector<HTMLFormElement>("#register")!;
     const loginLink = document.querySelector<HTMLAnchorElement>("#login")!;
-    const checkPrivacy = document.querySelector<HTMLInputElement>("#checkPrivacy");
-    const privacyLink = document.querySelector("#linkPrivacy");
+    const privacyLink = document.querySelector<HTMLAnchorElement>("#linkPrivacy")!;
 
-    if (privacyLink) {
-      privacyLink.addEventListener("click", async event => {
-        event.preventDefault();
-        loadPage(privacyPage);
-      });
+    privacyLink.onclick = event => {
+      event.preventDefault();
+      loadPage(privacyPage);
     }
 
-    loginLink.onclick = (event) => {
+    loginLink.onclick = event => {
       event.preventDefault();
       loadPage(loginPage, requestedPage);
     };
@@ -82,14 +81,8 @@ export const registerPage: Page<Page<any>> = {
     registerForm.onsubmit = async (event) => {
       event.preventDefault();
 
-      if (!checkPrivacy?.checked)
-      {
-        alert("You must agree to the Privacy Policy.");
-        return;
-      }
-
       const formData = new FormData(registerForm);
-      const response = await fetch("https://" + document.location.host + "/api/register", {
+      const response = await fetch(location.origin + "/api/register", {
         method: "POST",
         body: formData
       });
@@ -100,12 +93,16 @@ export const registerPage: Page<Page<any>> = {
         await connectWs();
         loadPage(requestedPage ?? profilePage);
       } else if (response.status == 409)
-        alert("Username already exists");
+        alert("Username / display name / email already exists");
       else
         console.error(response.body);
     };
   },
 
   onUnmount() {
+  },
+
+  toJSON() {
+    return this.url;
   }
 };

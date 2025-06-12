@@ -7,16 +7,23 @@ export default class User {
   id: number;
   username: string;
   displayName: string;
+  avatar?: Buffer;
   game?: Game;
   /**
    * Can contain multiple players when they are local players.
    */
   players: Player[] = [];
 
-  constructor(id: number, username: string, displayName: string, socket: WebSocket) {
+  /**
+   * Temporary value used when the user setting up the 2FA.
+   */
+  secret2fa: string | undefined;
+
+  constructor(id: number, username: string, displayName: string, avatar: Buffer | undefined, socket: WebSocket) {
     this.id = id;
     this.username = username;
     this.displayName = displayName;
+    this.avatar = avatar;
     this.socket = socket;
   }
 

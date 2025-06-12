@@ -50,5 +50,5 @@ async function start() {
     } catch (e) {
     }
   }
-  loadPage(findPage(window.location.pathname));
+  loadPage(findPage(window.location.pathname), undefined, "NONE");
 }

@@ -124,7 +124,7 @@ export const settingsPage: Page = {
 
   async onMount() {
     if (ws == undefined) {
-      loadPage(loginPage, this);
+      loadPage(loginPage, this, "REPLACE");
       return;
     }
 
@@ -148,10 +148,10 @@ export const settingsPage: Page = {
     setupInfo(displayName, settings.displayName, "displayName", () =>
       loggedNavProfile.querySelector("p")!.innerText = displayName.querySelector("input")!.value);
     setupInfo(document.querySelector("#email")!, settings.email, "email");
-    setupInfo(document.querySelector("#password")!, "****************************************", "username");
+    setupInfo(document.querySelector("#password")!, "****************************************", "password");
 
     if (settings.avatar != undefined)
-      avatarIcon.src = URL.createObjectURL(new Blob([new Uint8Array(settings.avatar)]));
+      avatarIcon.src = URL.createObjectURL(new Blob([ new Uint8Array(settings.avatar) ]));
     avatar.onsubmit = async (event) => {
       event.preventDefault();
 
@@ -167,7 +167,7 @@ export const settingsPage: Page = {
 
       if (response.success) {
         loadPage(this);
-        loggedNavProfile.querySelector("img")!.src = URL.createObjectURL(avatarInput.files[0])
+        loggedNavProfile.querySelector("img")!.src = URL.createObjectURL(avatarInput.files[0]);
       } else
         alert("An error occurred when updating the avatar.");
     };
@@ -225,6 +225,10 @@ export const settingsPage: Page = {
   },
 
   onUnmount() {
+  },
+
+  toJSON() {
+    return this.url;
   }
 };
 
@@ -244,7 +248,7 @@ function setupInfo(form: HTMLFormElement, defaultValue: string, eventName: strin
       if (onSuccess != undefined)
         onSuccess();
     } else
-      alert("An error occurred when trying to update your information.\nIt's commonly due to an existing value.");
+      alert("This value is unavailable.");
   };
 }
 

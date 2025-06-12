@@ -26,7 +26,7 @@ export const chooseGamePage: Page = {
 
   async onMount() {
     if (ws == undefined) {
-      loadPage(loginPage, chooseGamePage);
+      loadPage(loginPage, this, "REPLACE");
       return;
     }
 
@@ -36,8 +36,7 @@ export const chooseGamePage: Page = {
     const createGameName = document.querySelector<HTMLInputElement>("#createGameName")!;
     const games = document.querySelector<HTMLUListElement>("#games")!;
 
-    createGame.onsubmit =
-    event => {
+    createGame.onsubmit = event => {
       event.preventDefault();
       loadPage(pongPage, {
         event: "join_game",
@@ -74,5 +73,9 @@ export const chooseGamePage: Page = {
     if (wsListener != undefined)
       ws?.removeEventListener("message", wsListener);
     wsListener = undefined;
+  },
+
+  toJSON() {
+    return this.url;
   }
 };

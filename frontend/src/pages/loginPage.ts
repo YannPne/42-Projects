@@ -1,9 +1,9 @@
 import { connectWs, ws } from "../websocket.ts";
-import { loadPage, type Page } from "./Page.ts";
+import { findPage, loadPage, type Page } from "./Page.ts";
 import { registerPage } from "./registerPage.ts";
 import { profilePage } from "./profilePage.ts";
 
-export const loginPage: Page<Page<any>> = {
+export const loginPage: Page<Page<any> | string> = {
   url: "/login",
   title: "Login",
 
@@ -20,6 +20,10 @@ export const loginPage: Page<Page<any>> = {
             <label>
               <p>Password: </p>
               <input name="password" type="password" required class="p-1 bg-gray-600 rounded-lg w-full" />
+              <p class="text-right text-gray-400">
+               Forget password? 
+               <button id="recover" type="button" class="cursor-pointer underline">Recover it</button>
+              </p>
             </label>
             <div class="flex justify-center">
               <button class="rounded-2xl bg-gray-900 hover:bg-gray-950 p-2 mt-5 cursor-pointer">Login</button>
@@ -35,17 +39,34 @@ export const loginPage: Page<Page<any>> = {
   },
 
   onMount(requestedPage) {
+    if (typeof requestedPage == "string")
+      requestedPage = findPage(requestedPage);
+
     if (ws != undefined) {
-      loadPage(requestedPage ?? profilePage);
+      loadPage(requestedPage ?? profilePage, undefined, "REPLACE");
       return;
     }
 
     const loginForm = document.querySelector<HTMLFormElement>("#login")!;
     const registerLink = document.querySelector<HTMLAnchorElement>("#register")!;
+    const recover = document.querySelector<HTMLButtonElement>("#recover")!;
 
-    registerLink.onclick = (event) => {
+    registerLink.onclick = event => {
       event.preventDefault();
       loadPage(registerPage, requestedPage);
+    };
+
+    recover.onclick = () => {
+      const response = prompt("Please insert your email");
+      if (response == null)
+        return;
+
+      fetch(location.host + "/api/recover/request", {
+        method: "POST",
+        body: response
+      }).then();
+
+      alert(`If the email '${response}' is linked to a user, an email will be sent to them with recover instructions`);
     };
 
     loginForm.onsubmit = async (event) => {
@@ -53,7 +74,7 @@ export const loginPage: Page<Page<any>> = {
 
       const formData = new FormData(loginForm);
 
-      const require2fa = await fetch("https://" + document.location.host + "/api/require_2fa", {
+      const require2fa = await fetch(location.origin + "/api/require_2fa", {
         method: "POST",
         body: formData.get("username") as string
       });
@@ -65,7 +86,7 @@ export const loginPage: Page<Page<any>> = {
         formData.append("2fa", code2fa);
       }
 
-      const loginResponse = await fetch("https://" + document.location.host + "/api/login", {
+      const loginResponse = await fetch(location.origin + "/api/login", {
         method: "POST",
         body: formData
       });
@@ -88,5 +109,9 @@ export const loginPage: Page<Page<any>> = {
   },
 
   onUnmount() {
+  },
+
+  toJSON() {
+    return this.url;
   }
 };

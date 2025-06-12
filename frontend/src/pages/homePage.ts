@@ -27,11 +27,15 @@ export const homePage: Page = {
 
   onMount() {
     if (ws != undefined) {
-      loadPage(chooseGamePage);
+      loadPage(chooseGamePage, undefined, "REPLACE");
       return;
     }
   },
 
   onUnmount() {
+  },
+
+  toJSON() {
+    return this.url;
   }
 };

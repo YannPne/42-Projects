@@ -59,7 +59,7 @@ export const profilePage: Page<number> = {
 
   async onMount(profileId) {
     if (ws == undefined) {
-      loadPage(loginPage, profilePage);
+      loadPage(loginPage, this, "REPLACE");
       return;
     }
 
@@ -78,7 +78,7 @@ export const profilePage: Page<number> = {
 
     addFriendForm.onsubmit = async (event) => {
       event.preventDefault();
-      const result = await sendAndWait({ event: "add_friend", name: addFriendName.value });
+      const result = await sendAndWait({ event: "add_friend", user: addFriendName.value });
       if (result.success)
         loadPage(profilePage);
       else
@@ -94,7 +94,7 @@ export const profilePage: Page<number> = {
       addFriendForm.style.display = "none";
     } else {
       if (profile.avatar)
-        avatar.src = URL.createObjectURL(new Blob([new Uint8Array(profile.avatar)]));
+        avatar.src = URL.createObjectURL(new Blob([ new Uint8Array(profile.avatar) ]));
 
       if (profile.online)
         status.classList.add("bg-green-500");
@@ -120,6 +120,10 @@ export const profilePage: Page<number> = {
   },
 
   onUnmount() {
+  },
+
+  toJSON() {
+    return this.url;
   }
 };
 
@@ -183,7 +187,7 @@ function createFriend(friend: Friend) {
     li.querySelector<HTMLDivElement>(".friend-status")!.classList.add("bg-green-500");
 
   li.querySelector("i")!.onclick = () => {
-    send({ event: "remove_friend", id: friend.id });
+    send({ event: "remove_friend", user: friend.id });
     li.remove();
   };
 

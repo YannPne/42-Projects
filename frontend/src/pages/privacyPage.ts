@@ -22,7 +22,7 @@ export const privacyPage: Page = {
         <a href="https://ec.europa.eu/info/law/law-topic/data-protection_en" target="_blank" class="text-blue-400 hover:underline">
         &#x1f449; Learn more about your rights
         </a>
-      </div>  
+      </div>
   `;
   },
 
@@ -30,5 +30,9 @@ export const privacyPage: Page = {
   },
 
   onUnmount() {
+  },
+
+  toJSON() {
+    return this.url;
   }
 };
