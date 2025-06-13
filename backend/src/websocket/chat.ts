@@ -1,7 +1,6 @@
 import User from "../User";
 import { ClientEvent, ServerEvent } from "@ft_transcendence/core";
 import { sqlite } from "../index";
-import { finished } from "node:stream";
 
 const inChatUsers: User[] = [];
 
@@ -70,7 +69,7 @@ function onMessage(user: User, event: ClientEvent & { event: "message" }) {
 }
 
 export function leaveChat(user: User) {
-  if (!inChatUsers.some(u => u == user))
+  if (!inChatUsers.includes(user))
     return;
 
   inChatUsers.filter(u => u != user).forEach(u => u.send({

@@ -61,7 +61,7 @@ export const loginPage: Page<Page<any> | string> = {
       if (response == null)
         return;
 
-      fetch(location.host + "/api/recover/request", {
+      fetch(location.origin + "/api/recover/request", {
         method: "POST",
         body: response
       }).then();

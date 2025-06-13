@@ -1,10 +1,12 @@
 import { Game } from "./Game";
+import User from "./User";
 
 export default class Player {
   readonly width: number = 20;
   readonly height: number = 200;
 
   readonly game: Game;
+  readonly user: User | undefined;
   readonly name: string;
   readonly isAi: boolean;
   x: number = 0;
@@ -13,11 +15,12 @@ export default class Player {
   goDown: boolean = false;
   score: number = 0;
 
-  aiLastCheck: number = Date.now() - 1000;
-  aiTargetY: number = 0;
+  private aiLastCheck: number = Date.now() - 1000;
+  private aiTargetY: number = 0;
 
-  constructor(game: Game, name: string, isAi: boolean) {
+  constructor(game: Game, user: User | undefined, name: string, isAi: boolean) {
     this.game = game;
+    this.user = user;
     this.name = name;
     this.isAi = isAi;
   }
@@ -48,6 +51,10 @@ export default class Player {
 
   get centerY() {
     return this.y + this.height / 2;
+  }
+
+  get isDefaultOfUser() {
+    return this.user != undefined && this.user.players[0] == this;
   }
 
   move() {

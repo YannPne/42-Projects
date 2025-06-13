@@ -19,7 +19,6 @@ export default function gameEvents(user: User, message: ClientEvent) {
     move(user, message);
   else if (message.event === "get_tournament") {
     const tournament = user.game?.players.map(u => u.name)!;
-    console.log(tournament);
     user.send({ event: "get_tournament", tournament });
   } else
     return false;
@@ -49,9 +48,13 @@ function joinGame(user: User, message: ClientEvent & { event: "join_game" }) {
 }
 
 function addLocalPlayer(user: User, message: ClientEvent & { event: "add_local_player" }) {
-  if (!user.game) return;
+  if (!user.game)
+    return;
 
-  user.game.addLocalPlayer(message.name, message.isAi ? undefined : user);
+  if (message.isAi)
+    user.game.addLocalPlayer("🤖 " + message.name);
+  else
+    user.game.addLocalPlayer(message.name, user);
 
   const names = user.game?.players.map(p => p.name);
   for (const u of user.game.users)
@@ -61,7 +64,7 @@ function addLocalPlayer(user: User, message: ClientEvent & { event: "add_local_p
 function play(user: User) {
   if (user.game != undefined) {
     if (user.game.players.length % 2 != 0)
-      user.game.addLocalPlayer("AI");
+      user.game.addLocalPlayer("🤖 AI");
     user.game.state = GameState.IN_GAME;
   }
 }

@@ -47,7 +47,7 @@ export class Game {
 
   addUser(user: User) {
     if (this.state == GameState.CREATING) {
-      const player = new Player(this, user.displayName, false);
+      const player = new Player(this, user, user.displayName, false);
       this.players.push(player);
       user.players.push(player);
     }
@@ -76,7 +76,7 @@ export class Game {
   addLocalPlayer(name: string, user?: User) {
     if (this.state != GameState.CREATING) return;
 
-    const player = new Player(this, name, user == undefined);
+    const player = new Player(this, user, name, user == undefined);
     this.players.push(player);
     user?.players.push(player);
   }
@@ -108,11 +108,14 @@ export class Game {
       });
       this.players.push(player);
 
-      let date = new Date();
-      const convertDate = date.toISOString().split("T")[0];
-      sqlite.prepare(`INSERT INTO games (name1, name2, score1, score2, date)
-        VALUES (?, ?, ?, ?, ?)`)
-        .run(player1.name, player2.name, player1.score, player2.score, convertDate);
+      sqlite.prepare(`INSERT INTO games (player1_id, player1_name, player1_score, player2_id, player2_name, player2_score, date)
+        VALUES (?, ?, ?, ?, ?, ?, CURRENT_DATE)`)
+        .run(player1.isDefaultOfUser ? player1.user?.id : null,
+          player1.isDefaultOfUser ? null : player1.name,
+          player1.score,
+          player2.isDefaultOfUser ? player2.user?.id : null,
+          player2.isDefaultOfUser ? null : player2.name,
+          player2.score);
     }
 
     for (const u of this.users)
@@ -130,6 +133,9 @@ export class Game {
     while (this.state == GameState.CREATING)
       await new Promise((resolve) => setTimeout(resolve, 50));
 
+    if (this.state == GameState.ABORTED)
+      return;
+
     let [ player1, player2 ] = this.players;
     this.resetPos();
 
@@ -146,7 +152,8 @@ export class Game {
 
       if (this.checkWin()) {
         // @ts-ignore
-        if (this.state == GameState.SHOW_WINNER) break;
+        if (this.state == GameState.SHOW_WINNER)
+          break;
         [ player1, player2 ] = this.players;
         // for (const u of this.users) 
         //   u.socket.send(JSON.stringify({ event: "get_tournament", tournament: this.players.map(u => u.name) }));

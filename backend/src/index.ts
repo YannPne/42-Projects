@@ -27,12 +27,17 @@ sqlite.exec(`CREATE TABLE IF NOT EXISTS users (
 )`);
 
 sqlite.exec(`CREATE TABLE IF NOT EXISTS games (
-    id     INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    name1  TEXT NOT NULL,
-    name2  TEXT NOT NULL,
-    score1 INT NOT NULL,
-    score2 INT NOT NULL,
-    date   DATE NOT NULL
+    id            INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    player1_id    INTEGER,
+    player1_name  TEXT,
+    player1_score INTEGER NOT NULL,
+    player2_id    INTEGER,
+    player2_name  TEXT,
+    player2_score INTEGER NOT NULL,
+    date          DATE NOT NULL,
+    
+    FOREIGN KEY (player1_id) REFERENCES users (id) ON DELETE SET NULL,
+    FOREIGN KEY (player2_id) REFERENCES users (id) ON DELETE SET NULL
 )`);
 
 sqlite.exec(`CREATE TABLE IF NOT EXISTS friends (
@@ -141,6 +146,18 @@ app.post("/api/register", async (request, reply) => {
   if (!username || !displayName || !email || !password)
     return reply.status(400).send("Incomplete request");
 
+  if (!/[\w-]{3,16}/.test(username))
+    return reply.status(400).send("The username length must be between 3 and 16. And can only contain alphanumeric characters, _ and -");
+
+  if (!/^[\w- ]{3,16}$/.test(displayName))
+    return reply.status(400).send("The display name length must be between 3 and 16. And can only contain alphanumeric characters, _, - and spaces.");
+
+  if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(password))
+    return reply.status(400).send("The password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one digit, and one special character.");
+
+  if (!/^[\w-.+]+@([\w-]+\.)+[\w-]{2,4}$/.test(email))
+    return reply.status(400).send("Invalid email");
+
   try {
     const result = sqlite.prepare(`INSERT INTO users (username, displayName, email, password, avatar)
         SELECT ?, ?, ?, ?, ?`)
@@ -156,7 +173,7 @@ app.post("/api/recover/request", (request, reply) => {
 
   sqlite.prepare("UPDATE users SET recover = ? WHERE email = ?")
     .run(crypto.randomUUID(), email);
-  // In prod, a mail must be sent
+  // In prod, a mail must be sent if changes > 0
   return reply.status(204).send();
 });
 
@@ -166,13 +183,16 @@ app.post("/api/recover/submit", (request, reply) => {
   if (key == undefined || password == undefined)
     return reply.status(400).send("Invalid request");
 
+  if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(password))
+    return reply.status(400).send("The password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one digit, and one special character.");
+
   const result = sqlite.prepare("UPDATE users SET password = ?, recover = NULL WHERE recover = ?")
     .run(bcrypt.hashSync(password, 10), key);
 
   if (result.changes > 0)
     return reply.status(204).send();
   else
-    return reply.status(401).send();
+    return reply.status(401).send("The recover key is not valid, please use the URL provided in the mail.");
 });
 
 app.listen({ host: "0.0.0.0", port: 3000 }).then(console.log);

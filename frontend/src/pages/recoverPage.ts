@@ -39,8 +39,10 @@ export const recoverPage: Page = {
       event.preventDefault();
 
       const key = new URLSearchParams(location.search).get("key");
-      if (key == null)
+      if (key == null) {
+        alert("The URL appears to be invalid, please use the exact one provided by email.");
         return;
+      }
 
       const response = await fetch(location.origin + "/api/recover/submit", {
         method: "POST",
@@ -51,8 +53,8 @@ export const recoverPage: Page = {
       if (response.status == 204) {
         alert("Password change successful");
         loadPage(loginPage);
-      } else if (response.status == 401)
-        alert("The recover key is not valid, please use the URL provided in the mail.");
+      } else if (response.status == 401 || response.status == 400)
+        alert(await response.text());
       else {
         console.error(response);
         alert("Unexpected response status");

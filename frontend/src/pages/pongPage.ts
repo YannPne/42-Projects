@@ -10,6 +10,8 @@ let wsListener: ((event: MessageEvent) => void) | undefined;
 let keydownListener: ((event: KeyboardEvent) => void) | undefined;
 let keyupListener: ((event: KeyboardEvent) => void) | undefined;
 
+let scene: Scene | undefined;
+
 export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
   url: "/pong",
   title: "Pong",
@@ -17,30 +19,22 @@ export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
   getPage() {
     return `
       <div class="flex flex-col items-center justify-center h-full w-full p-5">
-        <div class="pb-5 w-full flex justify-around" id="up-bar">
-          <button id="start" class="p-2 rounded-xl bg-blue-900 hover:bg-blue-950 cursor-pointer">Start game</button>
-          <form id="addLocalForm" class="bg-gray-900 items-center justify-center">
-            <input id="addLocalName" type="text" required placeholder="Local player's name" class="p-2 placeholder-gray-400">
-            <label for="addLocalCheck">Is AI?</label>
-            <input id="addLocalCheck" type="checkbox">
-            <button class="p-2 bg-blue-900 hover:bg-blue-950">Add local player</button>
-          </form>
-        </div>
-        <canvas id="game2d" width="1200" height="600" class="w-[90%] aspect-[2/1] bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
-        <div class="w-[90%] relative">
-          <canvas id="game3d" width="1200" height="600" class="w-full aspect-[2/1] not-focus-visible"></canvas>
-          <i class="fa-solid fa-arrows-rotate fa-spin text-4xl absolute right-0 bottom-0"></i>
+        <div class="flex items-center justify-center w-full h-full max-h-[70vh]">
+          <div class="aspect-[2/1] w-full max-w-[calc(70vh*2)]">
+            <canvas id="game2d" width="1200" height="600" class="w-full h-full bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
+          </div>
+          <div class="relative aspect-[2/1] w-full max-w-[calc(70vh*2)]">
+            <canvas id="game3d" width="1200" height="600" class="w-full h-full not-focus-visible"></canvas>
+            <i title="The view can be moved with your mouse" class="fa-solid fa-arrows-rotate rotate-55 text-4xl absolute right-0 bottom-0"></i>
+          </div>
         </div>
         <div class="flex items-center space-x-4 mt-4">
           <span id="toggleText" class="text-lg font-medium text-white select-none cursor-pointer">Mode 3D</span>
           <button id="is3d" type="button"
             class="relative w-16 h-9 bg-gray-700 rounded-full transition-colors duration-300 ease-in-out focus:outline-none">
-            <span
-            id="toggleCircle"
-            class="absolute left-1 top-1 w-7 h-7 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out"></span>
+            <span id="toggleCircle" class="absolute left-1 top-1 w-7 h-7 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out"></span>
           </button>
         </div>
-        <div id="tournamentLine" class="text-white mt-4 text-lg font-semibold text-center whitespace-nowrap"></div>
       </div>
     `;
   },
@@ -51,13 +45,9 @@ export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
       return;
     }
 
+    console.log(ws);
+
     send(data);
-    send({ event: "get_tournament" });
-    // Header
-    const start = document.querySelector<HTMLButtonElement>("#start")!;
-    const addLocalName = document.querySelector<HTMLInputElement>("#addLocalName")!;
-    const addLocalCheck = document.querySelector<HTMLInputElement>("#addLocalCheck")!;
-    const addLocalForm = document.querySelector<HTMLButtonElement>("#addLocalForm")!;
     // Game
     const canvas2d = document.querySelector<HTMLCanvasElement>("#game2d")!;
     const context2d = canvas2d.getContext("2d")!;
@@ -67,7 +57,6 @@ export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
 
     const toggleText = document.querySelector<HTMLSpanElement>("#toggleText")!;
     const toggleCircle = document.querySelector<HTMLSpanElement>("#toggleCircle")!;
-    const myDiv = document.querySelector<HTMLDivElement>("#up-bar")!;
 
     let is3dActive = true;
 
@@ -80,27 +69,13 @@ export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
 
     updateToggleUI();
 
-    canvas2d.style.display = "none";
+    canvas2d.parentElement!.style.display = "none";
     is3d.addEventListener("click", () => {
       is3dActive = !is3dActive;
-      (is3dActive ? canvas2d : canvas3d.parentElement!).style.display = "none";
-      (is3dActive ? canvas3d.parentElement! : canvas2d).style.display = "";
+      (is3dActive ? canvas2d : canvas3d).parentElement!.style.display = "none";
+      (is3dActive ? canvas3d : canvas2d).parentElement!.style.display = "";
       updateToggleUI();
     });
-
-    start.onclick = async () => {
-      myDiv.style.display = "none";
-      send({ event: "play" });
-    };
-
-    addLocalForm.onsubmit = event => {
-      event.preventDefault();
-      if (addLocalName.value.trim() != "") {
-        send({ event: "add_local_player", name: addLocalName.value, isAi: addLocalCheck.checked });
-        addLocalName.value = "";
-        addLocalCheck.checked = false;
-      }
-    };
 
     document.addEventListener("keydown", keydownListener = event => {
       if (!event.repeat)
@@ -131,10 +106,6 @@ export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
           drawEndGame3D(context3d, message.player);
           await drawEndGame(canvas2d, context2d, message.player);
           break;
-        case "get_tournament":
-          if (message.tournament)
-            updateTournamentLine(message.tournament);
-          break;
       }
     });
   },
@@ -150,6 +121,11 @@ export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
     keydownListener = undefined;
     keyupListener = undefined;
     wsListener = undefined;
+
+    scene?.getEngine().stopRenderLoop();
+    scene?.dispose();
+    scene?.getEngine().dispose();
+    scene = undefined;
   },
 
   toJSON() {
@@ -265,10 +241,9 @@ type GameElements = {
 };
 
 function setup3d(canvas: HTMLCanvasElement): GameElements {
-
   // ## ENGINE && SCENE ##
   const engine = new Engine(canvas, true);
-  const scene = createScene(engine, new Color4(0, 0, 0, 0));
+  scene = createScene(engine, new Color4(0, 0, 0, 0));
 
   // ## CAMERA && LIGHT ##
   createCamera("Camera", Math.PI / 2, Math.PI / 4, -2000, new Vector3(600, 0, 275), canvas, scene);
@@ -347,7 +322,7 @@ function setup3d(canvas: HTMLCanvasElement): GameElements {
   guiNameP2.addControl(textNameP2);
   guiEndGame.addControl(textEndGame);
 
-  engine.runRenderLoop(() => scene.render());
+  engine.runRenderLoop(() => scene?.render());
 
   return { ball, player1, player2, textNameP1, textNameP2, textScoreP1, textScoreP2, textEndGame };
 }
@@ -473,21 +448,4 @@ async function drawEndGame(canvas: HTMLCanvasElement, context: CanvasRenderingCo
 
   await sleep(2000);
   loadPage(chooseGamePage);
-}
-
-// ## Tournament footer Banner ##
-function updateTournamentLine(tournament: string[]) {
-  const line = document.querySelector<HTMLDivElement>("#tournamentLine")!;
-
-  const [ p1, p2, ...remain ] = tournament;
-  let text = "";
-
-  if (p1 && p2) {
-    text += `${p1} ⚔ ${p2}`;
-    if (remain.length > 0)
-      text += " | " + remain.join(" | ");
-  } else
-    text = tournament.join(" | ");
-
-  line.textContent = text;
 }

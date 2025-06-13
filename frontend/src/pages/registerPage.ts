@@ -95,7 +95,7 @@ export const registerPage: Page<Page<any> | string> = {
       } else if (response.status == 409)
         alert("Username / display name / email already exists");
       else
-        console.error(response.body);
+        alert(await response.text());
     };
   },
 
