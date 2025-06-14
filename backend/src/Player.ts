@@ -89,7 +89,7 @@ export default class Player {
     if (!this.goUp && !this.goDown && ball.goToLeft != this.isAtLeft) 
     {
       this.speed = 1;
-      this.aiTargetY =  Math.floor(Date.now() / 1000) % 2 === 0 ? 0 : this.game.height
+      this.aiTargetY =  Math.floor(Date.now() / 500) % 2 === 0 ? 0 : this.game.height
     }
   }
 
