@@ -22,7 +22,6 @@ export default class Player {
     this.name = name;
     this.isAi = isAi;
     this.aiTargetY = ((Math.random() - 0.5) * 200) + game.height / 2;
-    console.log(this.aiTargetY);
   }
 
   get isAtLeft() {
