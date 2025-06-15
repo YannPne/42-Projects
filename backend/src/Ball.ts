@@ -2,7 +2,7 @@ import { Game } from "./Game";
 import Player from "./Player";
 
 export default class Ball {
-  readonly angle: number = 50;
+  readonly angle: number = 25;
   readonly size: number = 50;
 
   readonly game: Game;
