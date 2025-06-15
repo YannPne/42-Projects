@@ -79,7 +79,7 @@ export default class Player {
       }
       else
       {
-        this.speed = 5;
+        this.speed = 2;
         this.aiTargetY = ball.centerY;
       }
     }
@@ -87,7 +87,7 @@ export default class Player {
     this.goDown = this.centerY < this.aiTargetY - (this.height / 4);
     if (!this.goUp && !this.goDown && ball.goToLeft != this.isAtLeft) 
     {
-      this.speed = 5;
+      this.speed = 1;
       this.aiTargetY =  Math.floor(Date.now() / 500) % 2 === 0 ? 0 : this.game.height
     }
   }
