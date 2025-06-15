@@ -21,7 +21,7 @@ export default class Player {
     this.game = game;
     this.name = name;
     this.isAi = isAi;
-    this.aiTargetY = ((Math.random() - 0.5) * 200) + game.height / 2;
+    this.aiTargetY = ((Math.random() - 0.5) * this.height) + game.height / 2;
   }
 
   get isAtLeft() {
@@ -73,13 +73,13 @@ export default class Player {
           * ball.speedY) / ball.speedX + ball.centerY;
         if (this.aiTargetY < 0)
           this.aiTargetY = (-this.aiTargetY) * 1.25;
-        else if (this.aiTargetY > 600)
-          this.aiTargetY = 600 - ((this.aiTargetY - 600) * 1.25);
+        else if (this.aiTargetY > this.game.height)
+          this.aiTargetY = this.game.height - ((this.aiTargetY - this.game.height) * 1.25);
         this.aiTargetY += (Math.random() - 0.5) * 50;
       }
       else
       {
-        this.speed = 2;
+        this.speed = 5;
         this.aiTargetY = ball.centerY;
       }
     }
@@ -87,7 +87,7 @@ export default class Player {
     this.goDown = this.centerY < this.aiTargetY - (this.height / 4);
     if (!this.goUp && !this.goDown && ball.goToLeft != this.isAtLeft) 
     {
-      this.speed = 1;
+      this.speed = 5;
       this.aiTargetY =  Math.floor(Date.now() / 500) % 2 === 0 ? 0 : this.game.height
     }
   }
