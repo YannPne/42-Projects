@@ -1,4 +1,5 @@
 import { homePage } from "./homePage.ts";
+import { modGamePage } from "./modGamePage.ts";
 import { chooseGamePage } from "./chooseGamePage.ts";
 import { pongPage } from "./pongPage.ts";
 import { loginPage } from "./loginPage.ts";
@@ -21,6 +22,7 @@ export type Page<T = undefined> = {
 
 export const pages: Page<any>[] = [
   homePage,
+  modGamePage,
   chooseGamePage,
   pongPage,
   chatPage,

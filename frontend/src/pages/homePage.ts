@@ -1,6 +1,6 @@
 import { loadPage, type Page } from "./Page.ts";
 import { ws } from "../websocket.ts";
-import { chooseGamePage } from "./chooseGamePage.ts";
+import { modGamePage } from "./modGamePage.ts";
 
 export const homePage: Page = {
   url: "/",
@@ -27,7 +27,7 @@ export const homePage: Page = {
 
   onMount() {
     if (ws != undefined) {
-      loadPage(chooseGamePage, undefined, "REPLACE");
+      loadPage(modGamePage, undefined, "REPLACE");
       return;
     }
   },

@@ -11,6 +11,8 @@ let wsListener: ((event: MessageEvent) => void) | undefined;
 let currentChannel: number | undefined = undefined;
 let currentChannelButton: HTMLButtonElement | undefined;
 
+export let chatIsHide: boolean = false;
+
 let messages = {
   general: [] as Message[],
   generalAllRead: true,
@@ -182,6 +184,10 @@ export const chatPage: Page = {
     return this.url;
   }
 };
+
+export function setChatHide(value: boolean): void {
+  chatIsHide = value;
+}
 
 function updateUsers() {
   const users = document.querySelector<HTMLDivElement>("#users")!;
