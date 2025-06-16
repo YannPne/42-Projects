@@ -3,6 +3,7 @@ import { loadPage, type Page } from "./Page.ts";
 import { pongPage } from "./pongPage.ts";
 import { loginPage } from "./loginPage.ts";
 import { chatIsHide, chatPage, setChatHide } from "./chatPage.ts";
+import { chooseGamePage } from "./chooseGamePage.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 
@@ -16,8 +17,8 @@ export const modGamePage: Page = {
    
         	<hr class="h-px bg-gray-200 border-0">
         	<div class="flex-1 flex">
-          		<div class="flex-1 flex flex-col p-5 overflow-hidden">
-            		<div class="flex items-center justify-center h-full">
+				<div class="flex-1 flex flex-col p-5 overflow-hidden">
+					<div class="flex items-center justify-center h-full">
 						<div class="flex flex-col space-y-4 items-center w-64">
 						  <button id="btnTraining" class="w-full px-12 py-4 bg-gray-700 text-white rounded hover:bg-gray-600 transition">
 							Training
@@ -33,9 +34,9 @@ export const modGamePage: Page = {
 						</div>
 					</div>
           		</div>
-          		<div id="divider" class="h-full border border-gray-600 cursor-pointer"></div>
-          		<div id="liveChat" class="flex-1 flex flex-col px-5 pt-5">
-            		${chatPage.getPage()}
+				<div id="divider" class="h-full w-[6px] bg-gray-600 cursor-pointer"></div>
+				<div id="liveChat" class="w-[30%] flex flex-col px-5 pt-5">
+				  ${chatPage.getPage()}
           		</div>
         	</div>
       	</div>
@@ -74,6 +75,7 @@ export const modGamePage: Page = {
 
     document.getElementById('btnTournament')!.addEventListener('click', () => {
       console.log('Bouton Tournament cliqué');
+	  loadPage(chooseGamePage);
     });
 
 

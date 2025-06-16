@@ -5,6 +5,8 @@ import { ArcRotateCamera, Color3, Color4, Engine, HemisphericLight, GlowLayer, M
 import { TextBlock, AdvancedDynamicTexture } from "@babylonjs/gui";
 import type { Ball, ClientEvent, Player, ServerEvent } from "@ft_transcendence/core";
 import { send } from "../Event.ts";
+import { chatIsHide, chatPage, setChatHide } from "./chatPage.ts";
+import { modGamePage } from "./modGamePage.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 let keydownListener: ((event: KeyboardEvent) => void) | undefined;
@@ -16,40 +18,66 @@ export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
 
   getPage() {
     return `
-      <div class="flex flex-col items-center justify-center h-full w-full p-5">
-        <div class="pb-5 w-full flex justify-around" id="up-bar">
-          <button id="start" class="p-2 rounded-xl bg-blue-900 hover:bg-blue-950 cursor-pointer">Start game</button>
-          <form id="addLocalForm" class="bg-gray-900 items-center justify-center">
-            <input id="addLocalName" type="text" required placeholder="Local player's name" class="p-2 placeholder-gray-400">
-            <label for="addLocalCheck">Is AI?</label>
-            <input id="addLocalCheck" type="checkbox">
-            <button class="p-2 bg-blue-900 hover:bg-blue-950">Add local player</button>
-          </form>
-        </div>
-        <canvas id="game2d" width="1200" height="600" class="w-[90%] aspect-[2/1] bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
-        <div class="w-[90%] relative">
-          <canvas id="game3d" width="1200" height="600" class="w-full aspect-[2/1] not-focus-visible"></canvas>
-          <i class="fa-solid fa-arrows-rotate fa-spin text-4xl absolute right-0 bottom-0"></i>
-        </div>
-        <div class="flex items-center space-x-4 mt-4">
-          <span id="toggleText" class="text-lg font-medium text-white select-none cursor-pointer">Mode 3D</span>
-          <button id="is3d" type="button"
-            class="relative w-16 h-9 bg-gray-700 rounded-full transition-colors duration-300 ease-in-out focus:outline-none">
-            <span
-            id="toggleCircle"
-            class="absolute left-1 top-1 w-7 h-7 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out"></span>
-          </button>
-        </div>
-        <div id="tournamentLine" class="text-white mt-4 text-lg font-semibold text-center whitespace-nowrap"></div>
-      </div>
+      
+    <div class="h-full flex flex-col overflow-hidden">
+   
+		  <hr class="h-px bg-gray-200 border-0">
+		  <div class="flex-1 flex">
+			  <div class="flex-1 flex flex-col p-5 overflow-hidden">
+
+          <div class="flex flex-col items-center justify-center h-full w-full p-5">
+            <div class="pb-5 w-full flex justify-around" id="up-bar">
+              <button id="start" class="p-2 rounded-xl bg-blue-900 hover:bg-blue-950 cursor-pointer">Start game</button>
+              <form id="addLocalForm" class="bg-gray-900 items-center justify-center">
+                <input id="addLocalName" type="text" required placeholder="Local player's name" class="p-2 placeholder-gray-400">
+                <label for="addLocalCheck">Is AI?</label>
+                <input id="addLocalCheck" type="checkbox">
+                <button class="p-2 bg-blue-900 hover:bg-blue-950">Add local player</button>
+              </form>
+            </div>
+            <canvas id="game2d" width="1200" height="600" class="w-[90%] aspect-[2/1] bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
+            <div class="w-[90%] relative">
+              <canvas id="game3d" width="1200" height="600" class="w-full aspect-[2/1] not-focus-visible"></canvas>
+              <i class="fa-solid fa-arrows-rotate fa-spin text-4xl absolute right-0 bottom-0"></i>
+            </div>
+            <div class="flex items-center space-x-4 mt-4">
+              <span id="toggleText" class="text-lg font-medium text-white select-none cursor-pointer">Mode 3D</span>
+              <button id="is3d" type="button"
+                class="relative w-16 h-9 bg-gray-700 rounded-full transition-colors duration-300 ease-in-out focus:outline-none">
+                <span
+                id="toggleCircle"
+                class="absolute left-1 top-1 w-7 h-7 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out"></span>
+              </button>
+            </div>
+            <div id="tournamentLine" class="text-white mt-4 text-lg font-semibold text-center whitespace-nowrap"></div>
+          </div>
+
+			  </div>
+        <div id="divider" class="h-full w-[6px] bg-gray-600 cursor-pointer"></div>
+			  <div id="liveChat" class="w-[30%] flex flex-col px-5 pt-5">
+			    ${chatPage.getPage()}
+			  </div>
+		  </div>
+		</div>
     `;
   },
 
   onMount(data) {
     if (data == undefined) {
-      loadPage(chooseGamePage, undefined, "REPLACE");
+      loadPage(modGamePage, undefined, "REPLACE");
       return;
     }
+
+    const divider = document.getElementById("divider")!;
+    const liveChat = document.getElementById("liveChat")!;
+
+	  //chatPage.onMount();
+
+	  if (chatIsHide)
+		  liveChat.classList.add("hidden");
+	  divider.addEventListener("click", () => {
+		  setChatHide(liveChat.classList.toggle("hidden"));
+	  });
 
     send(data);
     send({ event: "get_tournament" });
