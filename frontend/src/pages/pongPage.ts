@@ -3,16 +3,16 @@ import { ws } from "../websocket.ts";
 import { chooseGamePage } from "./chooseGamePage.ts";
 import { ArcRotateCamera, Color3, Color4, Engine, HemisphericLight, GlowLayer, MeshBuilder, Scene, StandardMaterial, Texture, Vector3, Mesh } from "@babylonjs/core";
 import { TextBlock, AdvancedDynamicTexture } from "@babylonjs/gui";
-import type { Ball, ClientEvent, Player, ServerEvent } from "@ft_transcendence/core";
-import { send } from "../Event.ts";
-import { chatIsHide, chatPage, setChatHide } from "./chatPage.ts";
+import type { Ball, Player, ServerEvent } from "@ft_transcendence/core";
+import { send, sendAndWait } from "../Event.ts";
+import { changeChatTournamentState, chatData, chatPage } from "./chatPage.ts";
 import { modGamePage } from "./modGamePage.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 let keydownListener: ((event: KeyboardEvent) => void) | undefined;
 let keyupListener: ((event: KeyboardEvent) => void) | undefined;
 
-export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
+export const pongPage: Page = {
   url: "/pong",
   title: "Pong",
 
@@ -62,24 +62,29 @@ export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
     `;
   },
 
-  onMount(data) {
-    if (data == undefined) {
-      loadPage(modGamePage, undefined, "REPLACE");
-      return;
+  async onMount() {
+    if (ws == undefined) {
+        loadPage(modGamePage, undefined, "REPLACE");
+        return;
+    }
+    const {id, type} = (await sendAndWait({ event: "get_current_game"}));
+    if (id == undefined) {
+        loadPage(modGamePage, undefined, "REPLACE");
+        return;
     }
 
-    const divider = document.getElementById("divider")!;
-    const liveChat = document.getElementById("liveChat")!;
+    if (type != "LOCAL")
+      changeChatTournamentState(true);
 
-	  //chatPage.onMount();
+    const divider = document.querySelector("#divider")!;
+    const liveChat = document.querySelector("#liveChat")!;
 
-	  if (chatIsHide)
-		  liveChat.classList.add("hidden");
-	  divider.addEventListener("click", () => {
-		  setChatHide(liveChat.classList.toggle("hidden"));
-	  });
+	  chatPage.onMount();
 
-    send(data);
+	  if (chatData.hidden)
+      liveChat.classList.add("hidden");
+    divider.addEventListener("click", () => chatData.hidden = liveChat.classList.toggle("hidden"));
+
     send({ event: "get_tournament" });
     // Header
     const start = document.querySelector<HTMLButtonElement>("#start")!;
@@ -119,6 +124,7 @@ export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
     start.onclick = async () => {
       myDiv.style.display = "none";
       send({ event: "play" });
+      changeChatTournamentState(false);
     };
 
     addLocalForm.onsubmit = event => {
@@ -178,6 +184,7 @@ export const pongPage: Page<ClientEvent & { event: "join_game" }> = {
     keydownListener = undefined;
     keyupListener = undefined;
     wsListener = undefined;
+    chatPage.onUnmount();
   },
 
   toJSON() {

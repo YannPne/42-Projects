@@ -1,10 +1,10 @@
 import { loadPage, type Page } from "./Page.ts";
 import { pongPage } from "./pongPage.ts";
 import { loginPage } from "./loginPage.ts";
-import { send } from "../Event.ts";
+import { send, sendAndWait } from "../Event.ts";
 import type { ServerEvent } from "@ft_transcendence/core";
 import { awaitWs, ws } from "../websocket.ts";
-import { chatIsHide, chatPage, setChatHide } from "./chatPage.ts";
+import { chatData, chatPage } from "./chatPage.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 
@@ -51,11 +51,9 @@ export const chooseGamePage: Page = {
 
 	  chatPage.onMount();
 
-	  if (chatIsHide)
+	  if (chatData.hidden)
 		  liveChat.classList.add("hidden");
-	    divider.addEventListener("click", () => {
-		  setChatHide(liveChat.classList.toggle("hidden"));
-	  });
+	  divider.addEventListener("click", () => chatData.hidden = liveChat.classList.toggle("hidden"));
 
     await awaitWs();
 
@@ -65,11 +63,12 @@ export const chooseGamePage: Page = {
 
     createGame.onsubmit = event => {
       event.preventDefault();
-      loadPage(pongPage, {
-        event: "join_game",
-        uid: crypto.randomUUID(),
+      send({
+        event: "create_game",
+        type: "PUBLIC_TOURNAMENT",
         name: createGameName.value
       });
+      loadPage(pongPage);
     };
 
     ws.addEventListener("message", wsListener = event => {
@@ -82,11 +81,15 @@ export const chooseGamePage: Page = {
             const li = document.createElement("li");
             li.textContent = game.name;
             li.className = "pl-9 pr-9 p-2.5 hover:bg-gray-500 cursor-pointer";
-            li.onclick = () => {
-              loadPage(pongPage, {
+            li.onclick = async () => {
+              const response = await sendAndWait({
                 event: "join_game",
                 uid: game.uid
               });
+              if (response.success)
+                loadPage(pongPage);
+              else
+                alert("This game no longer exists");
             };
             games.appendChild(li);
           }
@@ -100,6 +103,7 @@ export const chooseGamePage: Page = {
     if (wsListener != undefined)
       ws?.removeEventListener("message", wsListener);
     wsListener = undefined;
+    chatPage.onUnmount();
   },
 
   toJSON() {

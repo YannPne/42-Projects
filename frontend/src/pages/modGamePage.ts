@@ -2,8 +2,9 @@ import { ws } from "../websocket.ts";
 import { loadPage, type Page } from "./Page.ts";
 import { pongPage } from "./pongPage.ts";
 import { loginPage } from "./loginPage.ts";
-import { chatIsHide, chatPage, setChatHide } from "./chatPage.ts";
+import { chatData, chatPage } from "./chatPage.ts";
 import { chooseGamePage } from "./chooseGamePage.ts";
+import { send } from "../Event.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 
@@ -22,10 +23,6 @@ export const modGamePage: Page = {
 						<div class="flex flex-col space-y-4 items-center w-64">
 						  <button id="btnTraining" class="w-full px-12 py-4 bg-gray-700 text-white rounded hover:bg-gray-600 transition">
 							Training
-						  </button>
-
-						  <button id="btnLocal" class="w-full px-12 py-4 bg-gray-700 text-white rounded hover:bg-gray-600 transition">
-							Local
 						  </button>
 
 						  <button id="btnTournament" class="w-full px-12 py-4 bg-gray-700 text-white rounded hover:bg-gray-600 transition">
@@ -49,31 +46,25 @@ export const modGamePage: Page = {
 	  return;
 	}
 
-	const divider = document.getElementById("divider")!;
-    const liveChat = document.getElementById("liveChat")!;
+	const divider = document.querySelector("#divider")!;
+    const liveChat = document.querySelector("#liveChat")!;
 
 	chatPage.onMount();
 
-	if (chatIsHide)
+	if (chatData.hidden)
 		liveChat.classList.add("hidden");
-	  divider.addEventListener("click", () => {
-		setChatHide(liveChat.classList.toggle("hidden"));
-	  });
+	divider.addEventListener("click", () => chatData.hidden = liveChat.classList.toggle("hidden"));
 
-    document.getElementById('btnTraining')!.addEventListener('click', event => {
-      event.preventDefault();
-      loadPage(pongPage, {
-        event: "join_game",
-        uid: crypto.randomUUID(),
-        name: "Training",
-      });
+    document.querySelector('#btnTraining')!.addEventListener('click', event => {
+    	event.preventDefault();
+		send({
+        	event: "create_game",
+        	type: "LOCAL"
+      	});
+      	loadPage(pongPage);
     });
 
-    document.getElementById('btnLocal')!.addEventListener('click', () => {
-      console.log('Bouton Local cliqué');
-    });
-
-    document.getElementById('btnTournament')!.addEventListener('click', () => {
+    document.querySelector('#btnTournament')!.addEventListener('click', () => {
       console.log('Bouton Tournament cliqué');
 	  loadPage(chooseGamePage);
     });
@@ -83,8 +74,9 @@ export const modGamePage: Page = {
 
   onUnmount() {
 	if (wsListener != undefined)
-	  ws!.removeEventListener("message", wsListener);
+	  ws?.removeEventListener("message", wsListener);
 	wsListener = undefined;
+	chatPage.onUnmount();
   },
 
   toJSON() {

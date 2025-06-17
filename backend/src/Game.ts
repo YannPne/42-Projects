@@ -4,6 +4,7 @@ import Player from "./Player";
 import User from "./User";
 import { onlineUsers } from "./websocket/websocket";
 import { sqlite } from "./index";
+import { GameType } from "@ft_transcendence/core";
 
 export let games: Game[] = [];
 
@@ -23,8 +24,9 @@ export class Game {
   readonly width: number = 1200;
   readonly height: number = 600;
 
-  readonly name: string;
+  readonly name?: string;
   readonly uid: string;
+  readonly type: GameType;
   state: GameState = GameState.CREATING;
   ball: Ball = new Ball(this);
   players: Player[] = [];
@@ -36,9 +38,10 @@ export class Game {
     score2: number;
   }[] = [];
 
-  constructor(name: string, uid: string) {
+  constructor(type: GameType, name?: string) {
     this.name = name;
-    this.uid = uid;
+    this.uid = crypto.randomUUID();
+    this.type = type;
 
     this.loop()
       .then(() => console.log("Game finished"))
@@ -187,7 +190,7 @@ export class Game {
   toJSON() {
     return {
       uid: this.uid,
-      name: this.name
+      name: this.name!
     };
   }
 

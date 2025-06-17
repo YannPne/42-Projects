@@ -7,8 +7,12 @@ import { chatAnnounceGame } from "./chat";
 export default function gameEvents(user: User, message: ClientEvent) {
   if (message.event === "get_games")
     getGames(user);
+  else if (message.event === "create_game")
+    createGame(user, message);
   else if (message.event === "join_game")
     joinGame(user, message);
+  else if (message.event === "get_current_game")
+    getCurrentGame(user);
   else if (message.event === "add_local_player")
     addLocalPlayer(user, message);
   else if (message.event === "play")
@@ -28,24 +32,33 @@ export default function gameEvents(user: User, message: ClientEvent) {
 }
 
 function getGames(user: User) {
-  user.send({ event: "get_games", games });
+  user.send({ event: "get_games", games: games.filter(g => g.type == "PUBLIC_TOURNAMENT").map(g => g.toJSON()) });
 }
 
-// TODO: if you join a game already ended, it recreate with name 'undefined', due to changes will come to this part, I let the bug now.
+function createGame(user: User, message: ClientEvent & { event: "create_game" }) {
+  const game = new Game(message.type, message.type == "LOCAL" ? undefined : message.name);
+  games.push(game);
+  if (message.type == "PUBLIC_TOURNAMENT"){
+    for (let user of onlineUsers)
+      user.send({ event: "get_games", games: games.filter(g => g.type == "PUBLIC_TOURNAMENT").map(g => g.toJSON()) });
+    chatAnnounceGame(game.uid, message.name);
+  }
+  game.addUser(user);
+}
+
 function joinGame(user: User, message: ClientEvent & { event: "join_game" }) {
   let game = games.find((g) => g.uid == message.uid);
-  if (game == undefined) {
-    games.push(game = new Game(message.name!, message.uid));
-    for (let user of onlineUsers)
-      user.send({ event: "get_games", games });
-    chatAnnounceGame(game.uid, game.name);
-  }
-
-  const names = game.players.map(p => p.name);
-  for (const u of game.users)
-    u.send({ event: "get_tournament", tournament: names });
-  if (!(game.players.some(u => u.name == user.displayName)))
+  if (game == undefined)
+    user.send({ event: "join_game", success: false});
+  else
+  {
     game.addUser(user);
+    user.send({ event: "join_game", success: true});
+  }
+}
+
+function getCurrentGame(user: User){
+  user.send({ event: "get_current_game", id: user.game?.uid, type: user.game?.type });
 }
 
 function addLocalPlayer(user: User, message: ClientEvent & { event: "add_local_player" }) {

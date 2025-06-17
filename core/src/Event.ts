@@ -34,6 +34,8 @@ export type Game = {
   date: number
 };
 
+export type GameType = "LOCAL" | "PRIVATE_TOURNAMENT" | "PUBLIC_TOURNAMENT";
+
 export type Friend = {
   id: number,
   displayName: string,
@@ -43,12 +45,15 @@ export type Friend = {
 
 export type Message =
   | { type: "message", sender: number, content: string }
-  | { type: "invite" | "announce", id: string, name: string };
+  | { type: "invite" | "announce", id?: string, name?: string };
 
 export type ClientEvent =
 // GAME
   | { event: "get_games" }
-  | { event: "join_game", uid: string, name?: string }
+  | { event: "create_game", type: GameType, name: string }
+  | { event: "create_game", type: GameType & "LOCAL" }
+  | { event: "join_game", uid: string }
+  | { event: "get_current_game" }
   | { event: "add_local_player", name: string, isAi: boolean }
   | { event: "play" }
   | { event: "leave_game" }
@@ -77,6 +82,8 @@ export type ServerEvent =
   | { event: "connected", displayName: string, avatar?: number[] }
   // GAME
   | { event: "get_games", games: { uid: string, name: string }[] }
+  | { event: "join_game", success: boolean }
+  | { event: "get_current_game", id?: string, type?: GameType }
   | { event: "update", players: Player[], ball: Ball }
   | { event: "win", player: string }
   | { event: "get_tournament", tournament: string[] }
