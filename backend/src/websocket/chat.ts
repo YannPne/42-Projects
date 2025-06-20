@@ -66,7 +66,8 @@ function onMessage(user: User, event: ClientEvent & { event: "message" }) {
 
   if (event.to != undefined) {
     send = send.filter(u => u.id == event.to);
-    user.send(sendMessage);
+    if (sendMessage.message.type !== "invite")
+      user.send(sendMessage);
   }
 
   if (event.to != undefined)
