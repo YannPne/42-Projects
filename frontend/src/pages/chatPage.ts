@@ -317,7 +317,7 @@ function createMessage(message: Message & { type: "message" }) {
       const messageUser = li.querySelector<HTMLDivElement>(".message-user")!;
       messageUser.classList.add("hover:*:underline");
       messageUser.onclick = () => {
-        for (let child of document.querySelector<HTMLDivElement>("chat-users")!.children) {
+        for (let child of document.querySelector<HTMLDivElement>("#chat-users")!.children) {
           if (parseInt((child as HTMLButtonElement).dataset.id!) == sender.id) {
             (child as HTMLButtonElement).click();
             break;

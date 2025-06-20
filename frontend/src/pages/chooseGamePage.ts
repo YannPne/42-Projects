@@ -27,6 +27,10 @@ export const chooseGamePage: Page = {
               <form class="mt-5 bg-gray-900" id="createGame">
                 <input id="createGameName" type="text" required placeholder="New game's name" class="p-2 placeholder-gray-400">
                 <button class="p-2 bg-blue-900 hover:bg-blue-950">Create a new game</button>
+                <label class="inline-flex items-center ml-2 text-gray-300 pr-4">
+                  <input type="checkbox" id="createGamePrivate" class="form-checkbox" />
+                  <span class="ml-2">Private</span>
+                </label>
               </form>
             </div>
 
@@ -61,11 +65,13 @@ export const chooseGamePage: Page = {
     const createGameName = document.querySelector<HTMLInputElement>("#createGameName")!;
     const games = document.querySelector<HTMLUListElement>("#games")!;
 
+    const privateCheckbox = createGame.querySelector<HTMLInputElement>("#createGamePrivate")!;
+
     createGame.onsubmit = event => {
       event.preventDefault();
       send({
         event: "create_game",
-        type: "PUBLIC_TOURNAMENT",
+        type: privateCheckbox.checked ? "PRIVATE_TOURNAMENT" : "PUBLIC_TOURNAMENT",
         name: createGameName.value
       });
       loadPage(pongPage);
