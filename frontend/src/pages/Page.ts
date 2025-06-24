@@ -42,8 +42,6 @@ export function loadPage<T>(page: Page<T>, data?: T, historyState: "PUSH" | "REP
   document.querySelector<HTMLDivElement>("#app")!.innerHTML = page.getPage();
   currentPage = page;
 
-  console.log("salut");
-
   let json: any = null;
   if (data != undefined) {
     if ((data as any).toJSON != undefined)

@@ -1,6 +1,5 @@
 import { findPage, loadPage } from "./pages/Page.ts";
 import { closeWs, connectWs } from "./websocket.ts";
-//import { chooseGamePage } from "./pages/chooseGamePage.ts";
 import { modGamePage } from "./pages/modGamePage.ts";
 
 export const loggedNav = document.querySelector<HTMLElement>("#logged-nav")!;

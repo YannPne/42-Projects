@@ -22,7 +22,7 @@ export const pongPage: Page = {
     <div class="h-full flex flex-col overflow-hidden">
    
 		  <hr class="h-px bg-gray-200 border-0">
-		  <div class="flex-1 flex">
+		  <div class="h-full flex-1 flex">
 			  <div class="flex-1 flex flex-col p-5 overflow-hidden">
 
           <div class="flex flex-col items-center justify-center h-full w-full p-5">
@@ -54,7 +54,7 @@ export const pongPage: Page = {
 
 			  </div>
         <div id="divider" class="h-full w-[6px] bg-gray-600 cursor-pointer"></div>
-			  <div id="liveChat" class="w-[30%] flex flex-col px-5 pt-5">
+			  <div id="liveChat" class="h-full w-[30%] flex flex-col px-5 pt-5">
 			    ${chatPage.getPage()}
 			  </div>
 		  </div>
@@ -76,8 +76,8 @@ export const pongPage: Page = {
     if (type != "LOCAL")
       changeChatTournamentState(true);
 
-    const divider = document.querySelector("#divider")!;
-    const liveChat = document.querySelector("#liveChat")!;
+     const divider = document.querySelector<HTMLDivElement>("#divider")!;
+    const liveChat = document.querySelector<HTMLDivElement>("#liveChat")!;
 
 	  chatPage.onMount();
 
