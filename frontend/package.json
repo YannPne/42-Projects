@@ -13,7 +13,8 @@
     "@fortawesome/fontawesome-free": "^6.7.2",
     "@tailwindcss/vite": "^4.1.11",
     "qrcode": "^1.5.4",
-    "tailwindcss": "^4.1.8"
+    "tailwindcss": "^4.1.8",
+    "brackets-viewer": "git+https://github.com/poppabear8883/brackets-viewer.js"
   },
   "devDependencies": {
     "@ft_transcendence/core": "^1.0.0",

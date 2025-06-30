@@ -1,3 +1,4 @@
+import "brackets-viewer";
 import { findPage, loadPage } from "./pages/Page.ts";
 import { closeWs, connectWs } from "./websocket.ts";
 import { modePage } from "./pages/modePage.ts";

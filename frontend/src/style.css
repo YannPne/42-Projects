@@ -1,5 +1,6 @@
 @import "@fortawesome/fontawesome-free/css/all.css";
 @import "tailwindcss";
+@import "brackets-viewer/dist/brackets-viewer.min.css";
 
 ::-webkit-scrollbar {
     width: 7px;
@@ -18,4 +19,15 @@
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--color-gray-800);
+}
+
+.brackets-viewer {
+    background-color: var(--color-gray-700);
+}
+.brackets-viewer .round > h3, .brackets-viewer .elimination > h1 {
+    display: none;
+}
+
+.brackets-viewer .match .participant .name img {
+    display: inline-block;
 }
