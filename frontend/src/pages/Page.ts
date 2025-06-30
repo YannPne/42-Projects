@@ -1,15 +1,15 @@
 import { homePage } from "./homePage.ts";
-import { modGamePage } from "./modGamePage.ts";
+import { modePage } from "./modePage.ts";
 import { chooseGamePage } from "./chooseGamePage.ts";
 import { pongPage } from "./pongPage.ts";
 import { loginPage } from "./loginPage.ts";
 import { registerPage } from "./registerPage.ts";
-import { chatPage } from "./chatPage.ts";
 import { privacyPage } from "./privacyPage.ts";
 import { profilePage } from "./profilePage.ts";
 import { settingsPage } from "./settingsPage.ts";
 import { recoverPage } from "./recoverPage.ts";
 import { notFoundPage } from "./notFoundPage.ts";
+import {startPage} from "./startPage.ts";
 
 export type Page<T = undefined> = {
   url: string;
@@ -22,10 +22,11 @@ export type Page<T = undefined> = {
 
 export const pages: Page<any>[] = [
   homePage,
-  modGamePage,
+  modePage,
   chooseGamePage,
+  startPage,
   pongPage,
-  chatPage,
+  // chatPage, -- We don't want access to the chat in a specific page
   loginPage,
   registerPage,
   recoverPage,

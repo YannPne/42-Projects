@@ -4,7 +4,8 @@ import { loginPage } from "./loginPage.ts";
 import { send, sendAndWait } from "../Event.ts";
 import type { ServerEvent } from "@ft_transcendence/core";
 import { awaitWs, ws } from "../websocket.ts";
-import { chatData, chatPage } from "./chatPage.ts";
+import { chatPage } from "./chatPage.ts";
+import {startPage} from "./startPage.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 
@@ -14,32 +15,18 @@ export const chooseGamePage: Page = {
 
   getPage() {
     return `
-      
-      <div class="h-full flex flex-col overflow-hidden">
-   
-        <hr class="h-px bg-gray-200 border-0">
-        <div class="h-full flex-1 flex">
-          <div class="flex-1 flex flex-col p-5 overflow-hidden">
-            
-            <div class="flex flex-col h-full items-center p-5">
-              <p class="text-2xl font-bold mb-3">Available games</p>
-              <ul id="games" class="flex-1 overflow-y-auto w-3/4 bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950"></ul>
-              <form class="mt-5 bg-gray-900" id="createGame">
-                <input id="createGameName" type="text" required placeholder="New game's name" class="p-2 placeholder-gray-400">
-                <button class="p-2 bg-blue-900 hover:bg-blue-950">Create a new game</button>
-                <label class="inline-flex items-center ml-2 text-gray-300 pr-4">
-                  <input type="checkbox" id="createGamePrivate" class="form-checkbox" />
-                  <span class="ml-2">Private</span>
-                </label>
-              </form>
-            </div>
-
-          </div>
-          <div id="divider" class="h-full w-[6px] bg-gray-600 cursor-pointer"></div>
-				  <div id="liveChat" class="h-full w-[30%] flex flex-col px-5 pt-5">
-            ${chatPage.getPage()}
-          </div>
+      <div class="h-full flex">
+        <div class="flex-1 flex flex-col p-5 overflow-hidden h-full items-center">
+          <p class="text-2xl font-bold mb-3">Available games</p>
+          <ul id="games" class="flex-1 overflow-y-auto w-3/4 bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950"></ul>
+          <form class="mt-5 bg-gray-900" id="create-game">
+            <input id="create-game-name" type="text" required placeholder="New game's name" class="p-2 placeholder-gray-400">
+            <input type="checkbox" id="create-game-private" class="ml-2" />
+            <label for="create-game-private" class="mr-2">Private</label>
+            <button class="p-2 bg-blue-900 hover:bg-blue-950">Create a new game</button>
+          </form>
         </div>
+        ${chatPage.getPage()}
       </div>
     `;
   },
@@ -50,22 +37,15 @@ export const chooseGamePage: Page = {
       return;
     }
 
-    const divider = document.querySelector<HTMLDivElement>("#divider")!;
-    const liveChat = document.querySelector<HTMLDivElement>("#liveChat")!;
-
-	  chatPage.onMount();
-
-	  if (chatData.hidden)
-		  liveChat.classList.add("hidden");
-	  divider.addEventListener("click", () => chatData.hidden = liveChat.classList.toggle("hidden"));
-
     await awaitWs();
 
-    const createGame = document.querySelector<HTMLFormElement>("#createGame")!;
-    const createGameName = document.querySelector<HTMLInputElement>("#createGameName")!;
+    chatPage.onMount();
+
+    const createGame = document.querySelector<HTMLFormElement>("#create-game")!;
+    const createGameName = document.querySelector<HTMLInputElement>("#create-game-name")!;
     const games = document.querySelector<HTMLUListElement>("#games")!;
 
-    const privateCheckbox = createGame.querySelector<HTMLInputElement>("#createGamePrivate")!;
+    const privateCheckbox = createGame.querySelector<HTMLInputElement>("#create-game-private")!;
 
     createGame.onsubmit = event => {
       event.preventDefault();
@@ -74,7 +54,7 @@ export const chooseGamePage: Page = {
         type: privateCheckbox.checked ? "PRIVATE_TOURNAMENT" : "PUBLIC_TOURNAMENT",
         name: createGameName.value
       });
-      loadPage(pongPage);
+      loadPage(startPage);
     };
 
     ws.addEventListener("message", wsListener = event => {
@@ -93,7 +73,7 @@ export const chooseGamePage: Page = {
                 uid: game.uid
               });
               if (response.success)
-                loadPage(pongPage);
+                loadPage(response.started ? pongPage : startPage);
               else
                 alert("This game no longer exists");
             };

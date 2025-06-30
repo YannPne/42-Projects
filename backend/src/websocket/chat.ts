@@ -59,7 +59,7 @@ function onMessage(user: User, event: ClientEvent & { event: "message" }) {
   };
   if (sendMessage.message.type == "message")
     sendMessage.message.sender = user.id;
-  if (sendMessage.message.type == "invite"){
+  if (sendMessage.message.type == "invite") {
     sendMessage.message.id = user.game?.uid;
     sendMessage.message.name = user.game?.name;
   }

@@ -1,8 +1,8 @@
 import User from "../User";
-import { ClientEvent } from "@ft_transcendence/core";
-import { Game, games, GameState } from "../Game";
-import { onlineUsers } from "./websocket";
-import { chatAnnounceGame } from "./chat";
+import {ClientEvent} from "@ft_transcendence/core";
+import {Game, games, GameState} from "../Game";
+import {onlineUsers} from "./websocket";
+import {chatAnnounceGame} from "./chat";
 
 export default function gameEvents(user: User, message: ClientEvent) {
   if (message.event === "get_games")
@@ -49,11 +49,10 @@ function createGame(user: User, message: ClientEvent & { event: "create_game" })
 function joinGame(user: User, message: ClientEvent & { event: "join_game" }) {
   let game = games.find((g) => g.uid == message.uid);
   if (game == undefined)
-    user.send({ event: "join_game", success: false});
-  else
-  {
+    user.send({ event: "join_game", success: false, started: false });
+  else {
     game.addUser(user);
-    user.send({ event: "join_game", success: true});
+    user.send({ event: "join_game", success: true, started: game.state == GameState.IN_GAME });
   }
 }
 

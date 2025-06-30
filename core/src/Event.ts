@@ -82,7 +82,7 @@ export type ServerEvent =
   | { event: "connected", displayName: string, avatar?: number[] }
   // GAME
   | { event: "get_games", games: { uid: string, name: string }[] }
-  | { event: "join_game", success: boolean }
+  | { event: "join_game", success: boolean, started: boolean }
   | { event: "get_current_game", id?: string, type?: GameType }
   | { event: "update", players: Player[], ball: Ball }
   | { event: "win", player: string }

@@ -8,16 +8,16 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@babylonjs/core": "^8.12.0",
-    "@babylonjs/gui": "^8.12.0",
+    "@babylonjs/core": "^8.14.0",
+    "@babylonjs/gui": "^8.14.0",
     "@fortawesome/fontawesome-free": "^6.7.2",
-    "@tailwindcss/vite": "^4.1.10",
+    "@tailwindcss/vite": "^4.1.11",
     "qrcode": "^1.5.4",
     "tailwindcss": "^4.1.8"
   },
   "devDependencies": {
     "@ft_transcendence/core": "^1.0.0",
-    "@types/node": "^22.15.31",
+    "@types/node": "^22.15.34",
     "@types/qrcode": "^1.5.5",
     "typescript": "^5.8.3",
     "vite": "^6.3.5"

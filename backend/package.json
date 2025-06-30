@@ -15,17 +15,17 @@
     "@fastify/websocket": "^11.1.0",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^11.10.0",
-    "dotenv": "^16.5.0",
-    "ethers": "^6.14.3",
-    "fastify": "^5.3.3",
+    "dotenv": "^16.6.1",
+    "ethers": "^6.14.4",
+    "fastify": "^5.4.0",
     "hi-base32": "^0.5.1"
   },
   "devDependencies": {
     "@ft_transcendence/core": "^1.0.0",
     "@types/bcrypt": "^5.0.2",
     "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^22.15.31",
-    "tsx": "^4.20.2",
+    "@types/node": "^22.15.34",
+    "tsx": "^4.20.3",
     "typescript": "^5.8.3"
   }
 }

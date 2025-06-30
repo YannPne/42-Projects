@@ -39,7 +39,8 @@ export const chatPage: Page = {
 
   getPage() {
     return `
-      <div class="h-full flex flex-col overflow-hidden">
+      <div id="live-chat-divider" class="h-full w-[6px] bg-gray-600 cursor-pointer"></div>
+      <div id="live-chat" class="h-full flex flex-col overflow-hidden w-[30%]">
         <div class="flex border-b border-gray-300 overflow-hidden gap-2 px-2">
           <button id="chat-general" class="px-2 py-1 hover:bg-gray-500 cursor-pointer flex items-center">
             <div class="h-[10px] w-[10px] rounded-full bg-blue-500 mr-1" style="display: none"></div>
@@ -50,7 +51,7 @@ export const chatPage: Page = {
         </div>
         <ul id="chat-messages" class="flex-1 overflow-y-auto overflow-x-hidden p-2 flex flex-col-reverse bg-gradient-to-b from-gray-900 via-gray-950 to-gray-900 gap-2"></ul>  
         <form id="chat-message-input" class="flex *:p-2 items-center">
-          <input type="text" required autocomplete="off" placeholder="Type your message here..." class="flex-1">
+          <input type="text" required autocomplete="off" placeholder="Type your message here..." class="flex-1 placeholder-gray-500">
           <button class="cursor-pointer">
             <i class="fa-solid fa-paper-plane"></i>
           </button>
@@ -70,6 +71,13 @@ export const chatPage: Page = {
       loadPage(loginPage, undefined, "REPLACE");
       return;
     }
+
+    const liveChatDivider = document.querySelector<HTMLDivElement>("#live-chat-divider")!;
+    const liveChatDiv = document.querySelector<HTMLDivElement>("#live-chat")!;
+
+    if (chatData.hidden)
+      liveChatDiv.classList.add("hidden");
+    liveChatDivider.onclick = () => chatData.hidden = liveChatDiv.classList.toggle("hidden");
 
     const general = document.querySelector<HTMLButtonElement>("#chat-general")!;
     const form = document.querySelector<HTMLFormElement>("#chat-message-input")!;

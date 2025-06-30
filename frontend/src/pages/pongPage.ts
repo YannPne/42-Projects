@@ -5,8 +5,8 @@ import { ArcRotateCamera, Color3, Color4, Engine, HemisphericLight, GlowLayer, M
 import { TextBlock, AdvancedDynamicTexture } from "@babylonjs/gui";
 import type { Ball, Player, ServerEvent } from "@ft_transcendence/core";
 import { send, sendAndWait } from "../Event.ts";
-import { changeChatTournamentState, chatData, chatPage } from "./chatPage.ts";
-import { modGamePage } from "./modGamePage.ts";
+import { changeChatTournamentState, chatPage } from "./chatPage.ts";
+import { modePage } from "./modePage.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 let keydownListener: ((event: KeyboardEvent) => void) | undefined;
@@ -18,79 +18,53 @@ export const pongPage: Page = {
 
   getPage() {
     return `
-      
-    <div class="h-full flex flex-col overflow-hidden">
+      <div class="h-full flex flex-col overflow-hidden">
    
 		  <hr class="h-px bg-gray-200 border-0">
 		  <div class="h-full flex-1 flex">
 			  <div class="flex-1 flex flex-col p-5 overflow-hidden">
 
           <div class="flex flex-col items-center justify-center h-full w-full p-5">
-            <div class="pb-5 w-full flex justify-around" id="up-bar">
-              <button id="start" class="p-2 rounded-xl bg-blue-900 hover:bg-blue-950 cursor-pointer">Start game</button>
-              <form id="addLocalForm" class="bg-gray-900 items-center justify-center">
-                <input id="addLocalName" type="text" required placeholder="Local player's name" class="p-2 placeholder-gray-400">
-                <label for="addLocalCheck">Is AI?</label>
-                <input id="addLocalCheck" type="checkbox">
-                <button class="p-2 bg-blue-900 hover:bg-blue-950">Add local player</button>
-              </form>
-            </div>
             <canvas id="game2d" width="1200" height="600" class="w-[90%] aspect-[2/1] bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
             <div class="w-[90%] relative">
               <canvas id="game3d" width="1200" height="600" class="w-full aspect-[2/1] not-focus-visible"></canvas>
               <i class="fa-solid fa-arrows-rotate fa-spin text-4xl absolute right-0 bottom-0"></i>
             </div>
             <div class="flex items-center space-x-4 mt-4">
-              <span id="toggleText" class="text-lg font-medium text-white select-none cursor-pointer">Mode 3D</span>
+              <span id="toggle-text" class="text-lg font-medium text-white select-none cursor-pointer">Mode 3D</span>
               <button id="is3d" type="button"
                 class="relative w-16 h-9 bg-gray-700 rounded-full transition-colors duration-300 ease-in-out focus:outline-none">
                 <span
-                id="toggleCircle"
+                id="toggle-circle"
                 class="absolute left-1 top-1 w-7 h-7 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out"></span>
               </button>
             </div>
-            <div id="tournamentLine" class="text-white mt-4 text-lg font-semibold text-center whitespace-nowrap"></div>
           </div>
 
 			  </div>
-        <div id="divider" class="h-full w-[6px] bg-gray-600 cursor-pointer"></div>
-			  <div id="liveChat" class="h-full w-[30%] flex flex-col px-5 pt-5">
-			    ${chatPage.getPage()}
-			  </div>
+			  ${chatPage.getPage()}
 		  </div>
-		</div>
+		  </div>
     `;
   },
 
   async onMount() {
     if (ws == undefined) {
-        loadPage(modGamePage, undefined, "REPLACE");
+        loadPage(modePage, undefined, "REPLACE");
         return;
     }
-    const {id, type} = (await sendAndWait({ event: "get_current_game"}));
+    const {id, type} = await sendAndWait({ event: "get_current_game"});
     if (id == undefined) {
-        loadPage(modGamePage, undefined, "REPLACE");
+        loadPage(modePage, undefined, "REPLACE");
         return;
     }
 
     if (type != "LOCAL")
       changeChatTournamentState(true);
 
-     const divider = document.querySelector<HTMLDivElement>("#divider")!;
-    const liveChat = document.querySelector<HTMLDivElement>("#liveChat")!;
-
 	  chatPage.onMount();
 
-	  if (chatData.hidden)
-      liveChat.classList.add("hidden");
-    divider.addEventListener("click", () => chatData.hidden = liveChat.classList.toggle("hidden"));
-
     send({ event: "get_tournament" });
-    // Header
-    const start = document.querySelector<HTMLButtonElement>("#start")!;
-    const addLocalName = document.querySelector<HTMLInputElement>("#addLocalName")!;
-    const addLocalCheck = document.querySelector<HTMLInputElement>("#addLocalCheck")!;
-    const addLocalForm = document.querySelector<HTMLButtonElement>("#addLocalForm")!;
     // Game
     const canvas2d = document.querySelector<HTMLCanvasElement>("#game2d")!;
     const context2d = canvas2d.getContext("2d")!;
@@ -98,9 +72,8 @@ export const pongPage: Page = {
     let context3d = setup3d(canvas3d);
     const is3d = document.querySelector<HTMLInputElement>("#is3d")!;
 
-    const toggleText = document.querySelector<HTMLSpanElement>("#toggleText")!;
-    const toggleCircle = document.querySelector<HTMLSpanElement>("#toggleCircle")!;
-    const myDiv = document.querySelector<HTMLDivElement>("#up-bar")!;
+    const toggleText = document.querySelector<HTMLSpanElement>("#toggle-text")!;
+    const toggleCircle = document.querySelector<HTMLSpanElement>("#toggle-circle")!;
 
     let is3dActive = true;
 
@@ -114,26 +87,11 @@ export const pongPage: Page = {
     updateToggleUI();
 
     canvas2d.style.display = "none";
-    is3d.addEventListener("click", () => {
+    is3d.onclick =  () => {
       is3dActive = !is3dActive;
       (is3dActive ? canvas2d : canvas3d.parentElement!).style.display = "none";
       (is3dActive ? canvas3d.parentElement! : canvas2d).style.display = "";
       updateToggleUI();
-    });
-
-    start.onclick = async () => {
-      myDiv.style.display = "none";
-      send({ event: "play" });
-      changeChatTournamentState(false);
-    };
-
-    addLocalForm.onsubmit = event => {
-      event.preventDefault();
-      if (addLocalName.value.trim() != "") {
-        send({ event: "add_local_player", name: addLocalName.value, isAi: addLocalCheck.checked });
-        addLocalName.value = "";
-        addLocalCheck.checked = false;
-      }
     };
 
     document.addEventListener("keydown", keydownListener = event => {
@@ -164,10 +122,6 @@ export const pongPage: Page = {
         case "win":
           drawEndGame3D(context3d, message.player);
           await drawEndGame(canvas2d, context2d, message.player);
-          break;
-        case "get_tournament":
-          if (message.tournament)
-            updateTournamentLine(message.tournament);
           break;
       }
     });
@@ -508,21 +462,4 @@ async function drawEndGame(canvas: HTMLCanvasElement, context: CanvasRenderingCo
 
   await sleep(2000);
   loadPage(chooseGamePage);
-}
-
-// ## Tournament footer Banner ##
-function updateTournamentLine(tournament: string[]) {
-  const line = document.querySelector<HTMLDivElement>("#tournamentLine")!;
-
-  const [ p1, p2, ...remain ] = tournament;
-  let text = "";
-
-  if (p1 && p2) {
-    text += `${p1} ⚔ ${p2}`;
-    if (remain.length > 0)
-      text += " | " + remain.join(" | ");
-  } else
-    text = tournament.join(" | ");
-
-  line.textContent = text;
 }
