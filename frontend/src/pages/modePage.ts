@@ -34,15 +34,13 @@ export const modePage: Page = {
 
     chatPage.onMount();
 
-    document.querySelector<HTMLButtonElement>('#btn-training')!.onclick = () => {
-      send({
-        event: "create_game",
-        type: "LOCAL"
-      });
+    document.querySelector<HTMLButtonElement>("#btn-training")!.onclick = () => {
+      send({ event: "create_game", type: "LOCAL" });
+      send({ event: "play" });
       loadPage(pongPage);
     };
 
-    document.querySelector<HTMLButtonElement>('#btn-tournament')!.onclick = () =>
+    document.querySelector<HTMLButtonElement>("#btn-tournament")!.onclick = () =>
       loadPage(chooseGamePage);
   },
 

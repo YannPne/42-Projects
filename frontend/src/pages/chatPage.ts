@@ -25,6 +25,7 @@ let messages = {
     }
   }
 };
+
 let info: ServerEvent & { event: "init_chat" } = {
   event: "init_chat",
   id: 0,
@@ -39,7 +40,11 @@ export const chatPage: Page = {
 
   getPage() {
     return `
-      <div id="live-chat-divider" class="h-full w-[6px] bg-gray-600 cursor-pointer"></div>
+      <div id="live-chat-divider" class="h-full flex flex-col justify-center bg-gray-600 cursor-pointer *:text-gray-300 px-[1px]">
+        <i class="fa-solid text-xs"></i>
+        <i class="fa-solid text-xs"></i>
+        <i class="fa-solid text-xs"></i>
+      </div>
       <div id="live-chat" class="h-full flex flex-col overflow-hidden w-[30%]">
         <div class="flex border-b border-gray-300 overflow-hidden gap-2 px-2">
           <button id="chat-general" class="px-2 py-1 hover:bg-gray-500 cursor-pointer flex items-center">
@@ -75,9 +80,33 @@ export const chatPage: Page = {
     const liveChatDivider = document.querySelector<HTMLDivElement>("#live-chat-divider")!;
     const liveChatDiv = document.querySelector<HTMLDivElement>("#live-chat")!;
 
-    if (chatData.hidden)
+    if (chatData.hidden) {
       liveChatDiv.classList.add("hidden");
-    liveChatDivider.onclick = () => chatData.hidden = liveChatDiv.classList.toggle("hidden");
+      for (let child of liveChatDivider.children) {
+        child.classList.add("fa-caret-left");
+        child.classList.remove("fa-caret-right");
+      }
+    } else {
+      for (let child of liveChatDivider.children) {
+        child.classList.add("fa-caret-right");
+        child.classList.remove("fa-caret-left");
+      }
+    }
+
+    liveChatDivider.onclick = () => {
+      chatData.hidden = liveChatDiv.classList.toggle("hidden");
+      if (chatData.hidden) {
+        for (let child of liveChatDivider.children) {
+          child.classList.add("fa-caret-left");
+          child.classList.remove("fa-caret-right");
+        }
+      } else {
+        for (let child of liveChatDivider.children) {
+          child.classList.add("fa-caret-right");
+          child.classList.remove("fa-caret-left");
+        }
+      }
+    };
 
     const general = document.querySelector<HTMLButtonElement>("#chat-general")!;
     const form = document.querySelector<HTMLFormElement>("#chat-message-input")!;
@@ -87,10 +116,6 @@ export const chatPage: Page = {
     const block = document.querySelector<HTMLButtonElement>("#chat-block")!;
     const invite = document.querySelector<HTMLButtonElement>("#chat-invite")!;
 
-    currentChannel = undefined;
-    currentChannelButton = general;
-
-    general.classList.add("border-b-2", "border-white");
     general.onclick = () => channelChange(general);
 
     form.onsubmit = event => {

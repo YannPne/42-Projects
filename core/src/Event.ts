@@ -35,12 +35,12 @@ export type Message =
 
 export type Tournament = {
   players: {
-    id: number,
+    id: string,
     displayName: string,
     avatar?: number[] | null
   }[],
   matches: {
-    player: number,
+    player: string,
     score: number
   }[][]
 };

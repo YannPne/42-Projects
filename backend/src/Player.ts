@@ -4,6 +4,7 @@ export default class Player {
   readonly width: number = 20;
   readonly height: number = 200;
 
+  readonly id: string;
   readonly game: Game;
   readonly name: string;
   readonly isAi: boolean;
@@ -18,6 +19,7 @@ export default class Player {
   aiTargetY: number = 0;
 
   constructor(game: Game, name: string, isAi: boolean) {
+    this.id = crypto.randomUUID();
     this.game = game;
     this.name = name;
     this.isAi = isAi;

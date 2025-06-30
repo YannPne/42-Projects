@@ -1,8 +1,14 @@
-import { type Page } from "./Page.ts";
-import { chatPage } from "./chatPage.ts";
+import { loadPage, type Page } from "./Page.ts";
+import { changeChatTournamentState, chatPage } from "./chatPage.ts";
 import { Status } from "brackets-model";
 import type { ViewerData } from "brackets-viewer";
-import type { Tournament } from "@ft_transcendence/core";
+import type { ServerEvent, Tournament } from "@ft_transcendence/core";
+import { send, sendAndWait } from "../Event.ts";
+import { ws } from "../websocket.ts";
+import { modePage } from "./modePage.ts";
+import { pongPage } from "./pongPage.ts";
+
+let wsListener: ((event: MessageEvent) => void) | undefined;
 
 export const startPage: Page = {
   url: "/start",
@@ -20,7 +26,7 @@ export const startPage: Page = {
               <label for="add-local-ai" class="mr-2">Is AI?</label>
               <button class="p-2 bg-blue-900 hover:bg-blue-950">Add local player</button>
             </form>
-            <button id="start" class="bg-blue-500 hover:bg-blue-700 cursor-pointer rounded-lg py-1 px-3">Start</button>
+            <button id="start" class="bg-blue-500 hover:bg-blue-700 cursor-pointer rounded-lg py-2 px-10">Start</button>
           </div>
         </div>
         ${chatPage.getPage()}
@@ -29,18 +35,20 @@ export const startPage: Page = {
   },
 
   async onMount() {
-    // if (ws == undefined) {
-    //   loadPage(modePage, undefined, "REPLACE");
-    //   return;
-    // }
-    //
-    // const currentGame = await sendAndWait({ event: "get_current_game"});
-    // if (currentGame.id == undefined) {
-    //   loadPage(modePage, undefined, "REPLACE");
-    //   return;
-    // }
-    //
-    // chatPage.onMount();
+    if (ws == undefined) {
+      loadPage(modePage, undefined, "REPLACE");
+      return;
+    }
+
+    const currentGame = await sendAndWait({ event: "get_current_game" });
+    if (currentGame.id == undefined) {
+      loadPage(modePage, undefined, "REPLACE");
+      return;
+    }
+
+    chatPage.onMount();
+    changeChatTournamentState(true);
+    setupBar();
 
     const brackets: ViewerData = {
       participants: [],
@@ -51,29 +59,48 @@ export const startPage: Page = {
       matchGames: []
     };
 
-    await updateMatches(brackets, {
-      players: [
-        {id: 0, displayName: "a"},
-        {id: 1, displayName: "b", avatar: null},
-      ],
-      matches: [
-        [
-          {player: 0, score: 1},
-          {player: 1, score: 2},
-          {player: 1, score: 3},
-        ]
-      ]
+    ws.addEventListener("message", wsListener = (event) => {
+      const message: ServerEvent = JSON.parse(event.data);
+      if (message.event == "tournament")
+        updateMatches(brackets, message);
     });
   },
 
   onUnmount() {
-    // chatPage.onUnmount();
+    if (wsListener != undefined)
+      ws?.removeEventListener("message", wsListener);
+    wsListener = undefined;
+    changeChatTournamentState(false);
+    chatPage.onUnmount();
   },
 
   toJSON() {
     return this.url;
   }
 };
+
+function setupBar() {
+  const form = document.querySelector<HTMLFormElement>("#add-local")!;
+  const formName = form.querySelector<HTMLInputElement>("#add-local-name")!;
+  const formAi = form.querySelector<HTMLInputElement>("#add-local-ai")!;
+  const start = document.querySelector<HTMLButtonElement>("#start")!;
+
+  form.onsubmit = event => {
+    event.preventDefault();
+    send({
+      event: "add_local_player",
+      name: formName.value,
+      isAi: formAi.checked
+    });
+    formName.value = "";
+    formAi.checked = false;
+  };
+
+  start.onclick = () => {
+    send({ event: "play" });
+    loadPage(pongPage);
+  };
+}
 
 async function updateMatches(brackets: ViewerData, tournament: Tournament) {
   brackets.participants = tournament.players.map(p => ({

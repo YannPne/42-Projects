@@ -5,7 +5,7 @@ import { ArcRotateCamera, Color3, Color4, Engine, HemisphericLight, GlowLayer, M
 import { TextBlock, AdvancedDynamicTexture } from "@babylonjs/gui";
 import type { Ball, Player, ServerEvent } from "@ft_transcendence/core";
 import { send, sendAndWait } from "../Event.ts";
-import { changeChatTournamentState, chatPage } from "./chatPage.ts";
+import { chatPage } from "./chatPage.ts";
 import { modePage } from "./modePage.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
@@ -30,14 +30,14 @@ export const pongPage: Page = {
               <canvas id="game3d" width="1200" height="600" class="w-full aspect-[2/1] not-focus-visible"></canvas>
               <i class="fa-solid fa-arrows-rotate fa-spin text-4xl absolute right-0 bottom-0"></i>
             </div>
-            <div class="flex items-center space-x-4 mt-4">
-              <span id="toggle-text" class="text-lg font-medium text-white select-none cursor-pointer">Mode 3D</span>
-              <button id="is3d" type="button"
-                class="relative w-16 h-9 bg-gray-700 rounded-full transition-colors duration-300 ease-in-out focus:outline-none">
-                <span
-                id="toggle-circle"
-                class="absolute left-1 top-1 w-7 h-7 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out"></span>
-              </button>
+            <div class="flex items-center justify-around w-full">
+              <div class="flex items-center space-x-4 mt-4">
+                <span id="toggle-text" class="text-lg font-medium text-white select-none cursor-pointer">Mode 3D</span>
+                <button id="is3d" type="button" class="relative w-16 h-9 bg-gray-700 rounded-full transition-colors duration-300 ease-in-out focus:outline-none">
+                  <span id="toggle-circle" class="absolute left-1 top-1 w-7 h-7 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out"></span>
+                </button>
+              </div>
+              <i id="tournament" class="fa-solid fa-trophy text-3xl cursor-pointer hover:text-gray-300"></i>
             </div>
           </div>
 
@@ -50,21 +50,17 @@ export const pongPage: Page = {
 
   async onMount() {
     if (ws == undefined) {
-        loadPage(modePage, undefined, "REPLACE");
-        return;
+      loadPage(modePage, undefined, "REPLACE");
+      return;
     }
-    const {id, type} = await sendAndWait({ event: "get_current_game"});
+    const { id } = await sendAndWait({ event: "get_current_game" });
     if (id == undefined) {
-        loadPage(modePage, undefined, "REPLACE");
-        return;
+      loadPage(modePage, undefined, "REPLACE");
+      return;
     }
 
-    if (type != "LOCAL")
-      changeChatTournamentState(true);
+    chatPage.onMount();
 
-	  chatPage.onMount();
-
-    send({ event: "get_tournament" });
     // Game
     const canvas2d = document.querySelector<HTMLCanvasElement>("#game2d")!;
     const context2d = canvas2d.getContext("2d")!;
@@ -87,7 +83,7 @@ export const pongPage: Page = {
     updateToggleUI();
 
     canvas2d.style.display = "none";
-    is3d.onclick =  () => {
+    is3d.onclick = () => {
       is3dActive = !is3dActive;
       (is3dActive ? canvas2d : canvas3d.parentElement!).style.display = "none";
       (is3dActive ? canvas3d.parentElement! : canvas2d).style.display = "";

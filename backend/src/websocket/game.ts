@@ -21,11 +21,7 @@ export default function gameEvents(user: User, message: ClientEvent) {
     leaveGame(user);
   else if (message.event === "move")
     move(user, message);
-  else if (message.event === "get_tournament") {
-    const tournament = user.game?.players.map(u => u.name)!;
-    console.log(tournament);
-    user.send({ event: "get_tournament", tournament });
-  } else
+  else
     return false;
 
   return true;
@@ -61,13 +57,10 @@ function getCurrentGame(user: User){
 }
 
 function addLocalPlayer(user: User, message: ClientEvent & { event: "add_local_player" }) {
-  if (!user.game) return;
+  if (!user.game)
+    return;
 
   user.game.addLocalPlayer(message.name, message.isAi ? undefined : user);
-
-  const names = user.game?.players.map(p => p.name);
-  for (const u of user.game.users)
-    u.send({ event: "get_tournament", tournament: names });
 }
 
 function play(user: User) {

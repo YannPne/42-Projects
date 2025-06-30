@@ -3,8 +3,8 @@ import { Game } from "./Game";
 import { ServerEvent } from "@ft_transcendence/core";
 
 export default class User {
-  socket: WebSocket;
-  id: number;
+  private readonly socket: WebSocket;
+  readonly id: number;
   username: string;
   displayName: string;
   avatar?: Buffer;
@@ -29,5 +29,9 @@ export default class User {
 
   send(data: ServerEvent) {
     this.socket.send(JSON.stringify(data));
+  }
+
+  closeSocket(code?: number, reason?: string) {
+    this.socket.close(code, reason);
   }
 }
