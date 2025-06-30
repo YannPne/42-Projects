@@ -23,6 +23,7 @@
 
 .brackets-viewer {
     background-color: var(--color-gray-700);
+    border-radius: 10px;
 }
 .brackets-viewer .round > h3, .brackets-viewer .elimination > h1 {
     display: none;
@@ -30,4 +31,8 @@
 
 .brackets-viewer .match .participant .name img {
     display: inline-block;
+}
+
+.brackets-viewer .match[data-match-status="3"] .opponents > * {
+    background-color: var(--color-green-200);
 }

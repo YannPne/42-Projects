@@ -13,21 +13,7 @@ export type Ball = {
   size: number;
 };
 
-export type Tournament = {
-  type: "tournament",
-  rounds: {
-    matches: {
-      players?: {
-        name: string,
-        avatar?: number[],
-        score: number
-      }[]
-    }[]
-  }[];
-};
-
 export type Game = {
-  type: "game",
   opponent: string,
   selfScore: number,
   opponentScore: number,
@@ -47,6 +33,18 @@ export type Message =
   | { type: "message", sender: number, content: string }
   | { type: "invite" | "announce", id?: string, name?: string };
 
+export type Tournament = {
+  players: {
+    id: number,
+    displayName: string,
+    avatar?: number[] | null
+  }[],
+  matches: {
+    player: number,
+    score: number
+  }[][]
+};
+
 export type ClientEvent =
 // GAME
   | { event: "get_games" }
@@ -58,7 +56,6 @@ export type ClientEvent =
   | { event: "play" }
   | { event: "leave_game" }
   | { event: "move", id: number, goUp?: boolean, goDown?: boolean }
-  | { event: "get_tournament" }
   // PROFILE
   | { event: "get_profile", id?: number }
   | { event: "add_friend", user: string | number }
@@ -86,10 +83,10 @@ export type ServerEvent =
   | { event: "get_current_game", id?: string, type?: GameType }
   | { event: "update", players: Player[], ball: Ball }
   | { event: "win", player: string }
-  | { event: "get_tournament", tournament: string[] }
+  | { event: "tournament" } & Tournament
   // PROFILE
   | { event: "get_profile", locked: true, displayName: string }
-  | { event: "get_profile", locked: false, self: boolean, avatar?: number[], online: boolean, displayName: string, username: string, email: string, games: (Game | Tournament)[], friends: Friend[] }
+  | { event: "get_profile", locked: false, self: boolean, avatar?: number[], online: boolean, displayName: string, username: string, email: string, games: Game[], friends: Friend[] }
   | { event: "add_friend", success: boolean }
   | { event: "remove_friend", success: boolean }
   // SETTINGS

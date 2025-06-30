@@ -40,7 +40,6 @@ function getProfile(user: User, userToGet: number) {
           SELECT json_group_array(
             CASE WHEN g.name1 = ug.displayName THEN
               json_object(
-                'type', 'game',
                 'opponent', g.name2,
                 'selfScore', g.score1,
                 'opponentScore', g.score2,
@@ -48,7 +47,6 @@ function getProfile(user: User, userToGet: number) {
               )
             ELSE
               json_object(
-                'type', 'game',
                 'opponent', g.name1,
                 'selfScore', g.score2,
                 'opponentScore', g.score1,

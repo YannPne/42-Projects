@@ -1,6 +1,6 @@
 import { loadPage, type Page } from "./Page.ts";
 import { send, sendAndWait } from "../Event.ts";
-import type { Friend, Game, Tournament } from "@ft_transcendence/core";
+import type { Friend, Game } from "@ft_transcendence/core";
 import { ws } from "../websocket.ts";
 import { loginPage } from "./loginPage.ts";
 import { settingsPage } from "./settingsPage.ts";
@@ -127,7 +127,7 @@ export const profilePage: Page<number> = {
   }
 };
 
-function createGraph(games: (Game | Tournament)[]) {
+function createGraph(games: Game[]) {
   const canvas = document.querySelector<HTMLCanvasElement>("#graph")!;
   const context = canvas.getContext("2d")!;
   const percent = document.querySelector<HTMLParagraphElement>("#graph-percent")!;
@@ -136,12 +136,10 @@ function createGraph(games: (Game | Tournament)[]) {
   let looseCount = 0;
 
   for (let game of games) {
-    if (game.type == "game") {
-      if (game.selfScore > game.opponentScore)
-        winCount++;
-      else
-        looseCount++;
-    }
+    if (game.selfScore > game.opponentScore)
+      winCount++;
+    else
+      looseCount++;
   }
 
   context.clearRect(0, 0, canvas.width, canvas.height);
@@ -194,33 +192,29 @@ function createFriend(friend: Friend) {
   return li;
 }
 
-function createGame(game: Game | Tournament, grid: HTMLDivElement) {
-  if (game.type == "game") {
-    let node = document.createElement("div");
-    node.innerText = new Date(game.date).toDateString();
-    node.className = "text-gray-500";
-    grid.appendChild(node);
+function createGame(game: Game, grid: HTMLDivElement) {
+  let node = document.createElement("div");
+  node.innerText = new Date(game.date).toDateString();
+  node.className = "text-gray-500";
+  grid.appendChild(node);
 
-    node = document.createElement("div");
-    node.className = "text-center";
-    if (game.selfScore < game.opponentScore) {
-      node.innerText = "LOOSE";
-      node.classList.add("text-red-500");
-    } else {
-      node.innerText = "WIN";
-      node.classList.add("text-green-500");
-    }
-    grid.appendChild(node);
-
-    node = document.createElement("div");
-    node.innerText = `${game.selfScore} - ${game.opponentScore}`;
-    node.className = "text-center";
-    grid.appendChild(node);
-
-    node = document.createElement("div");
-    node.innerText = game.opponent;
-    grid.appendChild(node);
+  node = document.createElement("div");
+  node.className = "text-center";
+  if (game.selfScore < game.opponentScore) {
+    node.innerText = "LOOSE";
+    node.classList.add("text-red-500");
   } else {
-
+    node.innerText = "WIN";
+    node.classList.add("text-green-500");
   }
+  grid.appendChild(node);
+
+  node = document.createElement("div");
+  node.innerText = `${game.selfScore} - ${game.opponentScore}`;
+  node.className = "text-center";
+  grid.appendChild(node);
+
+  node = document.createElement("div");
+  node.innerText = game.opponent;
+  grid.appendChild(node);
 }
