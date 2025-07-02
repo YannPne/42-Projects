@@ -52,19 +52,10 @@ export const startPage: Page = {
 
     const start = document.querySelector<HTMLButtonElement>("#start")!;
 
-    const brackets: ViewerData = {
-      participants: [],
-      stages: [
-        { id: 0, name: "", type: "single_elimination", tournament_id: 0, number: 1, settings: {} }
-      ],
-      matches: [],
-      matchGames: []
-    };
-
     ws.addEventListener("message", wsListener = (event) => {
       const message: ServerEvent = JSON.parse(event.data);
       if (message.event == "tournament") {
-        updateMatches(brackets, message);
+        updateMatches(message);
         start.disabled = message.players.length < 2;
       }
     });
@@ -72,7 +63,9 @@ export const startPage: Page = {
     send({ event: "tournament" });
   },
 
-  onUnmount() {
+  onUnmount(nextPage: Page<any>) {
+    if (nextPage !== pongPage)
+      send({ event: "leave_game" });
     if (wsListener != undefined)
       ws?.removeEventListener("message", wsListener);
     wsListener = undefined;
@@ -108,7 +101,16 @@ function setupBar() {
   };
 }
 
-async function updateMatches(brackets: ViewerData, tournament: Tournament) {
+const brackets: ViewerData = {
+  participants: [],
+  stages: [
+    { id: 0, name: "", type: "single_elimination", tournament_id: 0, number: 1, settings: {} }
+  ],
+  matches: [],
+  matchGames: []
+};
+
+export async function updateMatches(tournament: Tournament) {
   brackets.participants = tournament.players.map(p => ({
     id: p.id,
     tournament_id: 0,
@@ -134,7 +136,8 @@ async function updateMatches(brackets: ViewerData, tournament: Tournament) {
       const second = tournament.matches[roundId]?.[j + 1];
 
       brackets.matches.push({
-        id: incrementalId++, stage_id: 0, group_id: 0, round_id: roundId, number: j / 2, status: Status.Waiting, child_count: 0,
+        id: incrementalId++, stage_id: 0, group_id: 0, round_id: roundId, number: j / 2, child_count: 0,
+        status: first != undefined && first.running ? Status.Running : Status.Waiting,
         opponent1: { id: first == undefined ? null : first.player, score: first?.score },
         opponent2: second != undefined && second.player == null
           ? null

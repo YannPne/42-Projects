@@ -91,6 +91,9 @@ export class Game {
   }
 
   sendTournamentUpdate(user?: User) {
+    if (this.type == "LOCAL")
+      return;
+
     if (this.state == GameState.CREATING)
       this.generateTournamentRound();
 
@@ -99,16 +102,17 @@ export class Game {
       displayName: p.name,
       avatar: p.isAi ? null : undefined // TODO: With damien's PR, p will contain the user, use this instead. Currently avatar is broken
     }));
-    const matches: { player: string | null, score: number }[][] = [];
+    const matches: { player: string | null, score: number, running: boolean }[][] = [];
 
     for (let i = 0; i < this.tournament.length; i++) {
       matches.push([]);
       for (let match of this.tournament[i]) {
-        matches[i].push({ player: match.player1.id, score: match.score1 });
+        const running = match === this.currentMatch;
+        matches[i].push({ player: match.player1.id, score: match.score1, running });
         if (match.player2 != null)
-          matches[i].push({ player: match.player2.id, score: match.score2 });
+          matches[i].push({ player: match.player2.id, score: match.score2, running });
         else
-          matches[i].push({ player: null, score: 0 });
+          matches[i].push({ player: null, score: 0, running });
       }
     }
 
@@ -141,6 +145,7 @@ export class Game {
       return;
 
     this.resetPos(match);
+    this.sendTournamentUpdate();
   }
 
   generateTournamentRound() {
@@ -199,6 +204,15 @@ export class Game {
         this.currentMatch = match;
         this.resetPos(match);
 
+        for (let user of this.users) {
+          user.send({
+            event: "next_match",
+            players: [ match.player1.name, match.player2.name ]
+          });
+        }
+        this.sendTournamentUpdate();
+        await new Promise((res) => setTimeout(res, 5_000));
+
         while (Math.max(match.score1, match.score2 ?? -1) < Game.WIN_SCORE) {
           if (this.state != GameState.IN_GAME)
             break a;
@@ -229,7 +243,7 @@ export class Game {
             VALUES (?, ?, ?, ?, ?)`)
           .run(match.player1.name, match.player2.name, match.score1, match.score2, convertDate);
       }
-    } while (this.tournament[this.tournament.length - 1].length > 2);
+    } while (this.tournament[this.tournament.length - 1].length >= 2);
 
     if (this.state == GameState.IN_GAME) {
       this.state = GameState.SHOW_WINNER;
@@ -268,7 +282,7 @@ export class Game {
     for (let round of this.tournament) {
       for (let match of round) {
         matchIds.push(i++);
-        matchScores.push([ match.score1, match.player2 == null ? -1 : match.score2 ]);
+        matchScores.push([ match.score1, match.player2 == null ? Number.MAX_SAFE_INTEGER : match.score2 ]);
       }
     }
 

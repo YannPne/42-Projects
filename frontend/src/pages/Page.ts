@@ -16,7 +16,7 @@ export type Page<T = undefined> = {
   title: string;
   getPage(): string;
   onMount(data?: T): void;
-  onUnmount(): void;
+  onUnmount(nextPage?: Page<any>): void;
   toJSON(): string;
 };
 
@@ -36,10 +36,10 @@ export const pages: Page<any>[] = [
   notFoundPage
 ];
 
-let currentPage: Page<any> | undefined;
+export let currentPage: Page<any> | undefined;
 
 export function loadPage<T>(page: Page<T>, data?: T, historyState: "PUSH" | "REPLACE" | "NONE" = "PUSH") {
-  currentPage?.onUnmount();
+  currentPage?.onUnmount(page);
   document.querySelector<HTMLDivElement>("#app")!.innerHTML = page.getPage();
   currentPage = page;
 

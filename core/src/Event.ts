@@ -41,7 +41,8 @@ export type Tournament = {
   }[],
   matches: {
     player: string | null,
-    score: number
+    score: number,
+    running: boolean
   }[][]
 };
 
@@ -86,6 +87,7 @@ export type ServerEvent =
   | { event: "update", players: Player[], ball: Ball }
   | { event: "win", player: string }
   | { event: "tournament" } & Tournament
+  | { event: "next_match", players: [ string, string ] }
   // PROFILE
   | { event: "get_profile", locked: true, displayName: string }
   | { event: "get_profile", locked: false, self: boolean, avatar?: number[], online: boolean, displayName: string, username: string, email: string, games: Game[], friends: Friend[] }

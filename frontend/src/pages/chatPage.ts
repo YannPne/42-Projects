@@ -1,10 +1,11 @@
-import { loadPage, type Page } from "./Page.ts";
+import { currentPage, loadPage, type Page } from "./Page.ts";
 import { loginPage } from "./loginPage.ts";
 import { ws } from "../websocket.ts";
 import type { Message, ServerEvent } from "@ft_transcendence/core";
 import { send, sendAndWait } from "../Event.ts";
-import { pongPage } from "./pongPage.ts";
 import { profilePage } from "./profilePage.ts";
+import { startPage } from "./startPage.ts";
+import { pongPage } from "./pongPage.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 
@@ -387,12 +388,17 @@ function createSystemMessage(message: Message & { type: "invite" | "announce" },
     li.querySelector<HTMLSpanElement>(".message-content")!.innerText = `The tournament '${message.name}' has just been created. Come play with others!`;
 
   li.querySelector("button")!.onclick = async () => {
+    if (currentPage === startPage || currentPage === pongPage) {
+      alert("You are already participating in a game or tournament. Please leave the group before joining another.");
+      return;
+    }
+
     const response = await sendAndWait({
       event: "join_game",
       uid: message.id!
     });
     if (response.success)
-      loadPage(pongPage);
+      loadPage(startPage);
     else
       alert("This game no longer exists.");
   }

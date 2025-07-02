@@ -47,6 +47,9 @@ function createGame(user: User, message: ClientEvent & { event: "create_game" })
 }
 
 function joinGame(user: User, message: ClientEvent & { event: "join_game" }) {
+  if (user.game != undefined)
+    user.game.removeUser(user);
+
   let game = games.find((g) => g.uid == message.uid);
   if (game == undefined)
     user.send({ event: "join_game", success: false, started: false });
@@ -57,7 +60,10 @@ function joinGame(user: User, message: ClientEvent & { event: "join_game" }) {
 }
 
 function getCurrentGame(user: User) {
-  user.send({ event: "get_current_game", id: user.game?.uid, type: user.game?.type });
+  if (user.game != undefined)
+    user.send({ event: "get_current_game", id: user.game.uid, type: user.game.type });
+  else
+    user.send({ event: "get_current_game", id: undefined, type: undefined });
 }
 
 function addLocalPlayer(user: User, message: ClientEvent & { event: "add_local_player" }) {

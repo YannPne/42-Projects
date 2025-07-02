@@ -6,10 +6,12 @@ import type { Ball, Player, ServerEvent } from "@ft_transcendence/core";
 import { send, sendAndWait } from "../Event.ts";
 import { chatPage } from "./chatPage.ts";
 import { modePage } from "./modePage.ts";
+import { updateMatches } from "./startPage.ts";
 
 let wsListener: ((event: MessageEvent) => void) | undefined;
 let keydownListener: ((event: KeyboardEvent) => void) | undefined;
 let keyupListener: ((event: KeyboardEvent) => void) | undefined;
+let clickListener: ((event: MouseEvent) => void) | undefined;
 
 export const pongPage: Page = {
   url: "/pong",
@@ -19,31 +21,35 @@ export const pongPage: Page = {
     return `
       <div class="h-full flex flex-col overflow-hidden">
    
-		  <hr class="h-px bg-gray-200 border-0">
-		  <div class="h-full flex-1 flex">
-			  <div class="flex-1 flex flex-col p-5 overflow-hidden">
-
-          <div class="flex flex-col items-center justify-center h-full w-full p-5">
-            <canvas id="game2d" width="1200" height="600" class="w-[90%] aspect-[2/1] bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
-            <div class="w-[90%] relative">
-              <canvas id="game3d" width="1200" height="600" class="w-full aspect-[2/1] not-focus-visible"></canvas>
-              <i class="fa-solid fa-arrows-rotate fa-spin text-4xl absolute right-0 bottom-0"></i>
-            </div>
-            <div class="flex items-center justify-around w-full">
-              <div class="flex items-center space-x-4 mt-4">
-                <span id="toggle-text" class="text-lg font-medium text-white select-none cursor-pointer">Mode 3D</span>
-                <button id="is3d" type="button" class="relative w-16 h-9 bg-gray-700 rounded-full transition-colors duration-300 ease-in-out focus:outline-none">
-                  <span id="toggle-circle" class="absolute left-1 top-1 w-7 h-7 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out"></span>
-                </button>
+        <hr class="h-px bg-gray-200 border-0">
+        <div class="h-full flex-1 flex">
+          <div class="flex-1 flex flex-col p-5 overflow-hidden">
+  
+            <div class="flex flex-col items-center justify-center h-full w-full p-5">
+              <canvas id="game2d" width="1200" height="600" class="w-[90%] aspect-[2/1] bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
+              <div class="w-[90%] relative">
+                <canvas id="game3d" width="1200" height="600" class="w-full aspect-[2/1] not-focus-visible"></canvas>
+                <i class="fa-solid fa-arrows-rotate fa-spin text-4xl absolute right-0 bottom-0"></i>
               </div>
-              <i id="tournament" class="fa-solid fa-trophy text-3xl cursor-pointer hover:text-gray-300"></i>
+              <div class="flex items-center justify-around w-full">
+                <div class="flex items-center space-x-4 mt-4">
+                  <span id="toggle-text" class="text-lg font-medium text-white select-none cursor-pointer">Mode 3D</span>
+                  <button id="is3d" type="button" class="relative w-16 h-9 bg-gray-700 rounded-full transition-colors duration-300 ease-in-out focus:outline-none">
+                    <span id="toggle-circle" class="absolute left-1 top-1 w-7 h-7 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out"></span>
+                  </button>
+                </div>
+                <i id="tournament" class="fa-solid fa-trophy text-3xl cursor-pointer hover:text-gray-300"></i>
+              </div>
             </div>
+  
           </div>
-
-			  </div>
-			  ${chatPage.getPage()}
+          ${chatPage.getPage()}
+        </div>
 		  </div>
-		  </div>
+		  <div id="tournament-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center w-screen h-screen overflow-hidden p-10" style="display: none">
+		    <div class="brackets-viewer bg-gray-800 p-10 rounded-4xl max-w-full max-h-full overflow-auto">
+        </div>
+      </div>
     `;
   },
 
@@ -66,7 +72,9 @@ export const pongPage: Page = {
     const canvas3d = document.querySelector<HTMLCanvasElement>("#game3d")!;
     let context3d = setup3d(canvas3d);
     const is3d = document.querySelector<HTMLButtonElement>("#is3d")!;
-    const tournamentHover = document.querySelector<HTMLElement>("#tournament")!;
+    const tournamentButton = document.querySelector<HTMLElement>("#tournament")!;
+    const tournamentModal = document.querySelector<HTMLDivElement>("#tournament-modal")!;
+    const tournamentBracket = tournamentModal.querySelector<HTMLDivElement>(".brackets-viewer")!;
 
     const toggleText = document.querySelector<HTMLSpanElement>("#toggle-text")!;
     const toggleCircle = document.querySelector<HTMLSpanElement>("#toggle-circle")!;
@@ -74,7 +82,7 @@ export const pongPage: Page = {
     let is3dActive = true;
 
     if (currentGame.type == "LOCAL")
-      tournamentHover.remove();
+      tournamentButton.remove();
 
     function updateToggleUI() {
       toggleText.textContent = is3dActive ? "Mode 3D" : "Mode 2D";
@@ -93,6 +101,8 @@ export const pongPage: Page = {
       updateToggleUI();
     };
 
+    tournamentButton.onclick = () => tournamentModal.style.display = "";
+
     document.addEventListener("keydown", keydownListener = event => {
       if (!event.repeat)
         move(event, false);
@@ -102,7 +112,12 @@ export const pongPage: Page = {
       move(event, true);
     });
 
-    ws?.addEventListener("message", wsListener = async (event) => {
+    document.addEventListener("click", clickListener = event => {
+      if (!tournamentBracket.contains(event.target as Node | null) && event.target !== tournamentButton)
+        tournamentModal.style.display = "none";
+    });
+
+    ws.addEventListener("message", wsListener = async (event) => {
       const message: ServerEvent = JSON.parse(event.data);
 
       switch (message.event) {
@@ -117,24 +132,37 @@ export const pongPage: Page = {
             drawScore(canvas2d, context2d, message.players[0], message.players[1]);
           }
           break;
+        case "next_match":
+          drawText3d(context3d, message.players[0] + "\nvs\n" + message.players[1]);
+          drawText(context2d, message.players[0] + "\nvs\n" + message.players[1]);
+          break;
+        case "tournament":
+          await updateMatches(message);
+          break;
         case "win":
-          drawEndGame3D(context3d, message.player);
-          drawEndGame(canvas2d, context2d, message.player);
+          drawText3d(context3d, message.player + "\nwin!");
+          drawText(context2d, message.player + "\nwin!");
           await sleep(2000);
           loadPage(modePage);
           break;
       }
     });
+
+    send({ event: "tournament" });
+
   },
 
   onUnmount() {
     send({ event: "leave_game" });
+    if (clickListener != undefined)
+      document.removeEventListener("click", clickListener);
     if (keydownListener != undefined)
       document.removeEventListener("keydown", keydownListener);
     if (keyupListener != undefined)
       document.removeEventListener("keyup", keyupListener);
     if (wsListener != undefined)
       ws?.removeEventListener("message", wsListener);
+    clickListener = undefined;
     keydownListener = undefined;
     keyupListener = undefined;
     wsListener = undefined;
@@ -327,6 +355,43 @@ function setup3d(canvas: HTMLCanvasElement): GameElements {
   return { ball, player1, player2, textNameP1, textNameP2, textScoreP1, textScoreP2, textEndGame };
 }
 
+// ## 3D ##
+function updateGame3D(context: GameElements, ball: Ball, player1: Player, player2: Player) {
+  context.ball.position.set(ball.x + 25, -ball.y - 25, 0);
+  context.player2.position.set(player2.x + 10, -player2.y - 100, 5);
+  context.player1.position.set(player1.x + 10, -player1.y - 100, 5);
+  drawScore3D(context, player1, player2);
+}
+
+function drawScore3D(context: GameElements, player1: Player, player2: Player) {
+  if (context.textEndGame.text != "")
+    context.textEndGame.text = "";
+  if (context.textScoreP1.text != player1.score.toString())
+    context.textScoreP1.text = player1.score.toString();
+  if (context.textScoreP2.text != player2.score.toString())
+    context.textScoreP2.text = player2.score.toString();
+  if (context.textNameP1.text != player1.name)
+    context.textNameP1.text = player1.name;
+  if (context.textNameP2.text != player2.name)
+    context.textNameP2.text = player2.name;
+}
+
+function drawText3d(context: GameElements, text: string) {
+  context.textNameP1.text = "";
+  context.textNameP2.text = "";
+  context.textScoreP1.text = "";
+  context.textScoreP2.text = "";
+  context.textEndGame.text = text;
+  context.ball.position.set(600, -300, 200);
+  context.player1.position.set(600, -300, 200);
+  context.player2.position.set(600, -300, 200);
+}
+
+// ## 2D ##
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 function drawMap(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
   context.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -340,41 +405,6 @@ function drawMap(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
   context.setLineDash([]);
   context.shadowBlur = 20;
   context.shadowColor = "pink";
-}
-
-// ## 3D ##
-function updateGame3D(context: GameElements, ball: Ball, player1: Player, player2: Player) {
-  context.ball.position.set(ball.x + 25, -ball.y - 25, 0);
-  context.player2.position.set(player2.x + 10, -player2.y - 100, 5);
-  context.player1.position.set(player1.x + 10, -player1.y - 100, 5);
-  drawScore3D(context, player1, player2);
-}
-
-function drawScore3D(context: GameElements, player1: Player, player2: Player) {
-  if (context.textScoreP1.text != player1.score.toString())
-    context.textScoreP1.text = player1.score.toString();
-  if (context.textScoreP2.text != player2.score.toString())
-    context.textScoreP2.text = player2.score.toString();
-  if (context.textNameP1.text != player1.name)
-    context.textNameP1.text = player1.name;
-  if (context.textNameP2.text != player2.name)
-    context.textNameP2.text = player2.name;
-}
-
-function drawEndGame3D(context: GameElements, player: string) {
-  context.textNameP1.text = "";
-  context.textNameP2.text = "";
-  context.textScoreP1.text = "";
-  context.textScoreP2.text = "";
-  context.textEndGame.text = player + " win!";
-  context.ball.position.set(600, -300, 200);
-  context.player1.position.set(600, -300, 200);
-  context.player2.position.set(600, -300, 200);
-}
-
-// ## 2D ##
-function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function drawPlayer(context: CanvasRenderingContext2D, player: Player) {
@@ -413,10 +443,12 @@ function drawScore(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D,
   context.globalAlpha = 1;
 }
 
-function drawEndGame(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, player: string) {
+function drawText(context: CanvasRenderingContext2D, text: string) {
+  context.clearRect(0, 0, context.canvas.width, context.canvas.height);
   context.font = "80px Arial";
   context.fillStyle = "white";
   context.textAlign = "center";
   context.textBaseline = "middle";
-  context.fillText(player + " win", canvas.width / 2, canvas.height / 4);
+  text.split("\n").forEach((value, i) =>
+    context.fillText(value, context.canvas.width / 2, context.canvas.height / 4 + 80 * i));
 }
