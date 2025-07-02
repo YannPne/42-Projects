@@ -306,9 +306,9 @@ function setup3d(canvas: HTMLCanvasElement): GameElements {
 
   const textScoreP1 = createTextBlock("gray", 400, "");
   const textScoreP2 = createTextBlock("gray", 400, "");
-  const textNameP1 = createTextBlock("white", 150, "");
-  const textNameP2 = createTextBlock("white", 150, "");
-  const textEndGame = createTextBlock("white", 200, "");
+  const textNameP1 = createTextBlock("white", 90, "");
+  const textNameP2 = createTextBlock("white", 90, "");
+  const textEndGame = createTextBlock("white", 90, "");
 
   const guiScoreP1 = AdvancedDynamicTexture.CreateForMesh(planeScoreP1);
   const guiScoreP2 = AdvancedDynamicTexture.CreateForMesh(planeScoreP2);
