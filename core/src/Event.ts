@@ -40,7 +40,7 @@ export type Tournament = {
     avatar?: number[] | null
   }[],
   matches: {
-    player: string,
+    player: string | null,
     score: number
   }[][]
 };
@@ -56,6 +56,7 @@ export type ClientEvent =
   | { event: "play" }
   | { event: "leave_game" }
   | { event: "move", id: number, goUp?: boolean, goDown?: boolean }
+  | { event: "tournament" }
   // PROFILE
   | { event: "get_profile", id?: number }
   | { event: "add_friend", user: string | number }
@@ -80,7 +81,8 @@ export type ServerEvent =
   // GAME
   | { event: "get_games", games: { uid: string, name: string }[] }
   | { event: "join_game", success: boolean, started: boolean }
-  | { event: "get_current_game", id?: string, type?: GameType }
+  | { event: "get_current_game", id: string, type: GameType }
+  | { event: "get_current_game", id: undefined, type: undefined }
   | { event: "update", players: Player[], ball: Ball }
   | { event: "win", player: string }
   | { event: "tournament" } & Tournament

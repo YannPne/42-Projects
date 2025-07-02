@@ -1,33 +1,32 @@
 import { Game } from "./Game";
 
 export default class Player {
-  readonly width: number = 20;
-  readonly height: number = 200;
+  static readonly WIDTH = 20;
+  static readonly HEIGHT = 200;
 
   readonly id: string;
-  readonly game: Game;
+  private readonly game: Game;
   readonly name: string;
   readonly isAi: boolean;
-  speed: number = 5;
+  private speed: number = 5;
   x: number = 0;
   y: number = 0;
   goUp: boolean = false;
   goDown: boolean = false;
-  score: number = 0;
 
-  aiLastCheck: number = Date.now();
-  aiTargetY: number = 0;
+  private aiLastCheck: number = Date.now();
+  private aiTargetY: number = 0;
 
   constructor(game: Game, name: string, isAi: boolean) {
     this.id = crypto.randomUUID();
     this.game = game;
     this.name = name;
     this.isAi = isAi;
-    this.aiTargetY = ((Math.random() - 0.5) * this.height) + game.height / 2;
+    this.aiTargetY = ((Math.random() - 0.5) * Player.HEIGHT) + Game.HEIGHT / 2;
   }
 
   get isAtLeft() {
-    return this.x - this.game.width / 2 < 0;
+    return this.x - Game.WIDTH / 2 < 0;
   }
 
   get left() {
@@ -35,7 +34,7 @@ export default class Player {
   }
 
   get right() {
-    return this.x + this.width;
+    return this.x + Player.WIDTH;
   }
 
   get top() {
@@ -43,15 +42,15 @@ export default class Player {
   }
 
   get bottom() {
-    return this.y + this.height;
+    return this.y + Player.HEIGHT;
   }
 
   get centerX() {
-    return this.x + this.width / 2;
+    return this.x + Player.WIDTH / 2;
   }
 
   get centerY() {
-    return this.y + this.height / 2;
+    return this.y + Player.HEIGHT / 2;
   }
 
   move() {
@@ -59,7 +58,7 @@ export default class Player {
 
     if (this.goUp) this.y -= this.speed;
     if (this.goDown) this.y += this.speed;
-    this.y = Math.min(Math.max(this.y, 0), this.game.height - this.height);
+    this.y = Math.min(Math.max(this.y, 0), Game.HEIGHT - Player.HEIGHT);
   }
 
   playAi() {
@@ -75,22 +74,19 @@ export default class Player {
           * ball.speedY) / ball.speedX + ball.centerY;
         if (this.aiTargetY < 0)
           this.aiTargetY = (-this.aiTargetY) * 1.25;
-        else if (this.aiTargetY > this.game.height)
-          this.aiTargetY = this.game.height - ((this.aiTargetY - this.game.height) * 1.25);
+        else if (this.aiTargetY > Game.HEIGHT)
+          this.aiTargetY = Game.HEIGHT - ((this.aiTargetY - Game.HEIGHT) * 1.25);
         this.aiTargetY += (Math.random() - 0.5) * 50;
-      }
-      else
-      {
+      } else {
         this.speed = 2;
         this.aiTargetY = ball.centerY;
       }
     }
-    this.goUp = this.centerY > this.aiTargetY + (this.height / 4);
-    this.goDown = this.centerY < this.aiTargetY - (this.height / 4);
-    if (!this.goUp && !this.goDown && ball.goToLeft != this.isAtLeft) 
-    {
+    this.goUp = this.centerY > this.aiTargetY + (Player.HEIGHT / 4);
+    this.goDown = this.centerY < this.aiTargetY - (Player.HEIGHT / 4);
+    if (!this.goUp && !this.goDown && ball.goToLeft != this.isAtLeft) {
       this.speed = 1;
-      this.aiTargetY =  Math.floor(Date.now() / 500) % 2 === 0 ? 0 : this.game.height
+      this.aiTargetY = Math.floor(Date.now() / 500) % 2 === 0 ? 0 : Game.HEIGHT;
     }
   }
 
@@ -99,9 +95,8 @@ export default class Player {
       name: this.name,
       x: this.x,
       y: this.y,
-      width: this.width,
-      height: this.height,
-      score: this.score
+      width: Player.WIDTH,
+      height: Player.HEIGHT
     };
   }
 }

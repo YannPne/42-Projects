@@ -2,7 +2,7 @@ import { loadPage, type Page } from "./Page.ts";
 import { changeChatTournamentState, chatPage } from "./chatPage.ts";
 import { Status } from "brackets-model";
 import type { ViewerData } from "brackets-viewer";
-import type { ServerEvent, Tournament } from "@ft_transcendence/core";
+import { nextPow, type ServerEvent, type Tournament } from "@ft_transcendence/core";
 import { send, sendAndWait } from "../Event.ts";
 import { ws } from "../websocket.ts";
 import { modePage } from "./modePage.ts";
@@ -26,7 +26,7 @@ export const startPage: Page = {
               <label for="add-local-ai" class="mr-2">Is AI?</label>
               <button class="p-2 bg-blue-900 hover:bg-blue-950">Add local player</button>
             </form>
-            <button id="start" class="bg-blue-500 hover:bg-blue-700 cursor-pointer rounded-lg py-2 px-10">Start</button>
+            <button id="start" disabled class="bg-blue-500 disabled:bg-blue-900 not-disabled:hover:bg-blue-700 not-disabled:cursor-pointer rounded-lg py-2 px-10">Start</button>
           </div>
         </div>
         ${chatPage.getPage()}
@@ -50,6 +50,8 @@ export const startPage: Page = {
     changeChatTournamentState(true);
     setupBar();
 
+    const start = document.querySelector<HTMLButtonElement>("#start")!;
+
     const brackets: ViewerData = {
       participants: [],
       stages: [
@@ -61,9 +63,13 @@ export const startPage: Page = {
 
     ws.addEventListener("message", wsListener = (event) => {
       const message: ServerEvent = JSON.parse(event.data);
-      if (message.event == "tournament")
+      if (message.event == "tournament") {
         updateMatches(brackets, message);
+        start.disabled = message.players.length < 2;
+      }
     });
+
+    send({ event: "tournament" });
   },
 
   onUnmount() {
@@ -112,7 +118,7 @@ async function updateMatches(brackets: ViewerData, tournament: Tournament) {
   window.bracketsViewer.setParticipantImages(tournament.players
     .filter(p => p.avatar !== null)
     .map(p => ({
-      participantId: p.id,
+      participantId: p.id as any as number,
       imageUrl: p.avatar == undefined ? "/avatar.webp" : URL.createObjectURL(new Blob([ new Uint8Array(p.avatar) ]))
     })));
 
@@ -130,7 +136,9 @@ async function updateMatches(brackets: ViewerData, tournament: Tournament) {
       brackets.matches.push({
         id: incrementalId++, stage_id: 0, group_id: 0, round_id: roundId, number: j / 2, status: Status.Waiting, child_count: 0,
         opponent1: { id: first == undefined ? null : first.player, score: first?.score },
-        opponent2: { id: second == undefined ? null : second.player, score: second?.score }
+        opponent2: second != undefined && second.player == null
+          ? null
+          : { id: second == undefined ? null : second.player, score: second?.score }
       });
     }
 
@@ -138,15 +146,4 @@ async function updateMatches(brackets: ViewerData, tournament: Tournament) {
   }
 
   await window.bracketsViewer.render(brackets, { highlightParticipantOnHover: false, clear: true });
-}
-
-function nextPow(n: number) {
-  if (n <= 1)
-    return 1;
-
-  let pow = 1;
-  while (pow < n)
-    pow <<= 1;
-
-  return pow;
 }

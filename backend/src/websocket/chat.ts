@@ -1,8 +1,6 @@
 import User from "../User";
 import { ClientEvent, ServerEvent } from "@ft_transcendence/core";
 import { sqlite } from "../index";
-import { finished } from "node:stream";
-import { games } from "../Game";
 
 const inChatUsers: User[] = [];
 

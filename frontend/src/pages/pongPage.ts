@@ -1,6 +1,5 @@
 import { loadPage, type Page } from "./Page.ts";
 import { ws } from "../websocket.ts";
-import { chooseGamePage } from "./chooseGamePage.ts";
 import { ArcRotateCamera, Color3, Color4, Engine, HemisphericLight, GlowLayer, MeshBuilder, Scene, StandardMaterial, Texture, Vector3, Mesh } from "@babylonjs/core";
 import { TextBlock, AdvancedDynamicTexture } from "@babylonjs/gui";
 import type { Ball, Player, ServerEvent } from "@ft_transcendence/core";
@@ -53,8 +52,8 @@ export const pongPage: Page = {
       loadPage(modePage, undefined, "REPLACE");
       return;
     }
-    const { id } = await sendAndWait({ event: "get_current_game" });
-    if (id == undefined) {
+    const currentGame = await sendAndWait({ event: "get_current_game" });
+    if (currentGame.id == undefined) {
       loadPage(modePage, undefined, "REPLACE");
       return;
     }
@@ -66,12 +65,16 @@ export const pongPage: Page = {
     const context2d = canvas2d.getContext("2d")!;
     const canvas3d = document.querySelector<HTMLCanvasElement>("#game3d")!;
     let context3d = setup3d(canvas3d);
-    const is3d = document.querySelector<HTMLInputElement>("#is3d")!;
+    const is3d = document.querySelector<HTMLButtonElement>("#is3d")!;
+    const tournamentHover = document.querySelector<HTMLElement>("#tournament")!;
 
     const toggleText = document.querySelector<HTMLSpanElement>("#toggle-text")!;
     const toggleCircle = document.querySelector<HTMLSpanElement>("#toggle-circle")!;
 
     let is3dActive = true;
+
+    if (currentGame.type == "LOCAL")
+      tournamentHover.remove();
 
     function updateToggleUI() {
       toggleText.textContent = is3dActive ? "Mode 3D" : "Mode 2D";
@@ -112,12 +115,13 @@ export const pongPage: Page = {
               drawPlayer(context2d, player);
             drawBall(context2d, message.ball);
             drawScore(canvas2d, context2d, message.players[0], message.players[1]);
-            await nextMatch(context2d, message.players);
           }
           break;
         case "win":
           drawEndGame3D(context3d, message.player);
-          await drawEndGame(canvas2d, context2d, message.player);
+          drawEndGame(canvas2d, context2d, message.player);
+          await sleep(2000);
+          loadPage(modePage);
           break;
       }
     });
@@ -141,20 +145,6 @@ export const pongPage: Page = {
     return this.url;
   }
 };
-
-let lastName1: string;
-let lastName2: string;
-
-async function nextMatch(context: CanvasRenderingContext2D, players: Player[]) {
-  if (lastName1 == undefined) {
-    lastName1 = players[0].name;
-    lastName2 = players[1].name;
-  }
-  if (lastName1 != players[0].name || lastName2 != players[1].name)
-    await countdownOnCanvas(context);
-  lastName1 = players[0].name;
-  lastName2 = players[1].name;
-}
 
 function move(event: KeyboardEvent, up: boolean) {
   let goUp: boolean | undefined;
@@ -387,32 +377,6 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function countdownOnCanvas(ctx: CanvasRenderingContext2D) {
-  const width = ctx.canvas.width;
-  const height = ctx.canvas.height;
-
-  ctx.textBaseline = "middle";
-  ctx.textAlign = "center";
-  ctx.fillStyle = "white";
-  ctx.font = "bold 150px Arial";
-
-  for (let i = 3; i > 0; i--) {
-    ctx.clearRect(0, 0, width, height);
-    ctx.globalAlpha = 1;
-    ctx.fillText(i.toString(), width / 2, height / 2);
-
-    for (let alpha = 1; alpha >= 0; alpha -= 0.05) {
-      ctx.clearRect(0, 0, width, height);
-      ctx.globalAlpha = alpha;
-      ctx.fillText(i.toString(), width / 2, height / 2);
-      await sleep(50);
-    }
-  }
-
-  ctx.globalAlpha = 1;
-  ctx.clearRect(0, 0, width, height);
-}
-
 function drawPlayer(context: CanvasRenderingContext2D, player: Player) {
   context.fillStyle = "white";
   context.fillRect(player.x, player.y, player.width, player.height);
@@ -449,13 +413,10 @@ function drawScore(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D,
   context.globalAlpha = 1;
 }
 
-async function drawEndGame(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, player: string) {
+function drawEndGame(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, player: string) {
   context.font = "80px Arial";
   context.fillStyle = "white";
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.fillText(player + " win", canvas.width / 2, canvas.height / 4);
-
-  await sleep(2000);
-  loadPage(chooseGamePage);
 }
