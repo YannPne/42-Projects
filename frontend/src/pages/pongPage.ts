@@ -81,6 +81,9 @@ export const pongPage: Page = {
 
     let is3dActive = true;
 
+    const chatInput = document.querySelector<HTMLFormElement>("#chat-message-input")!
+      .querySelector("input")!;
+
     if (currentGame.type == "LOCAL")
       tournamentButton.remove();
 
@@ -104,12 +107,13 @@ export const pongPage: Page = {
     tournamentButton.onclick = () => tournamentModal.style.display = "";
 
     document.addEventListener("keydown", keydownListener = event => {
-      if (!event.repeat)
+      if (!event.repeat && document.activeElement !== chatInput)
         move(event, false);
     });
 
     document.addEventListener("keyup", keyupListener = event => {
-      move(event, true);
+      if (document.activeElement !== chatInput)
+        move(event, true);
     });
 
     document.addEventListener("click", clickListener = event => {

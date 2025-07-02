@@ -70,7 +70,6 @@ export class Game {
 
     if (this.players.filter(p => !p.isAi).length == 0) {
       this.state = GameState.ABORTED;
-      games.splice(games.indexOf(this), 1);
     }
 
     this.sendTournamentUpdate();

@@ -220,9 +220,16 @@ export const chatPage: Page = {
 function updateUsers() {
   const users = document.querySelector<HTMLDivElement>("#chat-users")!;
 
+  const seen = new Set<number>();
   const online = info.online
     .filter(u => !info.blocked.some(b => b == u.id))
-    .filter(u => u.id != info.id);
+    .filter(u => u.id != info.id)
+    .filter(u => {
+      if (seen.has(u.id))
+        return false;
+      seen.add(u.id);
+      return true;
+    });
 
   online.sort((a, b) => {
     let result = 0;
@@ -258,7 +265,7 @@ function createUser(users: HTMLDivElement, user: { id: number, avatar?: number[]
   button.innerHTML = `
     <div class="h-[10px] w-[10px] rounded-full bg-blue-500 mr-1" style="display: none"></div>
     <img src="/avatar.webp" alt="avatar" class="rounded-full h-[25px] w-[25px] bg-gray-950 border border-white">
-    <span class="mx-1"></span>
+    <span class="mx-1 text-ellipsis overflow-hidden"></span>
     <i class="fa-solid fa-star text-yellow-500" style="display: none"></i>
   `;
 

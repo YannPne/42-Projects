@@ -76,6 +76,8 @@ function addLocalPlayer(user: User, message: ClientEvent & { event: "add_local_p
 function play(user: User) {
   if (user.game != undefined) {
     user.game.state = GameState.IN_GAME;
+    for (let u of user.game.users)
+      u.send({ event: "play" });
   }
 }
 

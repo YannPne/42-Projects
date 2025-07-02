@@ -57,7 +57,8 @@ export const startPage: Page = {
       if (message.event == "tournament") {
         updateMatches(message);
         start.disabled = message.players.length < 2;
-      }
+      } else if (message.event == "play")
+        loadPage(pongPage);
     });
 
     send({ event: "tournament" });
@@ -97,7 +98,6 @@ function setupBar() {
 
   start.onclick = () => {
     send({ event: "play" });
-    loadPage(pongPage);
   };
 }
 

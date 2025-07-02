@@ -84,6 +84,7 @@ export type ServerEvent =
   | { event: "join_game", success: boolean, started: boolean }
   | { event: "get_current_game", id: string, type: GameType }
   | { event: "get_current_game", id: undefined, type: undefined }
+  | { event: "play" }
   | { event: "update", players: Player[], ball: Ball }
   | { event: "win", player: string }
   | { event: "tournament" } & Tournament
