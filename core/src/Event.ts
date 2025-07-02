@@ -13,26 +13,14 @@ export type Ball = {
   size: number;
 };
 
-export type Tournament = {
-  type: "tournament",
-  rounds: {
-    matches: {
-      players?: {
-        name: string,
-        avatar?: number[],
-        score: number
-      }[]
-    }[]
-  }[];
-};
-
 export type Game = {
-  type: "game",
   opponent: string,
   selfScore: number,
   opponentScore: number,
   date: number
 };
+
+export type GameType = "LOCAL" | "PRIVATE_TOURNAMENT" | "PUBLIC_TOURNAMENT";
 
 export type Friend = {
   id: number,
@@ -43,17 +31,33 @@ export type Friend = {
 
 export type Message =
   | { type: "message", sender: number, content: string }
-  | { type: "invite" | "announce", id: string, name: string };
+  | { type: "invite" | "announce", id?: string, name?: string };
+
+export type Tournament = {
+  players: {
+    id: string,
+    displayName: string,
+    avatar?: number[] | null
+  }[],
+  matches: {
+    player: string | null,
+    score: number,
+    running: boolean
+  }[][]
+};
 
 export type ClientEvent =
 // GAME
   | { event: "get_games" }
-  | { event: "join_game", uid: string, name?: string }
+  | { event: "create_game", type: GameType, name: string }
+  | { event: "create_game", type: GameType & "LOCAL" }
+  | { event: "join_game", uid: string }
+  | { event: "get_current_game" }
   | { event: "add_local_player", name: string, isAi: boolean }
   | { event: "play" }
   | { event: "leave_game" }
   | { event: "move", id: number, goUp?: boolean, goDown?: boolean }
-  | { event: "get_tournament" }
+  | { event: "tournament" }
   // PROFILE
   | { event: "get_profile", id?: number }
   | { event: "add_friend", user: string | number }
@@ -77,12 +81,17 @@ export type ServerEvent =
   | { event: "connected", displayName: string, avatar?: number[] }
   // GAME
   | { event: "get_games", games: { uid: string, name: string }[] }
+  | { event: "join_game", success: boolean, started: boolean }
+  | { event: "get_current_game", id: string, type: GameType }
+  | { event: "get_current_game", id: undefined, type: undefined }
+  | { event: "play" }
   | { event: "update", players: Player[], ball: Ball }
   | { event: "win", player: string }
-  | { event: "get_tournament", tournament: string[] }
+  | { event: "tournament" } & Tournament
+  | { event: "next_match", players: [ string, string ] }
   // PROFILE
   | { event: "get_profile", locked: true, displayName: string }
-  | { event: "get_profile", locked: false, self: boolean, avatar?: number[], online: boolean, displayName: string, username: string, email: string, games: (Game | Tournament)[], friends: Friend[] }
+  | { event: "get_profile", locked: false, self: boolean, avatar?: number[], online: boolean, displayName: string, username: string, email: string, games: Game[], friends: Friend[] }
   | { event: "add_friend", success: boolean }
   | { event: "remove_friend", success: boolean }
   // SETTINGS

@@ -1,7 +1,6 @@
 import User from "../User";
 import { ClientEvent, ServerEvent } from "@ft_transcendence/core";
 import { sqlite } from "../index";
-import { finished } from "node:stream";
 
 const inChatUsers: User[] = [];
 
@@ -58,10 +57,15 @@ function onMessage(user: User, event: ClientEvent & { event: "message" }) {
   };
   if (sendMessage.message.type == "message")
     sendMessage.message.sender = user.id;
+  if (sendMessage.message.type == "invite") {
+    sendMessage.message.id = user.game?.uid;
+    sendMessage.message.name = user.game?.name;
+  }
 
   if (event.to != undefined) {
     send = send.filter(u => u.id == event.to);
-    user.send(sendMessage);
+    if (sendMessage.message.type !== "invite")
+      user.send(sendMessage);
   }
 
   if (event.to != undefined)

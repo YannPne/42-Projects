@@ -1,6 +1,7 @@
+import "brackets-viewer";
 import { findPage, loadPage } from "./pages/Page.ts";
 import { closeWs, connectWs } from "./websocket.ts";
-import { chooseGamePage } from "./pages/chooseGamePage.ts";
+import { modePage } from "./pages/modePage.ts";
 
 export const loggedNav = document.querySelector<HTMLElement>("#logged-nav")!;
 export const unloggedNav = document.querySelector<HTMLElement>("#unlogged-nav")!;
@@ -35,7 +36,7 @@ for (let a of document.querySelectorAll("a")) {
   a.onclick = event => {
     event.preventDefault();
     if (unloggedNav.contains(a))
-      loadPage(findPage(a.getAttribute("href") ?? ""), chooseGamePage);
+      loadPage(findPage(a.getAttribute("href") ?? ""), modePage);
     else
       loadPage(findPage(a.getAttribute("href") ?? ""));
   };
