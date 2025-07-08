@@ -8,18 +8,19 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@babylonjs/core": "^8.12.0",
-    "@babylonjs/gui": "^8.12.0",
+    "@babylonjs/core": "^8.14.1",
+    "@babylonjs/gui": "^8.14.1",
     "@fortawesome/fontawesome-free": "^6.7.2",
-    "@tailwindcss/vite": "^4.1.10",
+    "@ft_transcendence/core": "^1.0.0",
+    "@tailwindcss/vite": "^4.1.11",
+    "brackets-viewer": "github:poppabear8883/brackets-viewer.js",
     "qrcode": "^1.5.4",
-    "tailwindcss": "^4.1.8"
+    "tailwindcss": "^4.1.11"
   },
   "devDependencies": {
-    "@ft_transcendence/core": "^1.0.0",
-    "@types/node": "^22.15.31",
+    "@types/node": "^24.0.10",
     "@types/qrcode": "^1.5.5",
     "typescript": "^5.8.3",
-    "vite": "^6.3.5"
+    "vite": "^7.0.0"
   }
 }

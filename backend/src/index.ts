@@ -34,7 +34,7 @@ sqlite.exec(`CREATE TABLE IF NOT EXISTS games (
     player2_id    INTEGER,
     player2_name  TEXT,
     player2_score INTEGER NOT NULL,
-    date          DATE NOT NULL,
+    date          DATE NOT NULL DEFAULT CURRENT_DATE,
     
     FOREIGN KEY (player1_id) REFERENCES users (id) ON DELETE SET NULL,
     FOREIGN KEY (player2_id) REFERENCES users (id) ON DELETE SET NULL

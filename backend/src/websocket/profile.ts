@@ -88,23 +88,13 @@ function getProfile(user: User, userToGet: number) {
 
     const games: Game[] = [];
     for (let game of row.games) {
-      if (game.players[0].id == userToGet) {
-        games.push({
-          type: "game",
-          opponent: game.players[1].name,
-          selfScore: game.players[0].score,
-          opponentScore: game.players[1].score,
-          date: game.date
-        });
-      } else {
-        games.push({
-          type: "game",
-          opponent: game.players[0].name,
-          selfScore: game.players[1].score,
-          opponentScore: game.players[0].score,
-          date: game.date
-        });
-      }
+      const index = game.players[0].id == userToGet ? 0 : 1;
+      games.push({
+        opponent: game.players[(index + 1) % 2].name,
+        selfScore: game.players[index].score,
+        opponentScore: game.players[(index + 1) % 2].score,
+        date: game.date
+      });
     }
 
     row.games = games;

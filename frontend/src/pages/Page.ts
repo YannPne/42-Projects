@@ -1,29 +1,32 @@
 import { homePage } from "./homePage.ts";
+import { modePage } from "./modePage.ts";
 import { chooseGamePage } from "./chooseGamePage.ts";
 import { pongPage } from "./pongPage.ts";
 import { loginPage } from "./loginPage.ts";
 import { registerPage } from "./registerPage.ts";
-import { chatPage } from "./chatPage.ts";
 import { privacyPage } from "./privacyPage.ts";
 import { profilePage } from "./profilePage.ts";
 import { settingsPage } from "./settingsPage.ts";
 import { recoverPage } from "./recoverPage.ts";
 import { notFoundPage } from "./notFoundPage.ts";
+import {startPage} from "./startPage.ts";
 
 export type Page<T = undefined> = {
   url: string;
   title: string;
   getPage(): string;
   onMount(data?: T): void;
-  onUnmount(): void;
+  onUnmount(nextPage?: Page<any>): void;
   toJSON(): string;
 };
 
 export const pages: Page<any>[] = [
   homePage,
+  modePage,
   chooseGamePage,
+  startPage,
   pongPage,
-  chatPage,
+  // chatPage, -- We don't want access to the chat in a specific page
   loginPage,
   registerPage,
   recoverPage,
@@ -33,10 +36,10 @@ export const pages: Page<any>[] = [
   notFoundPage
 ];
 
-let currentPage: Page<any> | undefined;
+export let currentPage: Page<any> | undefined;
 
 export function loadPage<T>(page: Page<T>, data?: T, historyState: "PUSH" | "REPLACE" | "NONE" = "PUSH") {
-  currentPage?.onUnmount();
+  currentPage?.onUnmount(page);
   document.querySelector<HTMLDivElement>("#app")!.innerHTML = page.getPage();
   currentPage = page;
 

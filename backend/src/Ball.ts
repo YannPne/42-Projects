@@ -1,13 +1,13 @@
-import { Game } from "./Game";
+import { Game, Match } from "./Game";
 import Player from "./Player";
 
 export default class Ball {
-  readonly angle: number = 50;
-  readonly size: number = 50;
+  static readonly ANGLE = 25;
+  static readonly SIZE = 50;
 
-  readonly game: Game;
-  x: number = 0;
-  y: number = 0;
+  private readonly game: Game;
+  private x: number = 0;
+  private y: number = 0;
   speedX: number = 0;
   speedY: number = 0;
 
@@ -24,7 +24,7 @@ export default class Ball {
   }
 
   get right() {
-    return this.x + this.size;
+    return this.x + Ball.SIZE;
   }
 
   get top() {
@@ -32,22 +32,21 @@ export default class Ball {
   }
 
   get bottom() {
-    return this.y + this.size;
+    return this.y + Ball.SIZE;
   }
 
   get centerX() {
-    return this.x + this.size / 2;
+    return this.x + Ball.SIZE / 2;
   }
 
   get centerY() {
-    return this.y + this.size / 2;
+    return this.y + Ball.SIZE / 2;
   }
 
-  resetPos() {
-    this.x = (this.game.width - this.size) / 2;
-    this.y = (this.game.height - this.size) / 2;
-    const [ player1, player2 ] = this.game.players;
-    this.speedX = player1.score < player2.score ? -3 : 3;
+  resetPos(match: Match & { player2: Player }) {
+    this.x = (Game.WIDTH - Ball.SIZE) / 2;
+    this.y = (Game.HEIGHT - Ball.SIZE) / 2;
+    this.speedX = match.score1 < match.score2 ? -3 : 3;
     this.speedY = 0;
   }
 
@@ -57,7 +56,7 @@ export default class Ball {
   }
 
   updateSpeed(player1: Player, player2: Player) {
-    if (this.bottom >= this.game.height || this.top <= 0) this.speedY *= -1;
+    if (this.bottom >= Game.HEIGHT || this.top <= 0) this.speedY *= -1;
     else if (this.goToLeft && this.left <= player1.right && this.bottom >= player1.top && this.top < player1.bottom)
       this.impactPlayer(player1);
     else if (!this.goToLeft && this.right >= player2.left && this.bottom >= player2.top && this.top < player2.bottom)
@@ -66,7 +65,7 @@ export default class Ball {
 
   impactPlayer(player: Player) {
     this.speedX *= -1;
-    this.speedY = ((this.y + this.size / 3) - player.centerY) / this.angle;
+    this.speedY = ((this.y + Ball.SIZE / 3) - player.centerY) / Ball.ANGLE;
     if (this.speedX > 0 && this.speedX < 40)
       this.speedX += 0.6;
     else if (this.speedX > -40)
@@ -77,7 +76,7 @@ export default class Ball {
     return {
       x: this.x,
       y: this.y,
-      size: this.size
+      size: Ball.SIZE
     };
   }
 }

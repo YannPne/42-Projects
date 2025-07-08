@@ -1,6 +1,6 @@
 import { loadPage, type Page } from "./Page.ts";
 import { send, sendAndWait } from "../Event.ts";
-import type { Friend, Game, Tournament } from "@ft_transcendence/core";
+import type { Friend, Game } from "@ft_transcendence/core";
 import { ws } from "../websocket.ts";
 import { loginPage } from "./loginPage.ts";
 import { settingsPage } from "./settingsPage.ts";
@@ -127,7 +127,7 @@ export const profilePage: Page<number> = {
   }
 };
 
-function createGraph(games: (Game | Tournament)[]) {
+function createGraph(games: Game[]) {
   const canvas = document.querySelector<HTMLCanvasElement>("#graph")!;
   const context = canvas.getContext("2d")!;
   const percent = document.querySelector<HTMLParagraphElement>("#graph-percent")!;
@@ -136,12 +136,10 @@ function createGraph(games: (Game | Tournament)[]) {
   let looseCount = 0;
 
   for (let game of games) {
-    if (game.type == "game") {
-      if (game.selfScore > game.opponentScore)
-        winCount++;
-      else
-        looseCount++;
-    }
+    if (game.selfScore > game.opponentScore)
+      winCount++;
+    else
+      looseCount++;
   }
 
   context.clearRect(0, 0, canvas.width, canvas.height);
@@ -197,31 +195,27 @@ function createFriend(friend: Friend) {
   return li;
 }
 
-function createGame(game: Game | Tournament, grid: HTMLDivElement) {
-  if (game.type == "game") {
-    const date = document.createElement("div");
-    date.innerText = new Date(game.date).toDateString();
-    date.className = "text-gray-500";
+function createGame(game: Game, grid: HTMLDivElement) {
+  const date = document.createElement("div");
+  date.innerText = new Date(game.date).toDateString();
+  date.className = "text-gray-500";
 
-    const state = document.createElement("div");
-    state.className = "text-center";
-    if (game.selfScore < game.opponentScore) {
-      state.innerText = "LOOSE";
-      state.classList.add("text-red-500");
-    } else {
-      state.innerText = "WIN";
-      state.classList.add("text-green-500");
-    }
-
-    const score = document.createElement("div");
-    score.innerText = `${game.selfScore} - ${game.opponentScore}`;
-    score.className = "text-center";
-
-    const opponent = document.createElement("div");
-    opponent.innerText = game.opponent ?? "{Deleted user}";
-
-    grid.prepend(date, state, score, opponent);
+  const state = document.createElement("div");
+  state.className = "text-center";
+  if (game.selfScore < game.opponentScore) {
+    state.innerText = "LOOSE";
+    state.classList.add("text-red-500");
   } else {
-
+    state.innerText = "WIN";
+    state.classList.add("text-green-500");
   }
+
+  const score = document.createElement("div");
+  score.innerText = `${game.selfScore} - ${game.opponentScore}`;
+  score.className = "text-center";
+
+  const opponent = document.createElement("div");
+  opponent.innerText = game.opponent ?? "{Deleted user}";
+
+  grid.prepend(date, state, score, opponent);
 }

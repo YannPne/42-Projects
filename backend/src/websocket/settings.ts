@@ -121,5 +121,5 @@ function removeAccount(user: User) {
 
   user.send({ event: "remove_account", success: result.changes > 0 });
   if (result.changes > 0)
-    user.socket.close();
+    user.closeSocket();
 }
