@@ -284,6 +284,11 @@ function setup3d(canvas: HTMLCanvasElement): GameElements {
   const engine = new Engine(canvas, true);
   scene = createScene(engine, new Color4(0, 0, 0, 0));
 
+  const ro = new ResizeObserver(() => engine.resize());
+  ro.observe(canvas);
+
+  window.addEventListener("resize", () => engine.resize());
+
   // ## CAMERA && LIGHT ##
   createCamera("Camera", Math.PI / 2, Math.PI / 4, -2000, new Vector3(600, 0, 275), canvas, scene);
   createLight("light", new Vector3(0, 0, -1), new Color3(1, 1, 1), new Color3(1, 1, 1), new Color3(0.2, 0.2, 0.5), scene);
