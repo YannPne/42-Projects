@@ -12,6 +12,8 @@ let wsListener: ((event: MessageEvent) => void) | undefined;
 let keydownListener: ((event: KeyboardEvent) => void) | undefined;
 let keyupListener: ((event: KeyboardEvent) => void) | undefined;
 let clickListener: ((event: MouseEvent) => void) | undefined;
+let resizeListener: ((event: UIEvent) => void) | undefined;
+let ro: ResizeObserver | undefined;
 
 let scene: Scene | undefined;
 
@@ -24,19 +26,15 @@ export const pongPage: Page = {
       <div class="h-full flex">
         <div class="flex-1 flex flex-col p-5 overflow-hidden">
           <div class="flex flex-col items-center justify-center h-full w-full p-5">
-            
-              <div class="flex items-center justify-center w-full h-full max-h-[70vh]">
-                <div class="aspect-[2/1] w-full max-w-[calc(70vh*2)]" style="display: none">
-                  <canvas id="game2d" width="1200" height="600" class="w-full h-full bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
-                </div>
-                <div class="relative aspect-[2/1] w-full max-w-[calc(70vh*2)]">
-                  <canvas id="game3d" width="1200" height="600" class="w-full h-full not-focus-visible"></canvas>
-                  <i title="The view can be moved with your mouse" class="fa-solid fa-arrows-rotate rotate-55 text-4xl absolute right-0 bottom-0"></i>
-                </div>
+            <div class="flex items-center justify-center w-full h-full max-h-[70vh]">
+              <div class="aspect-[2/1] w-full max-w-[calc(70vh*2)]" style="display: none">
+                <canvas id="game2d" width="1200" height="600" class="w-full h-full bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
               </div>
-          
-          
-            
+              <div class="relative aspect-[2/1] w-full max-w-[calc(70vh*2)]">
+                <canvas id="game3d" width="1200" height="600" class="w-full h-full not-focus-visible"></canvas>
+                <i title="The view can be moved with your mouse" class="fa-solid fa-arrows-rotate rotate-55 text-4xl absolute right-0 bottom-0"></i>
+              </div>
+            </div>
             <div class="flex items-center justify-around w-full">
               <div class="flex items-center space-x-4 mt-4">
                 <span id="toggle-text" class="text-lg font-medium text-white select-none cursor-pointer">Mode 3D</span>
@@ -168,10 +166,16 @@ export const pongPage: Page = {
       document.removeEventListener("keyup", keyupListener);
     if (wsListener != undefined)
       ws?.removeEventListener("message", wsListener);
+    if (resizeListener != undefined)
+      window.removeEventListener("resize", resizeListener);
     clickListener = undefined;
     keydownListener = undefined;
     keyupListener = undefined;
     wsListener = undefined;
+    resizeListener = undefined;
+
+    ro?.disconnect();
+    ro = undefined;
 
     scene?.getEngine().stopRenderLoop();
     scene?.dispose();
@@ -284,10 +288,10 @@ function setup3d(canvas: HTMLCanvasElement): GameElements {
   const engine = new Engine(canvas, true);
   scene = createScene(engine, new Color4(0, 0, 0, 0));
 
-  const ro = new ResizeObserver(() => engine.resize());
+  ro = new ResizeObserver(() => engine.resize());
   ro.observe(canvas);
 
-  window.addEventListener("resize", () => engine.resize());
+  window.addEventListener("resize", resizeListener = () => engine.resize());
 
   // ## CAMERA && LIGHT ##
   createCamera("Camera", Math.PI / 2, Math.PI / 4, -2000, new Vector3(600, 0, 275), canvas, scene);

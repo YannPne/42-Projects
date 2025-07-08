@@ -99,7 +99,7 @@ export class Game {
     const players = this.players.map(p => ({
       id: p.id,
       displayName: p.name,
-      avatar: p.isAi ? null : p.user?.avatar?.toJSON().data
+      avatar: !p.isDefaultOfUser ? null : p.user?.avatar?.toJSON().data
     }));
     const matches: { player: string | null, score: number, running: boolean }[][] = [];
 
