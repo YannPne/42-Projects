@@ -64,6 +64,8 @@ function getProfile(user: User, userToGet: number) {
     FROM users u
     WHERE u.id = ?`).get(userToGet);
 
+  if (row == undefined)
+    return;
   row.data = JSON.parse(row.data);
 
   if (row.hideProfile && user.id != userToGet)
