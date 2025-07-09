@@ -3,7 +3,6 @@ dist/
 node_modules/
 tsconfig.tsbuildinfo
 .env
-backend/database.sqlite
-backend/log_db.sql
+backend/database/
 frontend/fullchain.crt
 frontend/privkey.key

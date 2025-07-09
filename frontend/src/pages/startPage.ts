@@ -2,7 +2,7 @@ import { loadPage, type Page } from "./Page.ts";
 import { changeChatTournamentState, chatPage } from "./chatPage.ts";
 import { Status } from "brackets-model";
 import type { ViewerData } from "brackets-viewer";
-import { nextPow, type ServerEvent, type Tournament } from "@ft_transcendence/core";
+import type { ServerEvent, Tournament } from "@ft_transcendence/core";
 import { send, sendAndWait } from "../Event.ts";
 import { ws } from "../websocket.ts";
 import { modePage } from "./modePage.ts";
@@ -134,14 +134,24 @@ export async function updateMatches(tournament: Tournament) {
     for (let j = 0; j < i; j += 2) {
       const first = tournament.matches[roundId]?.[j];
       const second = tournament.matches[roundId]?.[j + 1];
+      let firstResult: undefined | "win" | "loss";
+      let secondResult: undefined | "win" | "loss";
+
+      if (first?.score == 5) {
+        firstResult = "win";
+        secondResult = "loss";
+      } else if (second?.score == 5) {
+        firstResult = "loss";
+        secondResult = "win";
+      }
 
       brackets.matches.push({
         id: incrementalId++, stage_id: 0, group_id: 0, round_id: roundId, number: j / 2, child_count: 0,
         status: first != undefined && first.running ? Status.Running : Status.Waiting,
-        opponent1: { id: first == undefined ? null : first.player, score: first?.score },
+        opponent1: { id: first == undefined ? null : first.player, score: first?.score, result: firstResult },
         opponent2: second != undefined && second.player == null
           ? null
-          : { id: second == undefined ? null : second.player, score: second?.score }
+          : { id: second == undefined ? null : second.player, score: second?.score, result: secondResult }
       });
     }
 
@@ -149,4 +159,15 @@ export async function updateMatches(tournament: Tournament) {
   }
 
   await window.bracketsViewer.render(brackets, { highlightParticipantOnHover: false, clear: true });
+}
+
+function nextPow(n: number) {
+  if (n <= 2)
+    return 2;
+
+  let pow = 1;
+  while (pow < n)
+    pow <<= 1;
+
+  return pow;
 }

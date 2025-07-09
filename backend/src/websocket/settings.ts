@@ -49,27 +49,41 @@ function updateInfo(user: User, message: ClientEvent & { event: "update_info" })
     if (result.changes > 0)
       user.avatar = buffer;
   }
+
   if (message.username != undefined) {
+    if (!/^[\w-]{3,16}$/.test(message.username))
+      return user.send({ event: "update_info", success: "The username length must be between 3 and 16. And can only contain alphanumeric characters, _ and -" });
     try {
       result = sqlite.prepare("UPDATE users SET username = ? WHERE id = ?").run(message.username, user.id);
       if (result.changes > 0)
         user.username = message.username;
     } catch (e) {}
   }
+
   if (message.displayName != undefined) {
+    if (!/^[\w- ]{3,16}$/.test(message.displayName))
+      return user.send({ event: "update_info", success: "The display name length must be between 3 and 16. And can only contain alphanumeric characters, _, - and spaces." });
     try {
       result = sqlite.prepare("UPDATE users SET displayName = ? WHERE id = ?").run(message.displayName, user.id);
       if (result.changes > 0)
         user.displayName = message.displayName;
     } catch (e) {}
   }
+
   if (message.email != undefined) {
+    if (!/^[\w-.+]+@([\w-]+\.)+[\w-]{2,4}$/.test(message.email))
+      return user.send({ event: "update_info", success: "Invalid email" });
     try {
       result = sqlite.prepare("UPDATE users SET email = ? WHERE id = ?").run(message.email, user.id);
     } catch (e) {}
   }
-  if (message.password != undefined)
+
+  if (message.password != undefined) {
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(message.password))
+      return user.send({ event: "update_info", success: "The password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one digit, and one special character."});
+
     result = sqlite.prepare("UPDATE users SET password = ? WHERE id = ?").run(bcrypt.hashSync(message.password, 10), user.id);
+  }
 
   user.send({ event: "update_info", success: result != undefined && result.changes > 0 });
 }
@@ -102,22 +116,8 @@ function setHideProfile(userId: number, hide: boolean) {
     .run(hide ? 1 : 0, userId);
 }
 
-function getDisplayName(userId: number): string {
-  const row: any = sqlite.prepare(`SELECT displayName
-        FROM users WHERE id = ?`).get(userId);
-
-  return row.displayName;
-}
-
 function removeAccount(user: User) {
-  const name: string = getDisplayName(user.id);
-
   const result = sqlite.prepare("DELETE FROM users WHERE id = ?").run(user.id);
-  sqlite.prepare(`UPDATE games
-    SET name1 = CASE WHEN name1 = ? THEN ? ELSE name1 END,
-        name2 = CASE WHEN name2 = ? THEN ? ELSE name2 END
-    WHERE name1 = ? OR name2 = ?;
-  `).run(name, "{Deleted User}", name, "{Deleted User}", name, name);
 
   user.send({ event: "remove_account", success: result.changes > 0 });
   if (result.changes > 0)

@@ -222,7 +222,7 @@ function updateUsers() {
 
   const seen = new Set<number>();
   const online = info.online
-    .filter(u => !info.blocked.some(b => b == u.id))
+    .filter(u => !info.blocked.includes(u.id))
     .filter(u => u.id != info.id)
     .filter(u => {
       if (seen.has(u.id))
@@ -233,11 +233,11 @@ function updateUsers() {
 
   online.sort((a, b) => {
     let result = 0;
-    if (info.friends.some(f => f == a.id))
+    if (info.friends.includes(a.id))
       result -= 5;
     if (!messages.users[a.id].allRead)
       result--;
-    if (info.friends.some(f => f == b.id))
+    if (info.friends.includes(b.id))
       result += 5;
     if (!messages.users[b.id].allRead)
       result++;
@@ -274,7 +274,7 @@ function createUser(users: HTMLDivElement, user: { id: number, avatar?: number[]
   if (user.avatar != undefined)
     button.querySelector("img")!.src = URL.createObjectURL(new Blob([ new Uint8Array(user.avatar) ]));
   button.querySelector("span")!.innerText = user.name;
-  if (info.friends.some(f => f == user.id))
+  if (info.friends.includes(user.id))
     button.querySelector("i")!.style.display = "";
 
   button.onclick = () => channelChange(button, user.id);
@@ -313,7 +313,7 @@ function channelChange(button: HTMLButtonElement, id?: number) {
     .style.display = id == undefined ? "none" : "";
   if (id != undefined) {
     const addFriend = document.querySelector<HTMLButtonElement>("#chat-add-friend")!;
-    const isFriend = info.friends.some(f => f == id);
+    const isFriend = info.friends.includes(id);
     addFriend.innerText = isFriend ? "Remove friend" : "Add friend";
     button.dataset.isFriend = isFriend ? "1" : "0";
   }
@@ -341,7 +341,7 @@ function createMessage(message: Message & { type: "message" }) {
   li.querySelector("span")!.innerText = sender.name;
   const content = li.querySelector("p")!;
 
-  if (info.blocked.some(b => b == message.sender)) {
+  if (info.blocked.includes(message.sender)) {
     content.innerText = "Blocked user";
     content.classList.add("text-gray-500");
 

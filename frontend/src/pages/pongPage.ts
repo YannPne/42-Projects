@@ -12,6 +12,10 @@ let wsListener: ((event: MessageEvent) => void) | undefined;
 let keydownListener: ((event: KeyboardEvent) => void) | undefined;
 let keyupListener: ((event: KeyboardEvent) => void) | undefined;
 let clickListener: ((event: MouseEvent) => void) | undefined;
+let resizeListener: ((event: UIEvent) => void) | undefined;
+let ro: ResizeObserver | undefined;
+
+let scene: Scene | undefined;
 
 export const pongPage: Page = {
   url: "/pong",
@@ -19,36 +23,33 @@ export const pongPage: Page = {
 
   getPage() {
     return `
-      <div class="h-full flex flex-col overflow-hidden">
-   
-        <hr class="h-px bg-gray-200 border-0">
-        <div class="h-full flex-1 flex">
-          <div class="flex-1 flex flex-col p-5 overflow-hidden">
-  
-            <div class="flex flex-col items-center justify-center h-full w-full p-5">
-              <canvas id="game2d" width="1200" height="600" class="w-[90%] aspect-[2/1] bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
-              <div class="w-[90%] relative">
-                <canvas id="game3d" width="1200" height="600" class="w-full aspect-[2/1] not-focus-visible"></canvas>
-                <i class="fa-solid fa-arrows-rotate fa-spin text-4xl absolute right-0 bottom-0"></i>
+      <div class="h-full flex">
+        <div class="flex-1 flex flex-col p-5 overflow-hidden">
+          <div class="flex flex-col items-center justify-center h-full w-full p-5">
+            <div class="flex items-center justify-center w-full h-full max-h-[70vh]">
+              <div class="aspect-[2/1] w-full max-w-[calc(70vh*2)]" style="display: none">
+                <canvas id="game2d" width="1200" height="600" class="w-full h-full bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950"></canvas>
               </div>
-              <div class="flex items-center justify-around w-full">
-                <div class="flex items-center space-x-4 mt-4">
-                  <span id="toggle-text" class="text-lg font-medium text-white select-none cursor-pointer">Mode 3D</span>
-                  <button id="is3d" type="button" class="relative w-16 h-9 bg-gray-700 rounded-full transition-colors duration-300 ease-in-out focus:outline-none">
-                    <span id="toggle-circle" class="absolute left-1 top-1 w-7 h-7 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out"></span>
-                  </button>
-                </div>
-                <i id="tournament" class="fa-solid fa-trophy text-3xl cursor-pointer hover:text-gray-300"></i>
+              <div class="relative aspect-[2/1] w-full max-w-[calc(70vh*2)]">
+                <canvas id="game3d" width="1200" height="600" class="w-full h-full not-focus-visible"></canvas>
+                <i title="The view can be moved with your mouse" class="fa-solid fa-arrows-rotate rotate-55 text-4xl absolute right-0 bottom-0"></i>
               </div>
             </div>
-  
+            <div class="flex items-center justify-around w-full">
+              <div class="flex items-center space-x-4 mt-4">
+                <span id="toggle-text" class="text-lg font-medium text-white select-none cursor-pointer">Mode 3D</span>
+                <button id="is3d" type="button" class="relative w-16 h-9 bg-gray-700 rounded-full transition-colors duration-300 ease-in-out focus:outline-none">
+                  <span id="toggle-circle" class="absolute left-1 top-1 w-7 h-7 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out"></span>
+                </button>
+              </div>
+              <i id="tournament" class="fa-solid fa-trophy text-3xl cursor-pointer hover:text-gray-300"></i>
+            </div>
           </div>
-          ${chatPage.getPage()}
         </div>
-		  </div>
+        ${chatPage.getPage()}
+      </div>
 		  <div id="tournament-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center w-screen h-screen overflow-hidden p-10" style="display: none">
-		    <div class="brackets-viewer bg-gray-800 p-10 rounded-4xl max-w-full max-h-full overflow-auto">
-        </div>
+		    <div class="brackets-viewer bg-gray-800 p-10 rounded-4xl max-w-full max-h-full overflow-auto"></div>
       </div>
     `;
   },
@@ -96,11 +97,10 @@ export const pongPage: Page = {
 
     updateToggleUI();
 
-    canvas2d.style.display = "none";
     is3d.onclick = () => {
       is3dActive = !is3dActive;
-      (is3dActive ? canvas2d : canvas3d.parentElement!).style.display = "none";
-      (is3dActive ? canvas3d.parentElement! : canvas2d).style.display = "";
+      (is3dActive ? canvas2d : canvas3d).parentElement!.style.display = "none";
+      (is3dActive ? canvas3d : canvas2d).parentElement!.style.display = "";
       updateToggleUI();
     };
 
@@ -108,12 +108,12 @@ export const pongPage: Page = {
 
     document.addEventListener("keydown", keydownListener = event => {
       if (!event.repeat && document.activeElement !== chatInput)
-        move(event, false);
+        move(event, true);
     });
 
     document.addEventListener("keyup", keyupListener = event => {
       if (document.activeElement !== chatInput)
-        move(event, true);
+        move(event, false);
     });
 
     document.addEventListener("click", clickListener = event => {
@@ -166,10 +166,22 @@ export const pongPage: Page = {
       document.removeEventListener("keyup", keyupListener);
     if (wsListener != undefined)
       ws?.removeEventListener("message", wsListener);
+    if (resizeListener != undefined)
+      window.removeEventListener("resize", resizeListener);
     clickListener = undefined;
     keydownListener = undefined;
     keyupListener = undefined;
     wsListener = undefined;
+    resizeListener = undefined;
+
+    ro?.disconnect();
+    ro = undefined;
+
+    scene?.getEngine().stopRenderLoop();
+    scene?.dispose();
+    scene?.getEngine().dispose();
+    scene = undefined;
+
     chatPage.onUnmount();
   },
 
@@ -178,14 +190,14 @@ export const pongPage: Page = {
   }
 };
 
-function move(event: KeyboardEvent, up: boolean) {
+function move(event: KeyboardEvent, down: boolean) {
   let goUp: boolean | undefined;
   let goDown: boolean | undefined;
 
   if (event.code == "KeyW" || event.code == "ArrowUp")
-    goUp = !up;
+    goUp = down;
   else if (event.code == "KeyS" || event.code == "ArrowDown")
-    goDown = !up;
+    goDown = down;
   else
     return;
 
@@ -272,10 +284,14 @@ type GameElements = {
 };
 
 function setup3d(canvas: HTMLCanvasElement): GameElements {
-
   // ## ENGINE && SCENE ##
   const engine = new Engine(canvas, true);
-  const scene = createScene(engine, new Color4(0, 0, 0, 0));
+  scene = createScene(engine, new Color4(0, 0, 0, 0));
+
+  ro = new ResizeObserver(() => engine.resize());
+  ro.observe(canvas);
+
+  window.addEventListener("resize", resizeListener = () => engine.resize());
 
   // ## CAMERA && LIGHT ##
   createCamera("Camera", Math.PI / 2, Math.PI / 4, -2000, new Vector3(600, 0, 275), canvas, scene);
@@ -338,9 +354,9 @@ function setup3d(canvas: HTMLCanvasElement): GameElements {
 
   const textScoreP1 = createTextBlock("gray", 400, "");
   const textScoreP2 = createTextBlock("gray", 400, "");
-  const textNameP1 = createTextBlock("white", 150, "");
-  const textNameP2 = createTextBlock("white", 150, "");
-  const textEndGame = createTextBlock("white", 200, "");
+  const textNameP1 = createTextBlock("white", 90, "");
+  const textNameP2 = createTextBlock("white", 90, "");
+  const textEndGame = createTextBlock("white", 90, "");
 
   const guiScoreP1 = AdvancedDynamicTexture.CreateForMesh(planeScoreP1);
   const guiScoreP2 = AdvancedDynamicTexture.CreateForMesh(planeScoreP2);
@@ -354,7 +370,7 @@ function setup3d(canvas: HTMLCanvasElement): GameElements {
   guiNameP2.addControl(textNameP2);
   guiEndGame.addControl(textEndGame);
 
-  engine.runRenderLoop(() => scene.render());
+  engine.runRenderLoop(() => scene?.render());
 
   return { ball, player1, player2, textNameP1, textNameP2, textScoreP1, textScoreP2, textEndGame };
 }

@@ -184,6 +184,9 @@ function createFriend(friend: Friend) {
   if (friend.online)
     li.querySelector<HTMLDivElement>(".friend-status")!.classList.add("bg-green-500");
 
+  if (friend.avatar != undefined)
+    li.querySelector("img")!.src = URL.createObjectURL(new Blob([ new Uint8Array(friend.avatar) ]));
+
   li.querySelector("i")!.onclick = () => {
     send({ event: "remove_friend", user: friend.id });
     li.remove();
@@ -193,28 +196,26 @@ function createFriend(friend: Friend) {
 }
 
 function createGame(game: Game, grid: HTMLDivElement) {
-  let node = document.createElement("div");
-  node.innerText = new Date(game.date).toDateString();
-  node.className = "text-gray-500";
-  grid.appendChild(node);
+  const date = document.createElement("div");
+  date.innerText = new Date(game.date).toDateString();
+  date.className = "text-gray-500";
 
-  node = document.createElement("div");
-  node.className = "text-center";
+  const state = document.createElement("div");
+  state.className = "text-center";
   if (game.selfScore < game.opponentScore) {
-    node.innerText = "LOOSE";
-    node.classList.add("text-red-500");
+    state.innerText = "LOOSE";
+    state.classList.add("text-red-500");
   } else {
-    node.innerText = "WIN";
-    node.classList.add("text-green-500");
+    state.innerText = "WIN";
+    state.classList.add("text-green-500");
   }
-  grid.appendChild(node);
 
-  node = document.createElement("div");
-  node.innerText = `${game.selfScore} - ${game.opponentScore}`;
-  node.className = "text-center";
-  grid.appendChild(node);
+  const score = document.createElement("div");
+  score.innerText = `${game.selfScore} - ${game.opponentScore}`;
+  score.className = "text-center";
 
-  node = document.createElement("div");
-  node.innerText = game.opponent;
-  grid.appendChild(node);
+  const opponent = document.createElement("div");
+  opponent.innerText = game.opponent ?? "{Deleted user}";
+
+  grid.prepend(date, state, score, opponent);
 }

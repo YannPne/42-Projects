@@ -4,7 +4,7 @@ import Player from "./Player";
 import User from "./User";
 import { onlineUsers } from "./websocket/websocket";
 import { sqlite } from "./index";
-import { GameType, nextPow } from "@ft_transcendence/core";
+import type { GameType } from "@ft_transcendence/core";
 
 export let games: Game[] = [];
 
@@ -50,7 +50,7 @@ export class Game {
 
   addUser(user: User) {
     if (this.state == GameState.CREATING) {
-      const player = new Player(this, user.displayName, false);
+      const player = new Player(this, user, user.displayName, false);
       this.players.push(player);
       user.players.push(player);
     }
@@ -83,7 +83,7 @@ export class Game {
     if (this.state != GameState.CREATING)
       return;
 
-    const player = new Player(this, name, user == undefined);
+    const player = new Player(this, user, name, user == undefined);
     this.players.push(player);
     user?.players.push(player);
     this.sendTournamentUpdate();
@@ -99,7 +99,7 @@ export class Game {
     const players = this.players.map(p => ({
       id: p.id,
       displayName: p.name,
-      avatar: p.isAi ? null : undefined // TODO: With damien's PR, p will contain the user, use this instead. Currently avatar is broken
+      avatar: !p.isDefaultOfUser ? null : p.user?.avatar?.toJSON().data
     }));
     const matches: { player: string | null, score: number, running: boolean }[][] = [];
 
@@ -201,12 +201,13 @@ export class Game {
           continue;
 
         this.currentMatch = match;
+        const { player1, player2 } = match;
         this.resetPos(match);
 
         for (let user of this.users) {
           user.send({
             event: "next_match",
-            players: [ match.player1.name, match.player2.name ]
+            players: [ player1.name, player2.name ]
           });
         }
         this.sendTournamentUpdate();
@@ -216,7 +217,6 @@ export class Game {
           if (this.state != GameState.IN_GAME)
             break a;
 
-          const { player1, player2 } = match;
           const startTime = Date.now();
 
           this.ball.move();
@@ -237,10 +237,14 @@ export class Game {
             setTimeout(res, 10 - (Date.now() - startTime)));
         }
 
-        const convertDate = new Date().toISOString().split("T")[0];
-        sqlite.prepare(`INSERT INTO games (name1, name2, score1, score2, date)
-            VALUES (?, ?, ?, ?, ?)`)
-          .run(match.player1.name, match.player2.name, match.score1, match.score2, convertDate);
+        sqlite.prepare(`INSERT INTO games (player1_id, player1_name, player1_score, player2_id, player2_name, player2_score)
+            VALUES (?, ?, ?, ?, ?, ?)`)
+          .run(player1.isDefaultOfUser ? player1.user?.id : null,
+            player1.isDefaultOfUser ? null : player1.name,
+            match.score1,
+            player2.isDefaultOfUser ? player2.user?.id : null,
+            player2.isDefaultOfUser ? null : player2.name,
+            match.score2);
       }
     } while (this.tournament[this.tournament.length - 1].length >= 2);
 
@@ -303,4 +307,15 @@ export class Game {
       console.error("Error when the match is retrieve from the smart contract :", err);
     }
   }
+}
+
+function nextPow(n: number) {
+  if (n <= 2)
+    return 2;
+
+  let pow = 1;
+  while (pow < n)
+    pow <<= 1;
+
+  return pow;
 }

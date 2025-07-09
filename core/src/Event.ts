@@ -96,7 +96,7 @@ export type ServerEvent =
   | { event: "remove_friend", success: boolean }
   // SETTINGS
   | { event: "get_settings", username: string, displayName: string, email: string, avatar?: number[], enabled2fa: boolean, hidden: boolean }
-  | { event: "update_info", success: boolean }
+  | { event: "update_info", success: boolean | string }
   | { event: "setup_2fa", secret?: string, username?: string }
   | { event: "setup_2fa_check", success: boolean }
   | { event: "remove_account", success: boolean }

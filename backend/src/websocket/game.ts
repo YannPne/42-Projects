@@ -43,7 +43,7 @@ function createGame(user: User, message: ClientEvent & { event: "create_game" })
   }
   game.addUser(user);
   if (message.type == "LOCAL")
-    game.addLocalPlayer("AI");
+    game.addLocalPlayer("🤖 AI");
 }
 
 function joinGame(user: User, message: ClientEvent & { event: "join_game" }) {
@@ -70,7 +70,10 @@ function addLocalPlayer(user: User, message: ClientEvent & { event: "add_local_p
   if (!user.game)
     return;
 
-  user.game.addLocalPlayer(message.name, message.isAi ? undefined : user);
+  if (message.isAi)
+    user.game.addLocalPlayer("🤖 " + message.name);
+  else
+    user.game.addLocalPlayer(message.name, user);
 }
 
 function play(user: User) {
@@ -89,9 +92,8 @@ function move(user: User, message: ClientEvent & { event: "move" }) {
   if (user.game == undefined)
     return;
 
-  // TODO: in Damien's PR, user is given in Player
-  const player = user.players.find((p) => p == (message.id == 0 ? user.game?.currentMatch?.player1 : user.game?.currentMatch?.player2));
-  if (player == undefined)
+  let player = message.id == 0 ? user.game.currentMatch?.player1 : user.game.currentMatch?.player2;
+  if (player === undefined || player === null || player.user !== user)
     return;
 
   if (message.goUp != undefined)

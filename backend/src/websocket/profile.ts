@@ -1,4 +1,4 @@
-import { ClientEvent } from "@ft_transcendence/core";
+import { ClientEvent, Game } from "@ft_transcendence/core";
 import User from "../User";
 import { sqlite } from "../index";
 import { onlineUsers } from "./websocket";
@@ -38,30 +38,34 @@ function getProfile(user: User, userToGet: number) {
         ),
         'games', (
           SELECT json_group_array(
-            CASE WHEN g.name1 = ug.displayName THEN
-              json_object(
-                'opponent', g.name2,
-                'selfScore', g.score1,
-                'opponentScore', g.score2,
-                'date', g.date
-              )
-            ELSE
-              json_object(
-                'opponent', g.name1,
-                'selfScore', g.score2,
-                'opponentScore', g.score1,
-                'date', g.date
-              )
-            END
+            json_object(
+              'players', json_array(
+                json_object(
+                  'id', g.player1_id,
+                  'name', CASE WHEN g.player1_id IS NULL THEN g.player1_name ELSE p1.displayName END,
+                  'score', g.player1_score
+                ),
+                json_object(
+                  'id', g.player2_id,
+                  'name', CASE WHEN g.player2_id IS NULL THEN g.player2_name ELSE p2.displayName END,
+                  'score', g.player2_score
+                )
+              ),
+              'date', g.date
+            )
           )
           FROM games g
-          JOIN users ug ON g.name1 = ug.displayName OR g.name2 = ug.displayName
-          WHERE g.name1 = u.displayName OR g.name2 = u.displayName
+          LEFT JOIN users p1 ON g.player1_id = p1.id
+          LEFT JOIN users p2 ON g.player2_id = p2.id
+          WHERE g.player1_id = u.id OR g.player2_id = u.id
         )
-      ) AS data, u.hideProfile
+      ) AS data,
+      u.hideProfile
     FROM users u
     WHERE u.id = ?`).get(userToGet);
 
+  if (row == undefined)
+    return;
   row.data = JSON.parse(row.data);
 
   if (row.hideProfile && user.id != userToGet)
@@ -83,6 +87,19 @@ function getProfile(user: User, userToGet: number) {
       else
         friend.avatar = Buffer.from(friend.avatar, "hex").toJSON().data;
     }
+
+    const games: Game[] = [];
+    for (let game of row.games) {
+      const index = game.players[0].id == userToGet ? 0 : 1;
+      games.push({
+        opponent: game.players[(index + 1) % 2].name,
+        selfScore: game.players[index].score,
+        opponentScore: game.players[(index + 1) % 2].score,
+        date: game.date
+      });
+    }
+
+    row.games = games;
 
     user.send(row);
   }

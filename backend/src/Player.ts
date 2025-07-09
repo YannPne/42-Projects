@@ -1,4 +1,5 @@
 import { Game } from "./Game";
+import User from "./User";
 
 export default class Player {
   static readonly WIDTH = 20;
@@ -6,6 +7,7 @@ export default class Player {
 
   readonly id: string;
   private readonly game: Game;
+  readonly user: User | undefined;
   readonly name: string;
   readonly isAi: boolean;
   private speed: number = 5;
@@ -17,9 +19,10 @@ export default class Player {
   private aiLastCheck: number = Date.now();
   private aiTargetY: number = 0;
 
-  constructor(game: Game, name: string, isAi: boolean) {
+  constructor(game: Game, user: User | undefined, name: string, isAi: boolean) {
     this.id = crypto.randomUUID();
     this.game = game;
+    this.user = user;
     this.name = name;
     this.isAi = isAi;
     this.aiTargetY = ((Math.random() - 0.5) * Player.HEIGHT) + Game.HEIGHT / 2;
@@ -51,6 +54,10 @@ export default class Player {
 
   get centerY() {
     return this.y + Player.HEIGHT / 2;
+  }
+
+  get isDefaultOfUser() {
+    return this.user != undefined && this.user.players[0] == this;
   }
 
   move() {

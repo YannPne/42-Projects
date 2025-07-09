@@ -1,20 +1,16 @@
 services:
   backend:
     container_name: backend
-    image: node:22-alpine
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
     restart: always
-    volumes: [ ./:/app ]
-    working_dir: /app
-    command: >
-      sh -c "apk add --no-cache sqlite
-      && npm ci
-      && npx --workspace=backend tsc
-      && npm --workspace=backend start"
+    volumes: [ ./backend/database:/app/backend/database ]
 
   nginx:
     container_name: nginx
     build:
       context: .
+      dockerfile: ./frontend/Dockerfile
     restart: always
-    working_dir: /www
     ports: [ "8443:443" ]

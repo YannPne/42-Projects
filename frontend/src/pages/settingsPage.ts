@@ -165,7 +165,9 @@ export const settingsPage: Page = {
         avatar: Array.from(new Uint8Array(await avatarInput.files[0].arrayBuffer()))
       });
 
-      if (response.success) {
+      if (typeof response.success == "string")
+        alert(response.success)
+      else if (response.success) {
         loadPage(this);
         loggedNavProfile.querySelector("img")!.src = URL.createObjectURL(avatarInput.files[0]);
       } else
@@ -243,7 +245,9 @@ function setupInfo(form: HTMLFormElement, defaultValue: string, eventName: strin
       [eventName]: input.value
     });
 
-    if (response.success) {
+    if (typeof response.success == "string")
+      alert(response.success);
+    else if (response.success) {
       loadPage(settingsPage);
       if (onSuccess != undefined)
         onSuccess();
