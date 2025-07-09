@@ -336,6 +336,8 @@ function createMessage(message: Message & { type: "message" }) {
   `;
 
   const sender = info.online.find(o => o.id == message.sender)!;
+  if (sender == undefined)
+    return;
   if (sender.avatar != undefined)
     li.querySelector("img")!.src = URL.createObjectURL(new Blob([ new Uint8Array(sender.avatar) ]));
   li.querySelector("span")!.innerText = sender.name;
