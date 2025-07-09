@@ -51,7 +51,7 @@ function updateInfo(user: User, message: ClientEvent & { event: "update_info" })
   }
 
   if (message.username != undefined) {
-    if (!/[\w-]{3,16}/.test(message.username))
+    if (!/^[\w-]{3,16}$/.test(message.username))
       return user.send({ event: "update_info", success: "The username length must be between 3 and 16. And can only contain alphanumeric characters, _ and -" });
     try {
       result = sqlite.prepare("UPDATE users SET username = ? WHERE id = ?").run(message.username, user.id);

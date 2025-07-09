@@ -146,7 +146,7 @@ app.post("/api/register", async (request, reply) => {
   if (!username || !displayName || !email || !password)
     return reply.status(400).send("Incomplete request");
 
-  if (!/[\w-]{3,16}/.test(username))
+  if (!/^[\w-]{3,16}$/.test(username))
     return reply.status(400).send("The username length must be between 3 and 16. And can only contain alphanumeric characters, _ and -");
 
   if (!/^[\w- ]{3,16}$/.test(displayName))
