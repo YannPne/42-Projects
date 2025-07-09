@@ -12,7 +12,7 @@ import { getTotpCode } from "./2fa";
 
 dotenv.config();
 
-export const sqlite = initSqlite("./database.sqlite", { verbose: (msg) => fs.appendFileSync("./log_db.sql", msg + ";\n") });
+export const sqlite = initSqlite("./database/database.sqlite", { verbose: (msg) => fs.appendFileSync("./database/log_db.sql", msg + ";\n") });
 
 sqlite.exec(`CREATE TABLE IF NOT EXISTS users (
     id          INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,

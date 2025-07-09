@@ -5,6 +5,7 @@ services:
       context: .
       dockerfile: ./backend/Dockerfile
     restart: always
+    volumes: [ ./backend/database:/app/backend/database ]
 
   nginx:
     container_name: nginx
