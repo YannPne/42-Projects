@@ -2,7 +2,7 @@ import { loadPage, type Page } from "./Page.ts";
 import { changeChatTournamentState, chatPage } from "./chatPage.ts";
 import { Status } from "brackets-model";
 import type { ViewerData } from "brackets-viewer";
-import { nextPow, type ServerEvent, type Tournament } from "@ft_transcendence/core";
+import type { ServerEvent, Tournament } from "@ft_transcendence/core";
 import { send, sendAndWait } from "../Event.ts";
 import { ws } from "../websocket.ts";
 import { modePage } from "./modePage.ts";
@@ -159,4 +159,15 @@ export async function updateMatches(tournament: Tournament) {
   }
 
   await window.bracketsViewer.render(brackets, { highlightParticipantOnHover: false, clear: true });
+}
+
+function nextPow(n: number) {
+  if (n <= 2)
+    return 2;
+
+  let pow = 1;
+  while (pow < n)
+    pow <<= 1;
+
+  return pow;
 }

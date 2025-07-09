@@ -4,7 +4,7 @@ import Player from "./Player";
 import User from "./User";
 import { onlineUsers } from "./websocket/websocket";
 import { sqlite } from "./index";
-import { GameType, nextPow } from "@ft_transcendence/core";
+import type { GameType } from "@ft_transcendence/core";
 
 export let games: Game[] = [];
 
@@ -307,4 +307,15 @@ export class Game {
       console.error("Error when the match is retrieve from the smart contract :", err);
     }
   }
+}
+
+function nextPow(n: number) {
+  if (n <= 2)
+    return 2;
+
+  let pow = 1;
+  while (pow < n)
+    pow <<= 1;
+
+  return pow;
 }
